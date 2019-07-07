@@ -1,0 +1,67 @@
+PNGファイルを読み書きするライブラリです。アニメーションPNG(APNG)の出力も備えます
+しかし、16ビット深度の画像と、インターレース画像には非対応です
+ビルドにはc++11以降とzlibが必要です
+
+
+解説：
+binaryは、バイナリ列を扱う基本クラス
+
+binary_viewは、受け取ったbinaryオブジェクトに対し、多バイト長の読み取りを行うクラス
+
+binary_cursorは、受け取ったbinaryオブジェクトに対し、多バイト長の書き込みを行うクラス
+
+chunkは、binaryクラスから派生した、PNGチャンクを表現するクラス。
+
+image_dataは、binaryクラスから派生した、PNGのIDATチャンクの内容を保持するクラス
+（ビット深度が8未満ならビット・パッキングされた）ピクセルデータ列を受け取り、フィルタリングと
+zlib圧縮を掛けて保持します
+メンバー関数extractによって、zlib展開され、
+フィルタリングを解除された（、ビット深度が8ビット未満ならビット・パッキングされたままの）
+ピクセルデータ列が抽出されます
+
+
+chunk_listは、PNGの各種チャンクを保持するクラス
+ファイルやメモリといったストリームを対象に、PNG形式を読み書きします
+
+
+chunk_setは、chunk_listを受け取り、チャンクを分類して、参照を保持します
+その性質のために、chunk_setオブジェクトを使っている間は、
+参照元のchunk_listは破棄されてはなりません
+
+
+direct_color_imageは、ピクセルをRGBA順で表現するバイト列を持つクラス
+chunk_setからPNG画像データを抽出し、そのピクセル形式に関わらず、
+RGBAバイト列に変換して保持します
+
+
+animation_builderは、APNGを構築するためのクラス
+同一サイズのdirect_color_imageを受け取って、APNGを構築します
+アニメーションの間隔は全フレーム一定で、ミリ秒単位です
+
+
+
+
+使用例：
+  try
+  {
+    direct_color_image  img("any.png");//ファイル名を与えれば、内部で
+                                       //chunk_list、chunk_setを生成して読み込む
+    auto  pix = img.get_pixel_pointer(0,0);
+
+    auto&  r = pix[0];
+    auto&  g = pix[1];
+    auto&  b = pix[2];
+    auto&  a = pix[3];
+  }
+
+
+//ファイルを開けない、開いたファイルがPNG形式ではない、不正なPNGデータである
+//と言ったときは、std::exceptionから派生した例外クラスを投げます
+  catch(const std::exception&  e)
+  {
+    printf("error: %s\n",e.what());
+  }
+
+
+
+

@@ -1,0 +1,43 @@
+画像等のバイナリデータは下記アドレスに置いてあります
+https://drive.google.com/open?id=0B_7bNzvT8p7UdzVpN3ZUUjBLaVE
+
+
+
+
+じぶんは、ネット上にある無償の情報によってプログラミングを習得した身ですので、
+じぶんもまた、その成果を無償で公開します
+
+
+
+
+ソースコードはC++17以降で書かれています
+mainプログラムがSDL2を使用する以外は、
+標準C++ライブラリ,zlibのみで動くように作られています
+
+常に開発中であり、安定版はありません
+
+ある程度、分量が肥大してきたら、
+リポジトリ名をgamebaby-dumped-YYYYMMDDという形式の名前に変更し、
+新たにgamebabyという名前のリポジトリを作成して、そちらで開発を継続するということをしています
+
+リポジトリにはバイナリ・ファイル等は含めてないので、
+必要なファイルが無く、そのままではビルドできません
+http://funnyboze.sannasubi.com/
+にバイナリ・ファイルを含んだアーカイブが置いてあります
+
+
+CMakeLists.txtの
+add_subdirectory
+add_executable
+target_link_libraries
+の行を適宜、コメントアウト解除してください
+
+以下を入力して、ビルドします(-DEMSC=onを付けた場合、emscriptenを使い、javascript版ができる)
+mkdir -p  builddir
+cd builddir
+cmake .. [-DEMSC=on]
+make
+
+
+
+
