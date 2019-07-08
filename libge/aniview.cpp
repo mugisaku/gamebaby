@@ -9,6 +9,52 @@ namespace ge{
 
 
 
+class
+aniview::
+drawing_area: public gbstd::widgets::node
+{
+  core&  m_core;
+
+  gbstd::point  m_point;
+
+public:
+  drawing_area(core&  cor) noexcept: m_core(cor){m_core.add_coworker({*this});}
+
+  void  set_point(gbstd::point  pt) noexcept
+  {
+    m_point = pt;
+
+    request_redraw();
+  }
+
+  void  process_before_reform() noexcept override
+  {
+    int  w = m_core.get_source().get_cell_width() ;
+    int  h = m_core.get_source().get_cell_height();
+
+    set_content_width( w);
+    set_content_height(h);
+  }
+
+  void  render(const gbstd::canvas&  cv) noexcept override
+  {
+    auto&  dsp = m_core.get_display();
+    auto&  src = m_core.get_source();
+
+    dsp.render_background({cv,0,0,src.get_cell_width(),src.get_cell_height()},2);
+
+      if(m_core.test_underlay())
+      {
+        dsp.render_underlay(cv,1);
+      }
+
+
+    cv.draw_canvas(m_core.get_source().get_canvas(m_point),0,0);
+  }
+
+};
+
+
 namespace{
 const uint32_t  g_time_table[] = {1000,600,200,80};
 }
@@ -22,7 +68,15 @@ psh(gbstd::widgets::button_event  evt) noexcept
     {
       auto&  aniv = evt->get_userdata<aniview>();
 
+        if(aniv.m_points.empty())
+        {
+          aniv.m_drawing_area.show();
+        }
+
+
       aniv.m_points.emplace_back(aniv.m_core.get_pixel_base_point());
+
+      aniv.m_drawing_area.show();
 
       aniv.update_state_label();
     }
@@ -42,6 +96,11 @@ pop(gbstd::widgets::button_event  evt) noexcept
           aniv.m_points.pop_back();
 
           aniv.update_state_label();
+
+            if(aniv.m_points.empty())
+            {
+              aniv.m_drawing_area.hide();
+            }
         }
     }
 }
@@ -62,6 +121,7 @@ dial_callback(gbstd::widgets::dial_event  evt) noexcept
 aniview::
 aniview(gbstd::widgets::operating_node&  root, core&  cor) noexcept:
 m_core(cor),
+m_drawing_area(*new drawing_area(cor)),
 m_state_label(root.create_label(u"--/ 0").set_color(gbstd::colors::white))
 {
   auto&  d = root.create_dial();
@@ -72,8 +132,8 @@ m_state_label(root.create_label(u"--/ 0").set_color(gbstd::colors::white))
   ;
 
 
-  auto&  psh_btn = root.create_button(u"Push",gbstd::colors::black).set_callback(psh);
-  auto&  pop_btn = root.create_button(u"Pop",gbstd::colors::black).set_callback(pop);
+  auto&  psh_btn = root.create_button(u"Push").set_callback(psh);
+  auto&  pop_btn = root.create_button(u"Pop").set_callback(pop);
 
 
   gbstd::widgets::set_userdata({d,psh_btn,pop_btn},*this);
@@ -86,9 +146,7 @@ m_state_label(root.create_label(u"--/ 0").set_color(gbstd::colors::white))
 
   auto&  speed_frame = root.create_frame("speed").set_content(d);
 
-  auto&  row = root.create_table_row({m_state_label,op_col,speed_frame});
-
-  add_child(row,{cor.get_source().get_cell_width(),0});
+  add_child_as_row({m_drawing_area,m_state_label,op_col,speed_frame});
 
   clear();
 }
@@ -101,6 +159,8 @@ aniview::
 clear() noexcept
 {
   m_index = 0;
+
+  m_drawing_area.hide();
 
   update_state_label();
 
@@ -126,7 +186,7 @@ check() noexcept
 
           update_state_label();
 
-          request_redraw();
+          m_drawing_area.set_point(m_points[m_index]);
         }
     }
 }
@@ -243,18 +303,6 @@ save_as_apng(const char*  filepath) const noexcept
 
 void
 aniview::
-process_before_reform() noexcept
-{
-  int  w = m_core.get_source().get_cell_width() ;
-  int  h = m_core.get_source().get_cell_height();
-
-  set_minimal_content_width( w);
-  set_minimal_content_height(h);
-}
-
-
-void
-aniview::
 update_state_label() noexcept
 {
     if(m_points.empty())
@@ -271,35 +319,11 @@ update_state_label() noexcept
 }
 
 
-void
-aniview::
-render(const gbstd::canvas&  cv) noexcept
-{
-    if(m_index < m_points.size())
-    {
-      auto  pt = m_points[m_index];
-
-      auto&  dsp = m_core.get_display();
-      auto&  src = m_core.get_source();
-
-      dsp.render_background({cv,0,0,src.get_cell_width(),src.get_cell_height()},2);
-
-        if(m_core.test_underlay())
-        {
-          dsp.render_underlay(cv,1);
-        }
-
-
-      cv.draw_canvas(m_core.get_source().get_canvas(pt),0,0);
-    }
-}
-
-
 gbstd::widgets::node&
 aniview::
 create_save_button(gbstd::widgets::operating_node&  root) noexcept
 {
-  auto&  btn = root.create_button(u"save as APNG",gbstd::colors::black);
+  auto&  btn = root.create_button(u"save as APNG");
 
   btn
     .set_callback([](gbstd::widgets::button_event  evt){
@@ -316,6 +340,18 @@ create_save_button(gbstd::widgets::operating_node&  root) noexcept
   btn.set_userdata(*this);
 
   return btn;
+}
+
+
+
+
+gbstd::widgets::node&
+aniview::
+create_frame(gbstd::widgets::operating_node&  root) noexcept
+{
+  auto&  sbtn = create_save_button(root);
+
+  return root.create_frame(u"animation").set_content(root.create_table_column({*this,sbtn}));
 }
 
 

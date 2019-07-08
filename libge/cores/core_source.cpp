@@ -116,7 +116,7 @@ gbstd::widgets::node&
 core_source::
 create_save_png_widget(gbstd::widgets::operating_node&  root) noexcept
 {
-  auto&  btn = root.create_button(u"save as PNG",gbstd::colors::black);
+  auto&  btn = root.create_button(u"save as PNG");
 
   btn
     .set_callback([](gbstd::widgets::button_event  evt){
@@ -147,7 +147,7 @@ gbstd::widgets::node&
 core_source::
 create_save_txt_widget(gbstd::widgets::operating_node&  root) noexcept
 {
-  auto&  btn = root.create_button(u"save as C code",gbstd::colors::black);
+  auto&  btn = root.create_button(u"save as C code");
 
   btn
     .set_callback([](gbstd::widgets::button_event  evt){

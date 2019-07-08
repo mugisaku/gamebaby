@@ -122,6 +122,18 @@ render(const gbstd::canvas&  cv) noexcept
 }
 
 
+
+
+gbstd::widgets::node&
+core::
+create_frame(gbstd::widgets::operating_node&  root) noexcept
+{
+  return root.create_frame(u"canvas").set_content(root.create_table_column({*this,m_paint.get_brush_label()}));
+}
+
+
+
+
 }
 
 

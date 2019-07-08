@@ -44,8 +44,6 @@ reform_if_necessary() noexcept
     {
       reform(point());
 
-      m_queue.clear();
-
       m_reform_status = 2;
     }
 }
@@ -57,13 +55,16 @@ redraw_if_necessary() noexcept
 {
   reform_if_necessary();
 
-    if(m_reform_status == 2)
+    if(m_perfect_redraw_status || (m_reform_status == 2))
     {
       m_canvas.fill(get_style().get_background_color());
 
       redraw(m_canvas);
 
-      m_reform_status = 0;
+      m_reform_status         =     0;
+      m_perfect_redraw_status = false;
+
+      m_queue.clear();
 
       return true;
     }

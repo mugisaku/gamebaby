@@ -21,18 +21,18 @@ color
   static constexpr int  masked(int  v) noexcept{return v&7;}
 
   constexpr color(int  v=0) noexcept: code((v&01000)? color(v>>6,v>>3,v).code:0){}
-  constexpr color(int  r7, int  g7, int  b7) noexcept: code(0x8000|((masked(r7)<<2)<<10)|
-                                                                   ((masked(g7)<<2)<< 5)|
-                                                                   ((masked(b7)<<2)    )){}
+  constexpr color(int  r7, int  g7, int  b7) noexcept: code(0x8000|((masked(r7))<<6)|
+                                                                   ((masked(g7))<<3)|
+                                                                   ((masked(b7))   )){}
 
   constexpr operator bool() const noexcept{return code>>15;}
 
   constexpr bool  operator==(const color&  rhs) const noexcept{return code == rhs.code;}
   constexpr bool  operator!=(const color&  rhs) const noexcept{return code != rhs.code;}
 
-  constexpr int  get_r7() const noexcept{return masked(((code>>10)>>2));}
-  constexpr int  get_g7() const noexcept{return masked(((code>> 5)>>2));}
-  constexpr int  get_b7() const noexcept{return masked(((code    )>>2));}
+  constexpr int  get_r7() const noexcept{return masked(code>>6);}
+  constexpr int  get_g7() const noexcept{return masked(code>>3);}
+  constexpr int  get_b7() const noexcept{return masked(code   );}
 
   constexpr int  get_r255() const noexcept{return (get_r7()<<5)|0b11111;}
   constexpr int  get_g255() const noexcept{return (get_g7()<<5)|0b11111;}

@@ -181,7 +181,7 @@ gbstd::widgets::node&
 core_display::
 create_background_widget(gbstd::widgets::operating_node&  root) noexcept
 {
-  auto&  ch1bg_btn = root.create_button(u"Change bg1 color",gbstd::colors::black)
+  auto&  ch1bg_btn = root.create_button(u"Change bg1 color")
     .set_callback([](gbstd::widgets::button_event  evt)
     {
         if(evt.is_release())
@@ -196,7 +196,7 @@ create_background_widget(gbstd::widgets::operating_node&  root) noexcept
   );
 
 
-  auto&  ch2bg_btn = root.create_button(u"Change bg2 color",gbstd::colors::black)
+  auto&  ch2bg_btn = root.create_button(u"Change bg2 color")
     .set_callback([](gbstd::widgets::button_event  evt)
     {
         if(evt.is_release())

@@ -15,7 +15,11 @@ namespace ge{
 class
 aniview: public gbstd::widgets::node
 {
+  class drawing_area;
+
   core&  m_core;
+
+  drawing_area&  m_drawing_area;
 
   int  m_index=0;
 
@@ -25,6 +29,8 @@ aniview: public gbstd::widgets::node
   gbstd::widgets::label&  m_state_label;
 
   std::vector<gbstd::point>  m_points;
+
+  gbstd::widgets::node&  create_save_button(gbstd::widgets::operating_node&  root) noexcept;
 
   static void   psh(gbstd::widgets::button_event  evt) noexcept;
   static void   pop(gbstd::widgets::button_event  evt) noexcept;
@@ -36,15 +42,11 @@ public:
   void  clear() noexcept;
   void  check() noexcept;
 
-  void  process_before_reform() noexcept override;
-
   void  save_as_apng(const char*  filename) const noexcept;
 
   void  update_state_label() noexcept;
 
-  void  render(const gbstd::canvas&  cv) noexcept override;
-
-  gbstd::widgets::node&  create_save_button(gbstd::widgets::operating_node&  root) noexcept;
+  gbstd::widgets::node&  create_frame(gbstd::widgets::operating_node&  root) noexcept;
 
 };
 

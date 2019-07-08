@@ -60,9 +60,10 @@ ge::aniview*
 g_aniv;
 
 
-constexpr int g_cell_size = 48;
-constexpr int  initial_w = 6;
-constexpr int  initial_h = 2;
+constexpr int  g_cell_size = 48;
+constexpr int g_pixel_size =  6;
+constexpr int  g_initial_w = 6;
+constexpr int  g_initial_h = 2;
 
 
 void
@@ -76,8 +77,6 @@ main_loop() noexcept
     {
       g_view.set_x_offset(0);
       g_view.set_y_offset(0);
-
-      g_aniv->clear();
 
       g_core->get_source().load(f);
 
@@ -189,7 +188,7 @@ main(int  argc, char**  argv)
   g_table
     .set_cell_width(g_cell_size)
     .set_cell_height(g_cell_size)
-    .resize(initial_w,initial_h)
+    .resize(g_initial_w,g_initial_h)
     .set_callback([](const menus::cell&  cell, const canvas&  cv){
       auto  pos = cell.get_position();
 
@@ -200,8 +199,8 @@ main(int  argc, char**  argv)
 
   g_view
     .set_table(g_table)
-    .set_width(initial_w)
-    .set_height(initial_h)
+    .set_width(g_initial_w)
+    .set_height(g_initial_h)
   ;
 
 
@@ -218,7 +217,7 @@ main(int  argc, char**  argv)
   auto&  tools = g_core->get_paint().create_tool_widget(g_root);
   auto&    ops = g_core->get_paint().create_operation_widget(g_root);
 
-  g_display = &g_core->get_display().set_pixel_size(6);
+  g_display = &g_core->get_display().set_pixel_size(g_pixel_size);
 
   auto&  bgop = g_display->create_background_widget(g_root);
 
@@ -231,22 +230,22 @@ main(int  argc, char**  argv)
   src
     .set_menu(*g_menu)
     .set_cell_size(g_cell_size,g_cell_size)
-    .inflate(initial_w,initial_h)
+    .inflate(g_initial_w,g_initial_h)
   ;
+
+  g_core->get_paint().reset();
 
   auto&  savbtns = g_root.create_table_column({
     src.create_save_png_widget(g_root),
-    g_aniv->create_save_button(g_root),
     src.create_save_txt_widget(g_root),
   });
 
-  auto&  aniv_frame = g_root.create_frame(u"animation").set_content(*g_aniv);
 
-  g_core->add_coworker({celmnu,*g_aniv});
+  g_core->add_coworker({celmnu});
 
 
-  auto&  upper_row = g_root.create_table_row({*g_core,colhndl.maker,colhndl.holder,tools,rightest_col});
-  auto&  lower_row = g_root.create_table_row({celmnu,aniv_frame,stk,savbtns});
+  auto&  upper_row = g_root.create_table_row({g_core->create_frame(g_root),colhndl.maker,colhndl.holder,tools,rightest_col});
+  auto&  lower_row = g_root.create_table_row({celmnu,g_aniv->create_frame(g_root),stk,savbtns});
 
 
   g_root.add_child_as_column({upper_row,lower_row});
@@ -268,9 +267,6 @@ main(int  argc, char**  argv)
 
       sdl::delay(20);
     }
-
-
-  sdl::quit();
 #endif
 
 

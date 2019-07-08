@@ -102,7 +102,7 @@ render(const canvas&  cv) noexcept
       cv.draw_vline(colors::black,0  ,0  ,h);
       cv.draw_vline(colors::white,w-1,0  ,h);
 
-      cv.fill_rectangle(color(5,5,5),1,1,w-2,h-2);
+      cv.fill_rectangle(color(2,2,2),1,1,w-2,h-2);
     }
 
   else
@@ -112,7 +112,7 @@ render(const canvas&  cv) noexcept
       cv.draw_vline(colors::white,0  ,0  ,h);
       cv.draw_vline(colors::black,w-1,0  ,h);
 
-      cv.fill_rectangle(color(6,6,6),1,1,w-2,h-2);
+      cv.fill_rectangle(color(3,3,3),1,1,w-2,h-2);
     }
 }
 

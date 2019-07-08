@@ -300,7 +300,7 @@ add_child_as_row(std::initializer_list<std::reference_wrapper<node>>  children) 
 
 
 
-void
+node&
 node::
 request_redraw() noexcept
 {
@@ -314,9 +314,24 @@ request_redraw() noexcept
     {
       ptr->request_redraw();
     }
+
+
+  return *this;
 }
 
 
+node&
+node::
+request_perfect_redraw() noexcept
+{
+    if(m_parent)
+    {
+      m_parent->request_perfect_redraw();
+    }
+
+
+  return *this;
+}
 
 
 void

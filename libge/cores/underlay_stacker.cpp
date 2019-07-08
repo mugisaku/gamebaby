@@ -103,12 +103,12 @@ swi(gbstd::widgets::button_event  evt) noexcept
 
 underlay_stacker::
 underlay_stacker(gbstd::widgets::operating_node&  root, core&  cor) noexcept:
-m_switching_label(root.create_label(u"hide").set_color(gbstd::colors::black)),
-m_counter_label(  root.create_label(u" 0").set_color(gbstd::colors::white)),
+m_switching_label(root.create_label(u"hide")),
+m_counter_label(  root.create_label(u" 0")),
 m_core(cor)
 {
-  auto&  psh_btn = root.create_button(u"push",gbstd::colors::black).set_callback(psh);
-  auto&  pop_btn = root.create_button(u"pop",gbstd::colors::black).set_callback(pop);
+  auto&  psh_btn = root.create_button(u"push").set_callback(psh);
+  auto&  pop_btn = root.create_button(u"pop").set_callback(pop);
   auto&  swi_btn = root.create_button(m_switching_label).set_callback(swi);
 
   gbstd::widgets::set_userdata({psh_btn,pop_btn,swi_btn},*this);

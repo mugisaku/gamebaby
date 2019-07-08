@@ -11,7 +11,7 @@ gbstd::widgets::node&
 core_paint::
 create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
 {
-  auto&  undo_btn = root.create_button(u"Undo",gbstd::colors::black)
+  auto&  undo_btn = root.create_button(u"Undo")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -20,7 +20,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
   });
 
 
-  auto&  copy_btn = root.create_button(u"Copy",gbstd::colors::black)
+  auto&  copy_btn = root.create_button(u"Copy")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -29,7 +29,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
   });
 
 
-  auto&  rou_btn = root.create_button(u"Rotate ↑",gbstd::colors::black)
+  auto&  rou_btn = root.create_button(u"Rotate ↑")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -38,7 +38,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
   });
 
 
-  auto&  rol_btn = root.create_button(u"Rotate ←",gbstd::colors::black)
+  auto&  rol_btn = root.create_button(u"Rotate ←")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -47,7 +47,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
   });
 
 
-  auto&  ror_btn = root.create_button(u"Rotate →",gbstd::colors::black)
+  auto&  ror_btn = root.create_button(u"Rotate →")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -56,7 +56,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
   });
 
 
-  auto&  rod_btn = root.create_button(u"Rotate ↓",gbstd::colors::black)
+  auto&  rod_btn = root.create_button(u"Rotate ↓")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -67,7 +67,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
 
 
 
-  auto&  rvl_btn = root.create_button(u"Revolve →",gbstd::colors::black)
+  auto&  rvl_btn = root.create_button(u"Revolve →")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -75,7 +75,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
      }
   });
 
-  auto&  rvh_btn = root.create_button(u"Reverse -",gbstd::colors::black)
+  auto&  rvh_btn = root.create_button(u"Reverse -")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -83,7 +83,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
       }
   });
 
-  auto&  rvv_btn = root.create_button(u"Reverse |",gbstd::colors::black)
+  auto&  rvv_btn = root.create_button(u"Reverse |")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {
@@ -91,7 +91,7 @@ create_operation_widget(gbstd::widgets::operating_node&  root) noexcept
       }
   });
 
-  auto&  mir_btn = root.create_button(u"Mirror |",gbstd::colors::black)
+  auto&  mir_btn = root.create_button(u"Mirror |")
     .set_callback([](gbstd::widgets::button_event  evt){
       if(evt.is_release())
       {

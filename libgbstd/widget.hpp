@@ -60,7 +60,7 @@ extern const icon  minus;
 class
 style
 {
-  color  m_background_color=colors::light_gray;
+  color  m_background_color=colors::gray;
 
   int  m_left_padding  =0;
   int  m_top_padding   =0;
@@ -255,11 +255,11 @@ public:
   node&    freeze() noexcept{    m_status.set(flags::frozen);  return *this;}
   node&  unfreeze() noexcept{  m_status.unset(flags::frozen);  return *this;}
 
-  node&    display() noexcept{    m_status.set(flags::displayed);  return *this;}
-  node&  undisplay() noexcept{  m_status.unset(flags::displayed);  return *this;}
+  node&    display() noexcept{    m_status.set(flags::displayed);  return request_reform();}
+  node&  undisplay() noexcept{  m_status.unset(flags::displayed);  return request_reform();}
 
-  node&  show() noexcept{  m_status.unset(flags::hidden);  return *this;}
-  node&  hide() noexcept{    m_status.set(flags::hidden);  return *this;}
+  node&  show() noexcept{  m_status.unset(flags::hidden);  return request_perfect_redraw();}
+  node&  hide() noexcept{    m_status.set(flags::hidden);  return request_perfect_redraw();}
 
 
   bool      test_by_point(point  pt) const noexcept;
@@ -283,8 +283,10 @@ public:
   void  reform(point  parent_content_position) noexcept;
   void  redraw(const canvas&  cv) noexcept;
 
-  void  request_redraw() noexcept;
-  void  request_reform() noexcept{if(m_parent){m_parent->relay_reform_request();}}
+  virtual node&  request_perfect_redraw() noexcept;
+
+  node&  request_redraw() noexcept;
+  node&  request_reform() noexcept{if(m_parent){m_parent->relay_reform_request();}  return *this;}
 
   node&  add_coworker(std::initializer_list<std::reference_wrapper<node>>  ls) noexcept;
 
@@ -818,6 +820,10 @@ operating_node: public node
   std::vector<node*>  m_queue;
 
   int  m_reform_status=1;
+
+  int  m_perfect_redraw_status=0;
+
+  node&  request_perfect_redraw() noexcept override{  m_perfect_redraw_status = 1;  return *this;}
 
   void  relay_redraw_request(node&  nd) noexcept override;
   void  relay_reform_request(         ) noexcept override;

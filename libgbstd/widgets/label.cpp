@@ -10,7 +10,7 @@ namespace widgets{
 
 color
 label::
-m_default_color = colors::black;
+m_default_color = colors::white;
 
 
 

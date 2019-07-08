@@ -14,6 +14,7 @@ namespace{
 SDL_Window*      g_window;
 SDL_Renderer*  g_renderer;
 SDL_Texture*    g_texture;
+SDL_Surface*    g_surface;
 
 bool  g_recording_flag;
 
@@ -28,6 +29,9 @@ gbstd::image
 g_image;
 
 SDL_Rect  g_dst_rect;
+
+uint32_t
+g_color_table[0b1000000000];
 
 
 void
@@ -55,6 +59,31 @@ transfer(const gbstd::canvas&  cv, uint8_t*  p_base, int  pitch) noexcept
 }
 
 
+template<typename  T>
+void
+transfer(const gbstd::canvas&  cv) noexcept
+{
+  auto  p_base = static_cast<uint8_t*>(g_surface->pixels);
+
+  int  pitch = g_surface->pitch;
+
+    for(int  y = 0;  y < g_height;  ++y)
+    {
+      auto  p = p_base         ;
+                p_base += pitch;
+
+      auto  src = cv.get_pixel_pointer(0,y);
+
+        for(int  x = 0;  x < g_width;  ++x)
+        {
+          *reinterpret_cast<T*>(p) = g_color_table[src++->color.code&0x7FFF];
+
+          p += sizeof(T);
+        }
+    }
+}
+
+
 }
 
 
@@ -63,20 +92,20 @@ transfer(const gbstd::canvas&  cv, uint8_t*  p_base, int  pitch) noexcept
 void
 update_screen(const gbstd::canvas&  cv) noexcept
 {
-  int  pitch;
-
-  void*  ptr;
-
-    if(SDL_LockTexture(g_texture,nullptr,&ptr,&pitch) == 0)
+    if(SDL_LockSurface(g_surface) == 0)
     {
-      transfer(cv,reinterpret_cast<uint8_t*>(ptr),pitch);
+        switch(g_surface->format->BytesPerPixel)
+        {
+      case(1): transfer<uint8_t >(cv);break;
+      case(2): transfer<uint16_t>(cv);break;
+      case(3): transfer<uint32_t>(cv);break;
+      case(4): transfer<uint32_t>(cv);break;
+        }
 
-      SDL_UnlockTexture(g_texture);
 
-      SDL_RenderClear(g_renderer);
-      SDL_RenderCopy(g_renderer,g_texture,nullptr,&g_dst_rect);
+      SDL_UpdateWindowSurface(g_window);
 
-      SDL_RenderPresent(g_renderer);
+      SDL_UnlockSurface(g_surface);
 
       gbstd::g_needed_to_redraw = false;
     }
@@ -134,8 +163,8 @@ quit() noexcept
     }
 
 
-  SDL_DestroyTexture(g_texture);
-  SDL_DestroyRenderer(g_renderer);
+//  SDL_DestroyTexture(g_texture);
+//  SDL_DestroyRenderer(g_renderer);
   SDL_DestroyWindow(g_window);
 
   SDL_Quit();
@@ -169,8 +198,18 @@ init(int  w, int  h, double  scale) noexcept
     }
 
 
-  g_renderer = SDL_CreateRenderer(g_window,-1,SDL_RENDERER_ACCELERATED);
-  g_texture  = SDL_CreateTexture(g_renderer,SDL_PIXELFORMAT_ARGB1555,SDL_TEXTUREACCESS_STREAMING,w,h);
+//  g_renderer = SDL_CreateRenderer(g_window,-1,SDL_RENDERER_ACCELERATED);
+//  g_texture  = SDL_CreateTexture(g_renderer,SDL_PIXELFORMAT_ARGB1555,SDL_TEXTUREACCESS_STREAMING,w,h);
+  g_surface  = SDL_GetWindowSurface(g_window);
+
+    for(int  b = 0;  b < 8;  ++b){
+    for(int  g = 0;  g < 8;  ++g){
+    for(int  r = 0;  r < 8;  ++r){
+      gbstd::color   color(r,g,b);
+
+      g_color_table[color.code&0x7FFF] = SDL_MapRGB(g_surface->format,color.get_r255(),color.get_g255(),color.get_b255());
+    }}}
+
 
   g_image.resize(w,h);
 }

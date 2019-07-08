@@ -303,6 +303,7 @@ public:
   void  render(const gbstd::canvas&  cv) noexcept override;
 
   gbstd::widgets::node&  create_underlay_widget(gbstd::widgets::operating_node&  root) noexcept;
+  gbstd::widgets::node&  create_frame(gbstd::widgets::operating_node&  root) noexcept;
 
 };
 
