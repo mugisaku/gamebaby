@@ -99,31 +99,53 @@ draw_rect(direct_color_image&  img, uint8_t  l, int  x, int  y, int  w, int  h) 
 }
 
 
+template<typename  T>
 void
-draw_rect(direct_color_image&  img, uint8_t  l, int  n, double  time, double  t) noexcept
+reduce(T&  x, T&  y, T&  w, T&  h) noexcept
 {
-  auto  diff = (time-t)*(1-(t/time));
+  x += 1;
+  y += 1;
+  w -= 2;
+  h -= 2;
+}
 
-  int  w = (img.get_width() /time*diff);
-  int  h = (img.get_height()/time*diff);
+
+void
+draw_rect(direct_color_image&  img, int  line_width, double  time, double  t) noexcept
+{
+  int  n = 0;
+
+    while(t > time)
+    {
+      t -= time;
+
+      ++n;
+    }
+
+
+  double  rate = (n&1)? (t/time):1.0-(t/time);
+
+  line_width = 1+(line_width*rate);
+
+  int  w = (img.get_width() *rate);
+  int  h = (img.get_height()*rate);
 
   int  x = (img.get_width() /2)-(w/2);
   int  y = (img.get_height()/2)-(h/2);
 
-    while(n--)
+  draw_rect(img,bg_l,x,y,w,h);
+
+  reduce(x,y,w,h);
+
+    while(line_width--)
     {
-      draw_rect(img,l,x,y,w,h);
+      draw_rect(img,fg_l,x,y,w,h);
 
-      x += 1;
-      y += 1;
-      w -= 2;
-      h -= 2;
-
-        if((w <= 0) || (h <= 0))
-        {
-          break;
-        }
+      reduce(x,y,w,h);
     }
+
+
+  draw_rect(img,bg_l,x,y,w,h);
 }
 
 
@@ -135,15 +157,11 @@ draw_rect(direct_color_image&  img, uint8_t  l, int  n, double  time, double  t)
 int
 main(int  argc, char**  argv)
 {
-  int  sec = 10;
+  constexpr double    fast_sec =  6;
+  constexpr double  middle_sec = 15;
+  constexpr double    slow_sec = 30;
 
-    if(argc == 2)
-    {
-      sscanf(argv[1],"%d",&sec);
-    }
-
-
-  int  time_ms = sec*1000;
+  int  time_ms = slow_sec*1000*2;
 
   constexpr int  delay_ms = 60;
 
@@ -163,17 +181,11 @@ main(int  argc, char**  argv)
     {
       fill(img,bg_l);
 
-      constexpr int  div_amount = 5;
-
-        for(int  n = 0;  n < div_amount;  ++n)
-        {
-          draw_rect(img,fg_l,1,time_ms,time_ms/div_amount*(1+n));
-        }
-
-
       draw_cross(img,fg_l);
 
-      draw_rect(img,fg_l,3,time_ms,t);
+      draw_rect(img,6,  slow_sec*1000,t);
+      draw_rect(img,6,middle_sec*1000,t);
+      draw_rect(img,6,  fast_sec*1000,t);
 
       ani.append(img);
     }

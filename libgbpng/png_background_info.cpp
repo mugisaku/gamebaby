@@ -92,7 +92,7 @@ void
 background_info::
 print() const noexcept
 {
-  printf("");
+  printf("{bg info...}");
 }
 
 

@@ -152,6 +152,7 @@ public:
   text&   pop() noexcept;
 
   bool  expose_one_character() noexcept;
+  void  expose_all_characters() noexcept{while(expose_all_characters_of_current_line());}
   bool  expose_all_characters_of_current_line() noexcept;
 
   bool  is_displaying_all_characters() const noexcept{return !m_character_counter;}

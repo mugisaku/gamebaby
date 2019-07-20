@@ -121,7 +121,7 @@ load_file(const char*  filepath) noexcept
 
             if(fread(m_data->data,1,size,f) != size)
             {
-              printf("%s %zdバイト読み込めない\n",filepath,size);
+              printf("%s %dバイト読み込めない\n",filepath,size);
 
               free(m_data)         ;
                    m_data = nullptr;

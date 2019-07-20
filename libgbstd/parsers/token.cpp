@@ -258,7 +258,7 @@ print() const noexcept
     switch(m_kind)
     {
   case(kind::null): ;break;
-  case(kind::integer): printf("%llu",m_data.n);break;
+  case(kind::integer): printf("%lu",m_data.n);break;
   case(kind::identifier): printf("%s ",m_data.s.data());break;
   case(kind::single_quoted): print_string(m_data.s,'\'');break;
   case(kind::double_quoted): print_string(m_data.s,'\"');break;

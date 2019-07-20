@@ -4,7 +4,7 @@
 #include"libgbstd/parser.hpp"
 #include"libgbstd/file_op.hpp"
 #include"libonch/onch.hpp"
-#include"sdl.hpp"
+#include"libsdlglu/sdl.hpp"
 #include<list>
 #include<vector>
 

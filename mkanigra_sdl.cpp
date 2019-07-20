@@ -1,7 +1,7 @@
 #include"libge/color_handler.hpp"
 #include"libge/core.hpp"
 #include"libge/ge.hpp"
-#include"sdl.hpp"
+#include"libsdlglu/sdl.hpp"
 
 
 #ifdef EMSCRIPTEN

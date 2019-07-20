@@ -128,7 +128,7 @@ operator()() noexcept
                          decode(p[5]   );
     break;
   default:
-      printf("不正なUTF8のバイト数です(%d)\n",n);
+      printf("不正なUTF8のバイト数です(%ld)\n",n);
       return 0;
     }
 

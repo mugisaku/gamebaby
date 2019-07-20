@@ -8,6 +8,9 @@
 namespace gbstd{
 
 
+namespace clocks{
+const clock  null;
+}
 
 
 clock&
@@ -28,6 +31,8 @@ reset(uint32_t  time, uint32_t  fraction) noexcept
 {
   m_time     =     time;
   m_fraction = fraction;
+
+  turnon();
 
   return *this;
 }
@@ -51,11 +56,6 @@ add(uint32_t  t) noexcept
 
   return *this;
 }
-
-
-const clock
-clock_watch::
-m_null;
 
 
 

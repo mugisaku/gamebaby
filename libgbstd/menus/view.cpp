@@ -50,9 +50,9 @@ set_y_offset(int  n) noexcept
 
 void
 view::
-draw(const gbstd::canvas&  cv) noexcept
+render(const gbstd::canvas&  cv) noexcept
 {
-  m_table->draw(m_offset.x,m_offset.y,m_width,m_height,cv);
+  m_table->render(m_offset.x,m_offset.y,m_width,m_height,cv);
 }
 
 

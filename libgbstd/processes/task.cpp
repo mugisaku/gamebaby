@@ -10,18 +10,12 @@ namespace gbstd{
 
 task&
 task::
-clear() noexcept
+reset() noexcept
 {
   clear_status();
 
   m_name.clear();
   m_id.clear();
-
-  m_data = nullptr;
-
-  m_draw_callback   = nullptr;
-  m_tick_callback   = nullptr;
-  m_finish_callback = nullptr;
 
   m_interval  = 0;
   m_next_time = 0;
@@ -143,9 +137,9 @@ update_next_time() noexcept
 }
 
 
-task&
+void
 task::
-operator()() noexcept
+operator()(const canvas*  cv) noexcept
 {
   auto  now = m_clock_watch.get_time();
 
@@ -158,9 +152,9 @@ operator()() noexcept
     }
 
 
-    while(is_living() && !is_sleeping() && (now >= m_next_time) && m_tick_callback)
+    while(is_living() && !is_sleeping() && (now >= m_next_time))
     {
-      m_tick_callback(*static_cast<dummy*>(m_data));
+      work();
 
         if(!m_interval)
         {
@@ -185,13 +179,17 @@ operator()() noexcept
 
   m_last_time = now;
 
-  return *this;
+
+    if(cv)
+    {
+      redraw(*cv);
+    }
 }
 
 
-task&
+void
 task::
-operator()(const canvas&  cv) noexcept
+redraw(const canvas&  cv) noexcept
 {
     if(is_living())
     {
@@ -212,31 +210,14 @@ operator()(const canvas&  cv) noexcept
         }
 
 
-        if(is_showing() && m_draw_callback)
+        if(is_showing())
         {
             if(!is_blinking() || m_status.test(flags::blink_bit))
             {
-              m_draw_callback(cv,*reinterpret_cast<dummy*>(m_data));
+              render(cv);
             }
         }
     }
-
-
-  return *this;
-}
-
-
-task&
-task::
-finish() noexcept
-{
-    if(m_finish_callback)
-    {
-      m_finish_callback(*static_cast<dummy*>(m_data));
-    }
-
-
-  return *this;
 }
 
 

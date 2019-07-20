@@ -40,7 +40,7 @@ resize(int  w, int  h) noexcept
 
 void
 table::
-draw(int  x, int  y, int  w, int  h, const gbstd::canvas&  cv) noexcept
+render(int  x, int  y, int  w, int  h, const gbstd::canvas&  cv) noexcept
 {
     for(int  yy = 0;  yy < h;  ++yy){
     for(int  xx = 0;  xx < w;  ++xx){

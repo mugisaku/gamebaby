@@ -24,9 +24,9 @@ set(SOURCES
   values/object.cpp
   menus/table.cpp
   menus/view.cpp
-#  menus/cursor.cpp
-#  menus/stack.cpp
-#  menus/window__.cpp
+  menus/basic_menu_window.cpp
+  menus/stack.cpp
+  menus/object.cpp
   widgets/operating_node.cpp
   widgets/node.cpp
   widgets/node_iterator.cpp
@@ -56,9 +56,9 @@ set(SOURCES
   sounds/scale_table.cpp
   weak_reference_counter.cpp
   instruction_queue.cpp
+  processes/timer.cpp
   processes/clock.cpp
   processes/task.cpp
-  processes/execution.cpp
   processes/process.cpp
   utility.cpp
   utility_sincos.cpp

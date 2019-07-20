@@ -1,5 +1,5 @@
 #include"libmkfont/mkfont.hpp"
-#include"sdl.hpp"
+#include"libsdlglu/sdl.hpp"
 
 
 #ifdef EMSCRIPTEN

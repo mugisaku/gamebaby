@@ -28,12 +28,15 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 
-set(CMAKE_C_COMPILER  "/usr/local/bin/gcc")
+#set(CMAKE_C_COMPILER  "/usr/local/bin/gcc")
 set(CMAKE_C_FLAGS   "-std=c1z -Werror")
-set(CMAKE_CXX_COMPILER  "/usr/local/bin/g++")
+set(CMAKE_C_LINK_FLAGS   "")
+#set(CMAKE_CXX_COMPILER  "/usr/local/bin/g++")
 set(CMAKE_CXX_FLAGS "-std=c++17 -Werror")
-set(CMAKE_CXX_LINK_FLAGS "-lSDL2 -lSDL2main -lstdc++")
+set(CMAKE_CXX_LINK_FLAGS "-lSDL2")
 
+
+set(BASIC_LIBS "z""SDL2" "SDL2main" "stdc++")
 
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS}   -O2 -march=core2 -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -march=core2 -fomit-frame-pointer")
@@ -64,50 +67,49 @@ endif(CCACHE_FOUND)
 
 
 
-set(SDL_SOURCES
-  sdl_screen.cpp
-  sdl_control.cpp
-  sdl_sound.cpp
-)
-
-
+add_subdirectory(libsdlglu)
 add_subdirectory(libgbstd)
 #add_subdirectory(libonch)
 add_subdirectory(libge)
 add_subdirectory(libgbpng)
 #add_subdirectory(libsubiso)
-#add_subdirectory(libww)
+add_subdirectory(libww)
 add_subdirectory(libmkfont)
 
 
-include_directories(./)
-include_directories(/usr/include/SDL2)
-add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp ${SDL_SOURCES})
-#add_executable("ww_sdl${EXECUTABLE_EXTENSION}" ww_sdl.cpp ${SDL_SOURCES})
-add_executable("mkfont_sdl${EXECUTABLE_EXTENSION}" mkfont_sdl.cpp ${SDL_SOURCES})
-#add_executable("mksnd_sdl${EXECUTABLE_EXTENSION}" mksnd_sdl.cpp ${SDL_SOURCES})
-#add_executable("vgi_sdl${EXECUTABLE_EXTENSION}" vgi_sdl.cpp ${SDL_SOURCES})
-#add_executable("waview_sdl${EXECUTABLE_EXTENSION}" waview_sdl.cpp ${SDL_SOURCES})
-#add_executable("earth_maker_sdl${EXECUTABLE_EXTENSION}" earth_maker_sdl.cpp ${SDL_SOURCES})
-#add_executable("tbgloop_sdl${EXECUTABLE_EXTENSION}" tbgloop_sdl.cpp ${SDL_SOURCES})
+
+include_directories(./ /usr/local/include)
+link_directories(/usr/local/lib)
+
+add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp)
+add_executable("ww_sdl${EXECUTABLE_EXTENSION}" ww_sdl.cpp)
+add_executable("mkfont_sdl${EXECUTABLE_EXTENSION}" mkfont_sdl.cpp)
+#add_executable("mksnd_sdl${EXECUTABLE_EXTENSION}" mksnd_sdl.cpp)
+#add_executable("vgi_sdl${EXECUTABLE_EXTENSION}" vgi_sdl.cpp)
+#add_executable("waview_sdl${EXECUTABLE_EXTENSION}" waview_sdl.cpp)
+#add_executable("earth_maker_sdl${EXECUTABLE_EXTENSION}" earth_maker_sdl.cpp)
+#add_executable("tbgloop_sdl${EXECUTABLE_EXTENSION}" tbgloop_sdl.cpp)
 #add_executable("png2lit${EXECUTABLE_EXTENSION}" png2lit.cpp)
-add_executable("mkicon_sdl${EXECUTABLE_EXTENSION}" mkicon_sdl.cpp ${SDL_SOURCES})
-add_executable("mkanigra_sdl${EXECUTABLE_EXTENSION}" mkanigra_sdl.cpp ${SDL_SOURCES})
-#add_executable("mkbg_sdl${EXECUTABLE_EXTENSION}" mkbg_sdl.cpp ${SDL_SOURCES})
-#add_executable("mkeyesquat${EXECUTABLE_EXTENSION}" mkeyesquat.cpp ${SDL_SOURCES})
-#target_link_libraries("ww_sdl${EXECUTABLE_EXTENSION}" "ww" "gbstd" "gbpng" "z")
-target_link_libraries("mkfont_sdl${EXECUTABLE_EXTENSION}" "mkfont" "gbstd" "gbpng" "z")
-#target_link_libraries("png2lit${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" "z")
-target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "gbstd" "gbpng" "z")
-#target_link_libraries("mksnd_sdl${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" "z")
-#target_link_libraries("vgi_sdl${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" "z")
-#target_link_libraries("waview_sdl${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" "z")
-#target_link_libraries("earth_maker_sdl${EXECUTABLE_EXTENSION}" "subiso" "gbstd" "gbpng" "z")
-#target_link_libraries("tbgloop_sdl${EXECUTABLE_EXTENSION}" "gbstd" "gbpng" "z")
-#target_link_libraries("mkeyesquat${EXECUTABLE_EXTENSION}" "gbstd" "gbpng" "z")
-target_link_libraries("mkicon_sdl${EXECUTABLE_EXTENSION}" "ge" "gbstd" "gbpng" "z")
-target_link_libraries("mkanigra_sdl${EXECUTABLE_EXTENSION}" "ge" "gbstd" "gbpng" "z")
-#target_link_libraries("mkbg_sdl${EXECUTABLE_EXTENSION}" "ge" "gbstd" "gbpng" "z")
+add_executable("mkicon_sdl${EXECUTABLE_EXTENSION}" mkicon_sdl.cpp)
+add_executable("mkanigra_sdl${EXECUTABLE_EXTENSION}" mkanigra_sdl.cpp)
+#add_executable("mkbg_sdl${EXECUTABLE_EXTENSION}" mkbg_sdl.cpp)
+add_executable("mkeyesquat${EXECUTABLE_EXTENSION}" mkeyesquat.cpp)
+add_executable("mkeyesquat2${EXECUTABLE_EXTENSION}" mkeyesquat2.cpp)
+
+target_link_libraries("ww_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ww" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("mkfont_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "mkfont" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("png2lit${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("mksnd_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("vgi_sdl${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("waview_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("earth_maker_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "subiso" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("tbgloop_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("mkeyesquat${EXECUTABLE_EXTENSION}" "gbpng" "z")
+target_link_libraries("mkeyesquat2${EXECUTABLE_EXTENSION}" "gbpng" "z")
+target_link_libraries("mkicon_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ge" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("mkanigra_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ge" "gbstd" "gbpng" ${BASIC_LIBS})
+#target_link_libraries("mkbg_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ge" "gbstd" "gbpng" ${BASIC_LIBS})
 
 
 if(EMSC)

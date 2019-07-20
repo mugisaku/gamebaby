@@ -8,46 +8,33 @@ namespace gbstd{
 
 
 
-process&
-process::
-assign(std::string_view  name, execution_entry  start) noexcept
-{
-  reset();
-
-  m_name = name;
-
-  push_frame({start},"initial frame");
-
-  return *this;
-}
-
-
-
-
 void
 process::
-update_clocks() noexcept
+update_clocks(uint32_t  diff) noexcept
 {
-  auto  diff = g_time-m_last_time         ;
-                      m_last_time = g_time;
-
     for(auto&  ptr: m_clock_list)
     {
       ptr->add(diff);
     }
 
 
-  m_equipped_clock.add(diff);
+    if(m_current_section)
+    {
+        for(auto  ptr: m_current_section->m_clock_list)
+        {
+          ptr->add(diff);
+        }
+    }
 }
 
 
+template<typename  T>
 void
-process::
-process_tasks(const canvas*  cv) noexcept
+process_tasks_internal(T&  ls, const canvas*  cv) noexcept
 {
-  auto  it = m_task_list.begin();
+  auto  it = ls.begin();
 
-    while(it != m_task_list.end())
+    while(it != ls.end())
     {
       auto&  tsk = **it;
 
@@ -55,22 +42,87 @@ process_tasks(const canvas*  cv) noexcept
         {
           tsk.finish();
 
-          it = m_task_list.erase(it);
+          it = ls.erase(it);
         }
 
       else
         {
-          tsk();
-
-            if(cv)
-            {
-              tsk(*cv);
-            }
-
+          tsk(cv);
 
           ++it;
         }
     }
+}
+
+
+void
+process::
+process_tasks(const canvas*  cv) noexcept
+{
+  process_tasks_internal(m_task_list,cv);
+
+    if(m_current_section)
+    {
+      process_tasks_internal(m_current_section->m_task_list,cv);
+    }
+}
+
+
+void
+process::
+process_timers(uint32_t  diff) noexcept
+{
+    for(auto  ptr: m_timer_list)
+    {
+      (*ptr)(diff);
+    }
+
+
+    if(m_current_section)
+    {
+        for(auto  ptr: m_current_section->m_timer_list)
+        {
+          (*ptr)(diff);
+        }
+    }
+}
+
+
+
+
+process&
+process::
+push(section&  sec) noexcept
+{
+  m_section_stack.emplace_back(m_current_section);
+
+  m_current_section = &sec;
+
+  sec.startup(*this);
+
+  return *this;
+}
+
+
+process&
+process::
+pop(int  value) noexcept
+{
+  m_current_section->cleanup(*this);
+
+  m_current_section->m_task_list.clear();
+  m_current_section->m_clock_list.clear();
+  m_current_section->m_timer_list.clear();
+
+  m_current_section = m_section_stack.back();
+
+  m_section_stack.pop_back();
+
+  m_current_section->m_return_value = value;
+
+  m_current_section->update_next_time();
+
+  return *this;
 }
 
 
@@ -80,31 +132,31 @@ bool
 process::
 operator()() noexcept
 {
-  update_clocks();
-
-  int  counter = 8;
-
-    while(*this)
+    if(m_status.test(flags::busy))
     {
-      m_status.unset(flags::pc_barrier);
+      return false;
+    }
 
-        if(m_pc < m_sp)
+
+  m_status.set(flags::busy);
+
+  auto  diff = g_time-m_last_time         ;
+                      m_last_time = g_time;
+
+  update_clocks(diff);
+  process_timers(diff);
+
+  int  m_safe_counter = 32;
+
+    while(--m_safe_counter && *this)
+    {
+      auto&  sec = *m_current_section;
+
+        if(sec)
         {
-          auto&  ent = *reinterpret_cast<const execution_entry*>(&m_memory[m_pc]);
+          sec(*this);
 
-          auto    cb = ent.get_callback();
-          auto  data = static_cast<dummy*>(ent.get_data());
-
-            if(test_verbose_flag())
-            {
-              print();
-              printf("\n*calback:\"%s\" invoked\n\n",ent.get_name());
-            }
-
-
-          cb(*this,*data);
-
-            if(!--counter || ent.test_interruption())
+            if(m_status.test(flags::interrupt))
             {
               break;
             }
@@ -112,10 +164,12 @@ operator()() noexcept
 
       else
         {
-          pop_frame();
+          break;
         }
     }
 
+
+  m_status.unset(flags::interrupt);
 
     if(g_time >= m_next_time)
     {
@@ -125,11 +179,15 @@ operator()() noexcept
 
       m_next_time = g_time+m_interval;
 
+      m_status.unset(flags::busy);
+
       return true;
     }
 
 
   process_tasks(nullptr);
+
+  m_status.unset(flags::busy);
 
   return false;
 }

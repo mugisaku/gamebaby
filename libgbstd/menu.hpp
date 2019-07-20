@@ -3,121 +3,173 @@
 
 
 #include"libgbstd/utility.hpp"
-#include"libgbstd/process.hpp"
+#include"libgbstd/image.hpp"
 #include<vector>
 
 
 
 
-/*
 namespace gbstd{
 namespace windows{
 
 
-struct
+class
 style
 {
-  int     m_top_width;
-  int  m_bottom_width;
+  int     m_frame_top_width=0;
+  int  m_frame_bottom_width=0;
 
-  int   m_left_side_width;
-  int  m_right_side_width;
-
-  style&  set_top_width(       int  n) noexcept{  m_top_width        = n;  return *this;}
-  style&  set_bottom_width(    int  n) noexcept{  m_bottom_width     = n;  return *this;}
-  style&  set_left_side_width( int  n) noexcept{  m_left_side_width  = n;  return *this;}
-  style&  set_right_side_width(int  n) noexcept{  m_right_side_width = n;  return *this;}
-
-};
-
-
-class
-content
-{
-  int  m_width =0;
-  int  m_height=0;
-
-  void*  m_data=0;
-
-  void  (*m_callback)(const canvas&,const style&,dummy&)=nullptr;
+  int   m_frame_left_width=0;
+  int  m_frame_right_width=0;
 
 public:
-  content() noexcept{}
+  style&  set_frame_top_width(   int  n) noexcept{  m_frame_top_width    = n;  return *this;}
+  style&  set_frame_bottom_width(int  n) noexcept{  m_frame_bottom_width = n;  return *this;}
+  style&  set_frame_left_width(  int  n) noexcept{  m_frame_left_width   = n;  return *this;}
+  style&  set_frame_right_width( int  n) noexcept{  m_frame_right_width  = n;  return *this;}
 
-  int  get_width()  const noexcept{return m_width ;}
-  int  get_height() const noexcept{return m_height;}
-
-  content&  set_width( int  n) noexcept{  m_width  = n;  return *this;}
-  content&  set_height(int  n) noexcept{  m_height = n;  return *this;}
-
-  template<typename  T>
-  content&  set_callback(void  (*cb)(const canvas&,const style&,T&), T&  t) noexcept
-  {
-    m_data     = &t;
-    m_callback = reinterpret_cast<void(*)(const canvas&,const style&,dummy&)>(cb);
-
-    return *this;
-  }
-
-  void  draw(const canvas&  cv, const style&  s, int  x, int  y) noexcept;
+  int  get_frame_top_width(   ) const noexcept{return m_frame_top_width   ;}
+  int  get_frame_bottom_width() const noexcept{return m_frame_bottom_width;}
+  int  get_frame_left_width(  ) const noexcept{return m_frame_left_width  ;}
+  int  get_frame_right_width( ) const noexcept{return m_frame_right_width ;}
 
 };
 
 
-struct
-frame_assembler
-{
-  void  (*m_top       )(const canvas&  cv, const style&  s);
-  void  (*m_bottom    )(const canvas&  cv, const style&  s);
-  void  (*m_left_side )(const canvas&  cv, const style&  s);
-  void  (*m_right_side)(const canvas&  cv, const style&  s);
-  void  (*m_background)(const canvas&  cv, const style&  s);
-
-};
-
-
-extern style            g_default_style;
-extern frame_assembler  g_default_frame_assembler;
+class stack;
 
 
 class
-frame
+result
 {
+  int  m_opening_value=0;
+  int  m_closing_value=0;
+
+public:
+  result(int  op=0, int  cl=0) noexcept:
+  m_opening_value(op), m_closing_value(cl){}
+
+  int  get_opening_value() const noexcept{return m_opening_value;}
+  int  get_closing_value() const noexcept{return m_closing_value;}
+
+};
+
+
+class
+object
+{
+  friend class stack;
+
+protected:
+  struct flags{
+    static constexpr int  open = 1;
+    static constexpr int  show = 2;
+  };
+
+  status_value<int>  m_status;
+
   point  m_position;
 
-  content*  m_content_pointer=nullptr;
+  int  m_content_width =0;
+  int  m_content_height=0;
 
-  const style*            m_style_pointer=&g_default_style;
-  const frame_assembler*  m_assembler_pointer=&g_default_frame_assembler;
+  style  m_style;
 
 public:
-  frame() noexcept{}
+          object() noexcept{}
+ virtual ~object(){}
 
-  frame&  set_x(int  n) noexcept{  m_position.x = n;  return *this;}
-  frame&  set_y(int  n) noexcept{  m_position.y = n;  return *this;}
+  bool  is_opened() const noexcept{return m_status.test(flags::open);}
+  bool  is_shown()  const noexcept{return m_status.test(flags::show);}
 
-  int  get_x() const noexcept{return m_position.x;}
-  int  get_y() const noexcept{return m_position.y;}
+  object&  show() noexcept{  m_status.set(  flags::show);  return *this;}
+  object&  hide() noexcept{  m_status.unset(flags::show);  return *this;}
+
+  object&  set_x_position(int  n) noexcept{  m_position.x = n;  return *this;}
+  object&  set_y_position(int  n) noexcept{  m_position.y = n;  return *this;}
+
+  int  get_x_position() const noexcept{return m_position.x;}
+  int  get_y_position() const noexcept{return m_position.y;}
 
   int  get_width()  const noexcept;
   int  get_height() const noexcept;
 
-  content*  get_content(              ) const noexcept{return  m_content_pointer                      ;}
-  frame&    set_content(content*  cont)       noexcept{        m_content_pointer = cont;  return *this;}
+  int  get_content_width()  const noexcept{return m_content_width ;}
+  int  get_content_height() const noexcept{return m_content_height;}
 
-  const style&  get_style(                   ) const noexcept{return *m_style_pointer                        ;}
-  frame&        set_style(const style&  style)       noexcept{        m_style_pointer = &style;  return *this;}
+  object&  set_content_width( int  v) noexcept{  m_content_width  = v;  return *this;}
+  object&  set_content_height(int  v) noexcept{  m_content_height = v;  return *this;}
 
-  const frame_assembler*  get_assembler(                          ) const noexcept{return  m_assembler_pointer                    ;}
-  frame&                  set_assembler(const frame_assembler*  as)       noexcept{        m_assembler_pointer = as;  return *this;}
+  int  get_content_x_position() const noexcept{return m_position.x+get_style().get_frame_left_width();}
+  int  get_content_y_position() const noexcept{return m_position.y+get_style().get_frame_top_width();}
 
-  void  draw(const canvas&  cv) const noexcept;
+  canvas  get_content_canvas(const canvas&  base_cv) const noexcept;
+  canvas      get_frame_top_canvas(const canvas&  base_cv) const noexcept;
+  canvas     get_frame_left_canvas(const canvas&  base_cv) const noexcept;
+  canvas    get_frame_right_canvas(const canvas&  base_cv) const noexcept;
+  canvas   get_frame_bottom_canvas(const canvas&  base_cv) const noexcept;
+  canvas  get_frame_content_canvas(const canvas&  base_cv) const noexcept;
+
+        style&  get_style()       noexcept{return m_style;}
+  const style&  get_style() const noexcept{return m_style;}
+
+  virtual void  render_frame(  const canvas&  cv) noexcept{}
+  virtual void  render_content(const canvas&  cv) noexcept{}
+
+  virtual void  work(result  res) noexcept{}
+  virtual void  work(stack&  stk) noexcept{}
 
 };
 
 
+class
+stack: public object
+{
+  struct element{
+    int  m_opening_value;
+
+    object*  m_object;
+
+    std::vector<object*>  m_children;
+
+    element() noexcept{}
+    element(int  opval, object&  obj) noexcept: m_opening_value(opval), m_object(&obj){}
+
+  };
+
+
+  std::vector<element>  m_container;
+
+public:
+  ~stack(){clear();}
+
+  stack&  clear() noexcept;
+
+  operator bool() const noexcept{return m_container.size();}
+
+  int  get_number_of_elements() const noexcept{return m_container.size();}
+
+  stack&  open(int  opening_value, object&  obj) noexcept;
+
+  stack&  add_child(object&  obj) noexcept;
+
+  stack&  close_top(int  closing_value) noexcept;
+
+  int  get_opening_value() const noexcept{return m_container.back().m_opening_value;}
+
+  void  render_content(const canvas&  cv) noexcept override;
+
+  void  work(stack&  stk) noexcept override;
+
+  static void  draw(const gbstd::canvas&  cv, stack&  stk) noexcept;
+  static void  tick(                          stack&  stk) noexcept;
+
+};
+
+
+
+
 }}
-*/
 
 
 
@@ -202,7 +254,7 @@ public:
         cell*  get_cell_pointer(int  x, int  y)       noexcept{return &m_container[m_width*y+x];}
   const cell*  get_cell_pointer(int  x, int  y) const noexcept{return &m_container[m_width*y+x];}
 
-  void  draw(int  x, int  y, int  w, int  h, const gbstd::canvas&  cv) noexcept;
+  void  render(int  x, int  y, int  w, int  h, const gbstd::canvas&  cv) noexcept;
 
 };
 
@@ -246,147 +298,24 @@ public:
 
   cell&  get_cell(int  x, int  y) const noexcept{return *m_table->get_cell_pointer(m_offset.x+x,m_offset.y+y);}
 
-  void  draw(const gbstd::canvas&  cv) noexcept;
-
-};
-
-
-/*
-class
-cursor
-{
-  view*  m_view=nullptr;
-
-  bool  m_visible=false;
-
-  gbstd::point  m_position;
-
-public:
-  cursor&  reset(view&  v) noexcept;
-
-  bool  is_visible() const noexcept{return m_visible;}
-
-  cursor&  set_x(int  n) noexcept;
-  cursor&  add_x(int  n) noexcept;
-  cursor&  set_y(int  n) noexcept;
-  cursor&  add_y(int  n) noexcept;
-
-  cursor&  set_position(point  pt) noexcept{  set_x(pt.x);  set_y(pt.y);  return *this;}
-
-  cell&  get_cell() const noexcept;
-
-  int  get_x() const noexcept{return m_position.x;}
-  int  get_y() const noexcept{return m_position.y;}
-
-  const gbstd::point&  get_position() const noexcept{return m_position;}
-
-  cursor&  show() noexcept{  m_visible =  true;  return *this;}
-  cursor&  hide() noexcept{  m_visible = false;  return *this;}
+  void  render(const gbstd::canvas&  cv) noexcept;
 
 };
 
 
 class
-view: public view
+basic_menu_window: public windows::object
 {
-  windows::frame    m_frame;
-  windows::content  m_content;
+  view*  m_view;
 
-  void  draw_cursor(const cursor&  cur, const gbstd::canvas&  cv) noexcept;
-
-  bool  m_busy_flag=false;
-
-  static void  draw_content(const canvas&  cv, const windows::style&  style, view&  v) noexcept;
+  point  m_cursor_position;
 
 public:
-  view() noexcept{}
-  view(table&  tbl) noexcept: view(tbl){}
+  basic_menu_window&  set_view(view&  v) noexcept;
 
-  view&  set_window_color(gbstd::color  color) noexcept{  m_window.m_color = color;  return *this;}
-
-  bool  test_busy_flag() const noexcept{return m_busy_flag;}
-
-  view&    set_busy_flag() noexcept{  m_busy_flag =  true;  return *this;}
-  view&  unset_busy_flag() noexcept{  m_busy_flag = false;  return *this;}
-
-  cursor&   get_first_cursor() noexcept{return  m_first_cursor;}
-  cursor&  get_second_cursor() noexcept{return m_second_cursor;}
-
-        windows::frame&  get_window_frame()       noexcept{return m_frame;}
-  const windows::frame&  get_window_frame() const noexcept{return m_frame;}
-
-  void  draw(const gbstd::canvas&  cv) noexcept;
+  void  render_content(const canvas&  cv) noexcept override;
 
 };
-
-
-class
-result
-{
-  int  m_opening_value=0;
-  int  m_closing_value=0;
-
-public:
-  result(int  op=0, int  cl=0) noexcept:
-  m_opening_value(op), m_closing_value(cl){}
-
-  int  get_opening_value() const noexcept{return m_opening_value;}
-  int  get_closing_value() const noexcept{return m_closing_value;}
-
-};
-
-
-class
-stack
-{
-public:
-  template<typename  T>
-  using callback = void(*)(stack&,const result*,view&,T&);
-
-private:
-  struct element{
-    int  m_opening_value;
-
-    view*  m_view;
-    void*  m_data;
-
-    callback<dummy>  m_callback;
-
-    std::vector<windows::frame*>  m_subwindow_list;
-
-  };
-
-
-  std::vector<element>  m_container;
-
-  task  m_task;
-
-  stack&  internal_open(int  opening_value, view&  v, void*  data, callback<dummy>  cb) noexcept;
-
-public:
-  stack&  clear() noexcept;
-
-  int  get_number_of_elements() const noexcept{return m_container.size();}
-
-  stack&  ready(clock_watch  w, uint32_t  intval) noexcept;
-
-  template<typename  T>
-  stack&  open(int  opening_value, view&  v, T&  data, callback<T>  cb) noexcept
-  {
-    return internal_open(opening_value,v,&data,reinterpret_cast<callback<dummy>>(cb));
-  }
-
-  stack&  add_subwindow(windows::frame&  frm) noexcept;
-
-  stack&  close_top(int  closing_value) noexcept;
-
-  int  get_opening_value() const noexcept{return m_container.back().m_opening_value;}
-
-  static void  draw(const gbstd::canvas&  cv, stack&  stk) noexcept;
-  static void  tick(                          stack&  stk) noexcept;
-
-};
-*/
 
 
 }}

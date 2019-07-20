@@ -91,7 +91,7 @@ render(const canvas&  cv) noexcept
 {
   render_background(cv);
 
-  m_view->draw(cv);
+  m_view->render(cv);
 
   int  w = m_view->get_table().get_cell_width() ;
   int  h = m_view->get_table().get_cell_height();
