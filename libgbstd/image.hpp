@@ -92,6 +92,39 @@ public:
 
 
 struct
+triangle
+{
+  point  a;
+  point  b;
+  point  c;
+
+  constexpr triangle()  noexcept{}
+  constexpr triangle(point  aa, point  bb, point  cc)  noexcept: a(aa), b(bb), c(cc){}
+
+};
+
+
+struct
+sorted_triangle
+{
+  point  highest;
+  point   middle;
+  point   lowest;
+
+  static constexpr point   hi(point  a, point  b) noexcept{return (a.y < b.y)? a:b;}
+  static constexpr point   lo(point  a, point  b) noexcept{return (a.y > b.y)? a:b;}
+
+  constexpr sorted_triangle(point  a, point  b, point  c)  noexcept:
+  highest(hi(a,hi(b,c))),
+  middle(((a.y < b.y) && (a.y > c.y))? a:((b.y < a.y) && (b.y > c.y))? b:c),
+  lowest( lo(a,lo(b,c))){}
+
+};
+
+
+
+
+struct
 pixel
 {
   gbstd::color  color=0;
@@ -260,6 +293,11 @@ public:
   void  draw_rectangle_safely(color  c, const rectangle&  rect) const noexcept{draw_rectangle_safely(c,rect.x,rect.y,rect.w,rect.h);}
   void  fill_rectangle(       color  c, const rectangle&  rect) const noexcept{fill_rectangle(c,rect.x,rect.y,rect.w,rect.h);}
   void  fill_rectangle_safely(color  c, const rectangle&  rect) const noexcept{fill_rectangle_safely(c,rect.x,rect.y,rect.w,rect.h);}
+
+  void  draw_triangle(       color  c, const triangle&  tri) const noexcept;
+  void  draw_triangle_safely(color  c, const triangle&  tri) const noexcept;
+  void  fill_triangle(       color  c, const triangle&  tri) const noexcept;
+  void  fill_triangle_safely(color  c, const triangle&  tri) const noexcept;
 
   void  draw_double_rectangle(color  out, color  in, int  x, int  y, int  w, int  h) const noexcept;
   void  draw_double_rectangle(color  out, color  in, const rectangle&  rect) const noexcept;

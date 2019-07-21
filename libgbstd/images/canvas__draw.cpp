@@ -163,6 +163,141 @@ draw_line_safely(color  i, int  x0, int  y0, int  x1, int  y1) const noexcept
 }
 
 
+
+
+
+void
+canvas::
+draw_triangle(color  c, const triangle&  tri) const noexcept
+{
+  draw_line(c,tri.a,tri.b);
+  draw_line(c,tri.a,tri.c);
+  draw_line(c,tri.b,tri.c);
+}
+
+
+void
+canvas::
+draw_triangle_safely(color  c, const triangle&  tri) const noexcept
+{
+  draw_line_safely(c,tri.a,tri.b);
+  draw_line_safely(c,tri.a,tri.c);
+  draw_line_safely(c,tri.b,tri.c);
+}
+
+
+void
+canvas::
+fill_triangle(color  c, const triangle&  tri) const noexcept
+{
+  sorted_triangle  str(tri.a,tri.b,tri.c);
+
+  liner   l(str.highest,str.lowest);
+  liner  sh(str.highest,str.middle);
+  liner  sl(str.middle ,str.lowest);
+
+    for(;;)
+    {
+      int  y = sh.get_y();
+
+        while(l.get_y() < y)
+        {
+          l.step();
+        }
+
+
+      draw_line(c,sh.get_x(),y,l.get_x(),l.get_y());
+
+        if(!sh.get_distance())
+        {
+          break;
+        }
+
+
+      sh.step();
+    }
+
+
+    for(;;)
+    {
+      int  y = sl.get_y();
+
+        while(l.get_y() < y)
+        {
+          l.step();
+        }
+
+
+      draw_line(c,sl.get_x(),y,l.get_x(),l.get_y());
+
+        if(!sl.get_distance())
+        {
+          break;
+        }
+
+
+      sl.step();
+    }
+}
+
+
+void
+canvas::
+fill_triangle_safely(color  c, const triangle&  tri) const noexcept
+{
+  sorted_triangle  str(tri.a,tri.b,tri.c);
+
+  liner   l(str.highest,str.lowest);
+  liner  sh(str.highest,str.middle);
+  liner  sl(str.middle ,str.lowest);
+
+    for(;;)
+    {
+      int  y = sh.get_y();
+
+        while(l.get_y() < y)
+        {
+          l.step();
+        }
+
+
+      draw_line_safely(c,sh.get_x(),y,l.get_x(),l.get_y());
+
+        if(!sh.get_distance())
+        {
+          break;
+        }
+
+
+      sh.step();
+    }
+
+
+    for(;;)
+    {
+      int  y = sl.get_y();
+
+        while(l.get_y() < y)
+        {
+          l.step();
+        }
+
+
+      draw_line_safely(c,sl.get_x(),y,l.get_x(),l.get_y());
+
+        if(!sl.get_distance())
+        {
+          break;
+        }
+
+
+      sl.step();
+    }
+}
+
+
+
+
 void
 canvas::
 draw_rectangle(color  i, int  x, int  y, int  w, int  h) const noexcept
