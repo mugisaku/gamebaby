@@ -190,15 +190,14 @@ void
 canvas::
 fill_triangle(color  c, const triangle&  tri) const noexcept
 {
-  sorted_triangle  str(tri.a,tri.b,tri.c);
+  auto  str = tri.sort();
 
-  liner   l(str.highest,str.lowest);
-  liner  sh(str.highest,str.middle);
-  liner  sl(str.middle ,str.lowest);
+  liner  l(str.get_top(),str.get_bottom());
+  liner  s(str.get_top(),str.get_middle());
 
     for(;;)
     {
-      int  y = sh.get_y();
+      int  y = s.get_y();
 
         while(l.get_y() < y)
         {
@@ -206,21 +205,39 @@ fill_triangle(color  c, const triangle&  tri) const noexcept
         }
 
 
-      draw_line(c,sh.get_x(),y,l.get_x(),l.get_y());
+      int  sx = s.get_x();
+      int  lx = l.get_x();
+      int   i = (sx < lx)? 1:-1;
 
-        if(!sh.get_distance())
+        for(;;)
+        {
+          draw_dot(c,sx,y);
+
+            if(sx == lx)
+            {
+              break;
+            }
+
+
+          sx += i;
+        }
+
+
+        if(!s.get_distance())
         {
           break;
         }
 
 
-      sh.step();
+      s.step();
     }
 
 
+  s = liner(str.get_middle(),str.get_bottom());
+
     for(;;)
     {
-      int  y = sl.get_y();
+      int  y = s.get_y();
 
         while(l.get_y() < y)
         {
@@ -228,15 +245,31 @@ fill_triangle(color  c, const triangle&  tri) const noexcept
         }
 
 
-      draw_line(c,sl.get_x(),y,l.get_x(),l.get_y());
+      int  sx = s.get_x();
+      int  lx = l.get_x();
+      int   i = (sx < lx)? 1:-1;
 
-        if(!sl.get_distance())
+        for(;;)
+        {
+          draw_dot(c,sx,y);
+
+            if(sx == lx)
+            {
+              break;
+            }
+
+
+          sx += i;
+        }
+
+
+        if(!s.get_distance())
         {
           break;
         }
 
 
-      sl.step();
+      s.step();
     }
 }
 
@@ -245,15 +278,14 @@ void
 canvas::
 fill_triangle_safely(color  c, const triangle&  tri) const noexcept
 {
-  sorted_triangle  str(tri.a,tri.b,tri.c);
+  auto  str = tri.sort();
 
-  liner   l(str.highest,str.lowest);
-  liner  sh(str.highest,str.middle);
-  liner  sl(str.middle ,str.lowest);
+  liner  l(str.get_top(),str.get_bottom());
+  liner  s(str.get_top(),str.get_middle());
 
     for(;;)
     {
-      int  y = sh.get_y();
+      int  y = s.get_y();
 
         while(l.get_y() < y)
         {
@@ -261,21 +293,39 @@ fill_triangle_safely(color  c, const triangle&  tri) const noexcept
         }
 
 
-      draw_line_safely(c,sh.get_x(),y,l.get_x(),l.get_y());
+      int  sx = s.get_x();
+      int  lx = l.get_x();
+      int   i = (sx < lx)? 1:-1;
 
-        if(!sh.get_distance())
+        for(;;)
+        {
+          draw_dot_safely(c,sx,y);
+
+            if(sx == lx)
+            {
+              break;
+            }
+
+
+          sx += i;
+        }
+
+
+        if(!s.get_distance())
         {
           break;
         }
 
 
-      sh.step();
+      s.step();
     }
 
 
+  s = liner(str.get_middle(),str.get_bottom());
+
     for(;;)
     {
-      int  y = sl.get_y();
+      int  y = s.get_y();
 
         while(l.get_y() < y)
         {
@@ -283,15 +333,31 @@ fill_triangle_safely(color  c, const triangle&  tri) const noexcept
         }
 
 
-      draw_line_safely(c,sl.get_x(),y,l.get_x(),l.get_y());
+      int  sx = s.get_x();
+      int  lx = l.get_x();
+      int   i = (sx < lx)? 1:-1;
 
-        if(!sl.get_distance())
+        for(;;)
+        {
+          draw_dot_safely(c,sx,y);
+
+            if(sx == lx)
+            {
+              break;
+            }
+
+
+          sx += i;
+        }
+
+
+        if(!s.get_distance())
         {
           break;
         }
 
 
-      sl.step();
+      s.step();
     }
 }
 

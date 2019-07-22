@@ -91,6 +91,26 @@ public:
 
 
 
+class
+sorted_triangle
+{
+  friend class triangle;
+
+  point     m_top;
+  point  m_middle;
+  point  m_bottom;
+
+  constexpr sorted_triangle(point  top, point  mid, point  btm) noexcept:
+  m_top(top), m_middle(mid), m_bottom(btm){}
+
+public:
+  constexpr const point&  get_top()    const noexcept{return m_top;}
+  constexpr const point&  get_middle() const noexcept{return m_middle;}
+  constexpr const point&  get_bottom() const noexcept{return m_bottom;}
+
+};
+
+
 struct
 triangle
 {
@@ -101,23 +121,25 @@ triangle
   constexpr triangle()  noexcept{}
   constexpr triangle(point  aa, point  bb, point  cc)  noexcept: a(aa), b(bb), c(cc){}
 
-};
+  constexpr sorted_triangle  sort() const noexcept
+  {
+      if((a.y < b.y) && (a.y < c.y))
+      {
+        return (b.y < c.y)? sorted_triangle(a,b,c)
+              :             sorted_triangle(a,c,b);
+      }
+
+    else
+      if((b.y < a.y) && (b.y < c.y))
+      {
+        return (a.y < c.y)? sorted_triangle(b,a,c)
+              :             sorted_triangle(b,c,a);
+      }
 
 
-struct
-sorted_triangle
-{
-  point  highest;
-  point   middle;
-  point   lowest;
-
-  static constexpr point   hi(point  a, point  b) noexcept{return (a.y < b.y)? a:b;}
-  static constexpr point   lo(point  a, point  b) noexcept{return (a.y > b.y)? a:b;}
-
-  constexpr sorted_triangle(point  a, point  b, point  c)  noexcept:
-  highest(hi(a,hi(b,c))),
-  middle(((a.y < b.y) && (a.y > c.y))? a:((b.y < a.y) && (b.y > c.y))? b:c),
-  lowest( lo(a,lo(b,c))){}
+    return (a.y < b.y)? sorted_triangle(c,a,b)
+          :             sorted_triangle(c,b,a);
+  }
 
 };
 

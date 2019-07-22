@@ -30,7 +30,7 @@ basic_point
   y(rhs.y){}
 
   template<typename  U>
-  constexpr basic_point&  operator=(basic_point<U>  rhs) noexcept
+  basic_point&  operator=(basic_point<U>  rhs) noexcept
   {
     x = static_cast<T>(rhs.x);
     y = static_cast<T>(rhs.y);
