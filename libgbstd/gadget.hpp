@@ -30,6 +30,13 @@ public:
 
   tile_source&  make(int  w, int  h, int  n) noexcept;
 
+  image  make_image() noexcept;
+
+  int  find(const pixel*  stream) const noexcept;
+
+  int  append(const canvas&  cv, int  x, int  y)       noexcept;
+  int    find(const canvas&  cv, int  x, int  y) const noexcept;
+
   canvas  get_canvas(int  i) noexcept{return canvas(get_pixel_pointer(i),m_width,m_width,m_height);}
 
         pixel*  get_pixel_pointer(int  i)       noexcept{return &m_stream[m_width*m_height*i];}
@@ -47,6 +54,8 @@ tile_map
   std::vector<int>  m_table;
 
 public:
+  tile_source  make_from(const canvas&  cv, int  tile_w, int  tile_h) noexcept;
+
   tile_map&  resize(int  w, int  h) noexcept;
 
   int  get_width()  const noexcept{return m_width;}
