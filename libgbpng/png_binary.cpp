@@ -99,7 +99,7 @@ get_compressed() const
 {
   unsigned long  dst_size = (m_data_size*2)+12;
 
-  uint8_t  buf[dst_size];
+  auto  buf = new uint8_t[dst_size];
 
     if(compress(buf,&dst_size,m_data,m_data_size) != Z_OK)
     {
@@ -107,7 +107,11 @@ get_compressed() const
     }
 
 
-  return binary(buf,dst_size);
+  binary  bin(buf,dst_size);
+
+  delete[] buf;
+
+  return std::move(bin);
 }
 
 

@@ -72,7 +72,7 @@ find(const pixel*  stream) const noexcept
 
     while(i < m_number_of_tiles)
     {
-      auto  p = m_stream.data();
+      auto  p = &m_stream[n*i];
 
         if(std::memcmp(stream,p,sizeof(pixel)*n) == 0)
         {

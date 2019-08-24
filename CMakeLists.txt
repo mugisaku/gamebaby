@@ -19,24 +19,18 @@ endif(CCACHE_FOUND)
 
 
 
-if(OPT)
-endif()
-
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 
-#set(CMAKE_C_COMPILER  "/usr/local/bin/gcc")
 set(CMAKE_C_FLAGS   "-std=c1z -Werror")
 set(CMAKE_C_LINK_FLAGS   "")
-#set(CMAKE_CXX_COMPILER  "/usr/local/bin/g++")
 set(CMAKE_CXX_FLAGS "-std=c++17 -Werror")
 set(CMAKE_CXX_LINK_FLAGS "-lSDL2")
 
 
-set(BASIC_LIBS "z""SDL2" "SDL2main" "stdc++")
+set(BASIC_LIBS "z" "SDL2" "SDL2main" "stdc++")
 
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS}   -O2 -march=core2 -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -march=core2 -fomit-frame-pointer")
@@ -69,6 +63,7 @@ endif(CCACHE_FOUND)
 
 add_subdirectory(libsdlglu)
 add_subdirectory(libgbstd)
+add_subdirectory(libsns)
 #add_subdirectory(libonch)
 add_subdirectory(libge)
 add_subdirectory(libgbpng)
@@ -99,7 +94,7 @@ add_executable("mkeyesquat2${EXECUTABLE_EXTENSION}" mkeyesquat2.cpp)
 target_link_libraries("ww_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ww" "gbstd" "gbpng" ${BASIC_LIBS})
 target_link_libraries("mkfont_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "mkfont" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("png2lit${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
-target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sns" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("mksnd_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("vgi_sdl${EXECUTABLE_EXTENSION}" "onch" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("waview_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})

@@ -52,6 +52,8 @@ assign(const image&  rhs) noexcept
     if(this != &rhs)
     {
       resize(rhs.m_width,rhs.m_height);
+
+      std::memcpy(m_pixels,rhs.m_pixels,sizeof(*m_pixels)*m_width*m_height);
     }
 
 
