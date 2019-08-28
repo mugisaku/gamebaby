@@ -57,10 +57,14 @@ public:
 
   sha256_hash_generator&  finish() noexcept;
 
-  void  push(uint8_t   c) noexcept;
-  void  push(uint16_t  c) noexcept;
-  void  push(uint32_t  c) noexcept;
-  void  push(uint64_t  c) noexcept;
+  void  push(int  c) noexcept;
+
+  void  push_le16(uint16_t  c) noexcept;
+  void  push_be16(uint16_t  c) noexcept;
+  void  push_le32(uint32_t  c) noexcept;
+  void  push_be32(uint32_t  c) noexcept;
+  void  push_le64(uint64_t  c) noexcept;
+  void  push_be64(uint64_t  c) noexcept;
 
 };
 

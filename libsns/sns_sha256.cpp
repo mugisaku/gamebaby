@@ -207,7 +207,7 @@ process() noexcept
 
 void
 sha256_hash_generator::
-push(uint8_t  c) noexcept
+push(int  c) noexcept
 {
   m_block_buffer[m_block_size++] = c;
 
@@ -222,36 +222,71 @@ push(uint8_t  c) noexcept
 
 void
 sha256_hash_generator::
-push(uint16_t  c) noexcept
+push_le16(uint16_t  c) noexcept
 {
-  push(static_cast<uint8_t>(c   ));
-  push(static_cast<uint8_t>(c>>8));
+  push((c   )&0xFF);
+  push((c>>8)&0xFF);
 }
 
 
 void
 sha256_hash_generator::
-push(uint32_t  c) noexcept
+push_be16(uint16_t  c) noexcept
 {
-  push(static_cast<uint8_t>(c    ));
-  push(static_cast<uint8_t>(c>> 8));
-  push(static_cast<uint8_t>(c>>16));
-  push(static_cast<uint8_t>(c>>24));
+  push((c>>8)&0xFF);
+  push((c   )&0xFF);
 }
 
 
 void
 sha256_hash_generator::
-push(uint64_t  c) noexcept
+push_le32(uint32_t  c) noexcept
 {
-  push(static_cast<uint8_t>(c    ));
-  push(static_cast<uint8_t>(c>> 8));
-  push(static_cast<uint8_t>(c>>16));
-  push(static_cast<uint8_t>(c>>24));
-  push(static_cast<uint8_t>(c>>32));
-  push(static_cast<uint8_t>(c>>40));
-  push(static_cast<uint8_t>(c>>48));
-  push(static_cast<uint8_t>(c>>56));
+  push((c    )&0xFF);
+  push((c>> 8)&0xFF);
+  push((c>>16)&0xFF);
+  push((c>>24)&0xFF);
+}
+
+
+void
+sha256_hash_generator::
+push_be32(uint32_t  c) noexcept
+{
+  push((c>>24)&0xFF);
+  push((c>>16)&0xFF);
+  push((c>> 8)&0xFF);
+  push((c    )&0xFF);
+}
+
+
+void
+sha256_hash_generator::
+push_le64(uint64_t  c) noexcept
+{
+  push((c    )&0xFF);
+  push((c>> 8)&0xFF);
+  push((c>>16)&0xFF);
+  push((c>>24)&0xFF);
+  push((c>>32)&0xFF);
+  push((c>>40)&0xFF);
+  push((c>>48)&0xFF);
+  push((c>>56)&0xFF);
+}
+
+
+void
+sha256_hash_generator::
+push_be64(uint64_t  c) noexcept
+{
+  push((c>>56)&0xFF);
+  push((c>>48)&0xFF);
+  push((c>>40)&0xFF);
+  push((c>>32)&0xFF);
+  push((c>>24)&0xFF);
+  push((c>>16)&0xFF);
+  push((c>> 8)&0xFF);
+  push((c    )&0xFF);
 }
 
 
