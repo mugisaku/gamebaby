@@ -11,7 +11,7 @@ set(SOURCES
 
 include_directories(./ ../ /usr/include/SDL2)
 add_library("sdlglu" STATIC ${SOURCES})
-target_link_libraries("SDL2")
+#target_link_libraries("SDL2")
 
 
 

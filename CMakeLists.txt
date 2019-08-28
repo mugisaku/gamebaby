@@ -53,14 +53,6 @@ endif()
 
 
 
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-#  set(CMAKE_CXX_COMPILER_LAUNCHER "sleep 2; CCACHE_DIR=/tmp/ccachedir ccache  ${CMAKE_CXX_COMPILER}")
-endif(CCACHE_FOUND)
-
-
-
-
 add_subdirectory(libsdlglu)
 add_subdirectory(libgbstd)
 add_subdirectory(libsns)
