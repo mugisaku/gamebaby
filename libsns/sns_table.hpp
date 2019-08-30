@@ -7,9 +7,9 @@
 #include<cstring>
 #include<cctype>
 #include<vector>
-#include<memory>
 #include<string>
 #include<string_view>
+#include"libsns/sns_sha256.hpp"
 
 
 namespace sns{
@@ -65,9 +65,15 @@ record
 
   std::string  m_content;
 
+  sha256_hash  m_seed_hash;
+
 public:
   record() noexcept{}
-  record(uint64_t  i, timestamp  ts, std::string_view  sv) noexcept: m_index(i), m_timestamp(ts), m_content(sv){}
+  record(uint64_t  i, timestamp  ts, std::string_view  sv, const sha256_hash&  seed_hash) noexcept:
+  m_index(i),
+  m_timestamp(ts),
+  m_content(sv),
+  m_seed_hash(seed_hash){}
 
   bool  operator< (timestamp  ts) const noexcept{return m_timestamp <  ts;}
   bool  operator<=(timestamp  ts) const noexcept{return m_timestamp <= ts;}
@@ -79,6 +85,10 @@ public:
   uint64_t  get_index() const noexcept{return m_index;}
 
   timestamp  get_timestamp() const noexcept{return m_timestamp;}
+
+  const sha256_hash&  get_seed_hash() const noexcept{return m_seed_hash;}
+
+  sha256_hash  generate_hash() const noexcept;
 
   const std::string&   get_content() const noexcept{return m_content;}
 
@@ -200,9 +210,11 @@ table
 {
   timestamp  m_last_timestamp;
 
-  std::vector<std::unique_ptr<T>>  m_container;
+  using pointer_type = T*;
 
-  range  search_internal(const std::unique_ptr<T>*  base_pointer, uint64_t  bottom, uint64_t  top, timestamp  ts) const noexcept
+  std::vector<pointer_type>  m_container;
+
+  range  search_internal(const pointer_type  base_pointer, uint64_t  bottom, uint64_t  top, timestamp  ts) const noexcept
   {
     auto  length = 1+(top-bottom);
 
@@ -275,23 +287,38 @@ table
   }
 
 public:
-  int  get_number_of_records() const noexcept{return m_container.size();}
+ ~table(){clear();}
 
-  const std::unique_ptr<T>&  operator[](uint64_t  i) const noexcept{return m_container[i];}
-
-  const std::unique_ptr<T>&  append(timestamp  ts, std::string_view  sv) noexcept
+  void  clear() noexcept
   {
-      if(ts <= m_last_timestamp)
+      for(auto  ptr: m_container)
       {
-        static const std::unique_ptr<T>  null;
-
-        printf("table: timestamp error\n");
-
-        return null;
+        delete ptr;
       }
 
 
-    m_container.emplace_back(std::make_unique<T>(1+m_container.size(),ts,sv));
+    m_container.clear();
+  }
+
+  int  get_number_of_records() const noexcept{return m_container.size();}
+
+  pointer_type  operator[](uint64_t  i) const noexcept{return m_container[i];}
+
+  pointer_type  append(timestamp  ts, std::string_view  sv) noexcept
+  {
+      if(ts <= m_last_timestamp)
+      {
+        printf("table: timestamp error\n");
+
+        return nullptr;
+      }
+
+
+    auto  n = m_container.size();
+
+    sha256_hash  hash = n? m_container[n-1].generate_hash():sha256_hash();
+
+    m_container.emplace_back(new T(n,ts,sv,hash));
 
     m_last_timestamp = ts;
 
@@ -331,8 +358,8 @@ public:
     return index_list<T>(*this);
   }
 
-  const std::unique_ptr<T>*  begin() const noexcept{return m_container.data();}
-  const std::unique_ptr<T>*    end() const noexcept{return m_container.data()+m_container.size();}
+  const pointer_type  begin() const noexcept{return m_container.data();}
+  const pointer_type    end() const noexcept{return m_container.data()+m_container.size();}
 
 };
 

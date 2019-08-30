@@ -16,6 +16,7 @@ set(SOURCES
   sns_sha256.cpp
   sns_tester.cpp
   sns_record.cpp
+  sns_account.cpp
 )
 
 

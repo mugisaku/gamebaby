@@ -30,6 +30,9 @@ public:
 
   void  print() const noexcept;
 
+  const uint32_t*  begin() const noexcept{return std::cbegin(m_data);}
+  const uint32_t*    end() const noexcept{return std::cend(  m_data);}
+
 };
 
 
