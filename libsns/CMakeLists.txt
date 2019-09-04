@@ -17,6 +17,9 @@ set(SOURCES
   sns_tester.cpp
   sns_record.cpp
   sns_account.cpp
+  sns_account_observer.cpp
+  sns_platform.cpp
+  sns_timeline.cpp
 )
 
 

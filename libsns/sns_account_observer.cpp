@@ -1,4 +1,4 @@
-#include"libsns/sns.hpp"
+#include"libsns/sns_account.hpp"
 
 
 
@@ -72,7 +72,7 @@ assign(const account_observer&   rhs) noexcept
 
         if(m_data)
         {
-          ++m_data->counter;
+          ++m_data->count;
         }
     }
 

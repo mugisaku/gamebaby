@@ -1,4 +1,4 @@
-#include"libsns/sns.hpp"
+#include"libsns/sns_account.hpp"
 
 
 
@@ -54,7 +54,7 @@ test(const std::list<account_observer>&  ls, const account_observer&  obs) noexc
 
   return false;
 }
-bool
+void
 remove(std::list<account_observer>&  ls, const account_observer&  obs) noexcept
 {
   auto   it = ls.begin();
@@ -66,12 +66,9 @@ remove(std::list<account_observer>&  ls, const account_observer&  obs) noexcept
         {
           ls.erase(it);
 
-          return true;
+          return;
         }
     }
-
-
-  return false;
 }
 }
 
@@ -80,20 +77,9 @@ void
 account::
 add_follow(const account_observer&  obs) noexcept
 {
-    if(!obs)
-    {
-      return;
-    }
-
-
     if(!test(m_follow_list,obs))
     {
       m_follow_list.emplace_back(obs);
-
-        if(!test(obs->m_follower_list,m_observer))
-        {
-          obs->m_follower_list.emplace_back(m_observer);
-        }
     }
 }
 
@@ -102,20 +88,9 @@ void
 account::
 add_follower(const account_observer&  obs) noexcept
 {
-    if(!obs)
-    {
-      return;
-    }
-
-
     if(!test(m_follower_list,obs))
     {
       m_follower_list.emplace_back(obs);
-
-        if(!test(obs->m_follow_list,m_observer))
-        {
-          obs->m_follow_list.emplace_back(m_observer);
-        }
     }
 }
 
@@ -182,10 +157,7 @@ void
 account::
 remove_follow(const account_observer&  obs) noexcept
 {
-    if(remove(m_follow_list,obs))
-    {
-      remove(obs->m_follower_list,m_observer);
-    }
+  remove(m_follow_list,obs);
 }
 
 
@@ -193,10 +165,7 @@ void
 account::
 remove_follower(const account_observer&  obs) noexcept
 {
-    if(remove(m_follower_list,obs))
-    {
-      remove(obs->m_follow_list,m_observer);
-    }
+  remove(m_follower_list,obs);
 }
 
 
@@ -213,6 +182,17 @@ account::
 remove_mute(const account_observer&  obs) noexcept
 {
   remove(m_mute_list,obs);
+}
+
+
+
+
+void
+account::
+print() const noexcept
+{
+  printf("name = \"%s\",\n",m_name.data());
+  printf("sex = \"%s\",\n",m_sex.get_name().data());
 }
 
 

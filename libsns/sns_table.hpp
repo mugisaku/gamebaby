@@ -302,9 +302,12 @@ public:
 
   int  get_number_of_records() const noexcept{return m_container.size();}
 
-  pointer_type  operator[](uint64_t  i) const noexcept{return m_container[i];}
+  const T&  operator[](uint64_t  i) const noexcept{return *m_container[i];}
 
-  pointer_type  append(timestamp  ts, std::string_view  sv) noexcept
+  const T&  get_first() const noexcept{return *m_container.front();}
+  const T&  get_last()  const noexcept{return *m_container.back();}
+
+  T&  append(timestamp  ts, std::string_view  sv) noexcept
   {
       if(ts <= m_last_timestamp)
       {
@@ -322,7 +325,7 @@ public:
 
     m_last_timestamp = ts;
 
-    return m_container.back();
+    return *m_container.back();
   }
 
 
@@ -358,8 +361,20 @@ public:
     return index_list<T>(*this);
   }
 
-  const pointer_type  begin() const noexcept{return m_container.data();}
-  const pointer_type    end() const noexcept{return m_container.data()+m_container.size();}
+  class iterator{
+    const pointer_type*  m_pp;
+  public:
+    constexpr iterator(const pointer_type*   pp) noexcept: m_pp(pp){}
+
+    constexpr const T&  operator*() const noexcept{return **m_pp;}
+    constexpr bool  operator!=(iterator  rhs) const noexcept{return m_pp != rhs.m_pp;}
+
+    iterator&  operator++() noexcept{  ++m_pp;  return *this;}
+
+  };
+
+  iterator  begin() const noexcept{return iterator(m_container.data()                   );}
+  iterator    end() const noexcept{return iterator(m_container.data()+m_container.size());}
 
 };
 
