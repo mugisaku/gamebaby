@@ -36,7 +36,21 @@ clear() noexcept
   m_mute_list.clear();
 
   m_observer.die();
+
+  m_record_table.clear();
 }
+
+
+account&
+account::
+add_record(timestamp  ts, std::string_view  sv) noexcept
+{
+  m_record_table.append(ts,sv);
+
+  return *this;
+}
+
+
 
 
 namespace{

@@ -9,152 +9,110 @@ namespace sns{
 
 
 
-timeline::
-target::
-target(const account_observer&  obs) noexcept
+namespace{
+auto  cmp =
+[](const article&  a, const article&  b)->bool
 {
-    if(obs)
-    {
-      auto&  tbl = obs->get_article_table();
-
-        if(tbl.get_number_of_records())
-        {
-          m_observer = obs;
-
-          m_bottom_index = tbl.get_last().get_index();
-        }
-    }
-}
-
-
-
-
-void
-timeline::
-reset(timestamp  base) noexcept
-{
-  m_article_table.clear();
-
-  m_front_timestamp = base;
-  m_back_timestamp  = base;
+  return a.get_timestamp() > b.get_timestamp();
+};
 }
 
 
 void
 timeline::
-fetch_front_articles(timestamp   ts) noexcept
+fetch_forward(timestamp  ts) noexcept
 {
-  std::vector<const article*>  ls;
+  m_temporary_table.clear();
 
-    for(auto&  t: m_target_list)
+    for(auto&  nd: m_nodes)
     {
-        if(t.m_observer)
+        if(nd)
         {
-          auto&  acc = *t.m_observer;
-
-            for(auto&  art: acc.get_article_table())
+            for(;;)
             {
-                if(art <= m_front_timestamp)
+              auto  ptr = nd.fetch_head(ts);
+
+                if(!ptr)
                 {
                   break;
                 }
 
 
-              ls.emplace_back(&art);
+              m_temporary_table.emplace_back(nd.get_observer(),*ptr);
             }
         }
     }
 
 
-  constexpr auto  cmp = [](const article* const&  a, const article* const&  b) noexcept->bool{
-    return a->get_timestamp() < b->get_timestamp();
-  };
-
-
-  std::stable_sort(ls.begin(),ls.end(),cmp);
-
-  m_front_timestamp = ts;
-
-    for(auto  ptr: ls)
+    if(m_temporary_table.size())
     {
-      m_article_table.emplace_front(ptr);
+      auto  p = m_temporary_table.data();
+      auto  n = m_temporary_table.size();
+
+      std::stable_sort(p,p+n,cmp);
+
+        for(auto&  art: m_main_table)
+        {
+          m_temporary_table.emplace_back(std::move(art));
+        }
+
+
+      std::swap(m_main_table,m_temporary_table);
     }
 }
 
 
 void
 timeline::
-fetch_back_articles() noexcept
+fetch_backward() noexcept
 {
-    for(auto&  t: m_target_list)
+    for(auto&  nd: m_nodes)
     {
-        if(t.m_observer)
+        if(nd)
         {
-          auto&  tbl = t.m_observer->get_article_table();
+          auto  ts = nd.get_next_tail_timestamp();
 
-          auto&  art = tbl[t.m_bottom_index];
-
-            if(art < m_back_timestamp)
+            if(ts < m_tail_ts)
             {
-              m_back_timestamp = art.get_timestamp();
+              m_tail_ts = ts;
             }
         }
     }
 
 
-  fetch_back_articles(m_back_timestamp);
-}
+  m_temporary_table.clear();
 
-
-void
-timeline::
-fetch_back_articles(timestamp   ts) noexcept
-{
-  std::vector<const article*>  ls;
-
-    for(auto&  t: m_target_list)
+    for(auto&  nd: m_nodes)
     {
-        if(t.m_observer)
+        if(nd)
         {
-          auto&  tbl = t.m_observer->get_article_table();
-
             for(;;)
             {
-              auto&  i = t.m_bottom_index;
+              auto  ptr = nd.fetch_tail(m_tail_ts);
 
-              auto&  art = tbl[i];
-
-                if(art < ts)
+                if(!ptr)
                 {
-                  ls.emplace_back(&art);
-
-                    if(!i)
-                    {
-                      t.m_observer.unrefer();
-                    }
-
-                  else
-                    {
-                      --i;
-                    }
+                  break;
                 }
+
+
+              m_temporary_table.emplace_back(nd.get_observer(),*ptr);
             }
         }
     }
 
 
-  m_back_timestamp = ts;
-
-  constexpr auto  cmp = [](const article* const&  a, const article* const&  b) noexcept->bool{
-    return a->get_timestamp() > b->get_timestamp();
-  };
-
-
-  std::stable_sort(ls.rbegin(),ls.rend(),cmp);
-
-    for(auto  ptr: ls)
+    if(m_temporary_table.size())
     {
-      m_article_table.emplace_back(ptr);
+      auto  p = m_temporary_table.data();
+      auto  n = m_temporary_table.size();
+
+      std::stable_sort(p,p+n,cmp);
+
+        for(auto&  art: m_temporary_table)
+        {
+          m_main_table.emplace_back(std::move(art));
+        }
     }
 }
 

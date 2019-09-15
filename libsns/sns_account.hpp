@@ -15,38 +15,6 @@ namespace sns{
 
 
 class
-article
-{
-  uint64_t  m_index=0;
-
-  timestamp  m_timestamp;
-
-  std::string  m_content;
-
-public:
-  article() noexcept{}
-  article(uint64_t  i, timestamp  ts, std::string_view  sv) noexcept:
-  m_index(i), m_timestamp(ts), m_content(sv){}
-
-  bool  operator==(timestamp  ts) const noexcept{return m_timestamp == ts;}
-  bool  operator!=(timestamp  ts) const noexcept{return m_timestamp != ts;}
-  bool  operator< (timestamp  ts) const noexcept{return m_timestamp <  ts;}
-  bool  operator<=(timestamp  ts) const noexcept{return m_timestamp <= ts;}
-  bool  operator> (timestamp  ts) const noexcept{return m_timestamp >   ts;}
-  bool  operator>=(timestamp  ts) const noexcept{return m_timestamp >= ts;}
-
-  uint64_t  get_index() const noexcept{return m_index;}
-
-  timestamp  get_timestamp() const noexcept{return m_timestamp;}
-
-  const std::string&  get_content() const noexcept{return m_content;}
-
-  class link;
-
-};
-
-
-class
 sex
 {
   int  m_value;
@@ -131,7 +99,7 @@ account
   timestamp  m_create_timestamp;
   timestamp  m_modify_timestamp;
 
-  table<article>  m_article_table;
+  table<record>  m_record_table;
 
   std::list<account_observer>    m_follow_list;
   std::list<account_observer>  m_follower_list;
@@ -159,7 +127,9 @@ public:
 
   const account_observer&  get_observer() const noexcept{return m_observer;}
 
-  const table<article>&  get_article_table() const noexcept{return m_article_table;}
+  const table<record>&  get_record_table() const noexcept{return m_record_table;}
+
+  account&  add_record(timestamp  ts, std::string_view  sv) noexcept;
 
   void  add_follow(  const account_observer&  obs) noexcept;
   void  add_follower(const account_observer&  obs) noexcept;
@@ -183,6 +153,7 @@ public:
 
 
 
+/*
 class
 article::
 link
@@ -199,6 +170,7 @@ public:
   constexpr uint64_t  get_entry_index()   const noexcept{return m_entry_index;}
 
 };
+*/
 
 
 

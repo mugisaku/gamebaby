@@ -41,11 +41,9 @@ print() const noexcept
 {
   printf("date = %ld(",m_timestamp.get_value());
 
-  time_object  to(m_timestamp);
+  auto  s = to_string(m_timestamp);
 
-  to.print();
-
-  printf("), text = \"%s\"",m_content.data());
+  printf("%s), text = \"%s\"",s.data(),m_content.data());
 }
 
 

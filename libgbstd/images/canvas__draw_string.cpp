@@ -8,69 +8,80 @@ namespace gbstd{
 
 
 
-/*
+template<bool  PointCheck>
 void
-canvas::
-draw_glyph(color  col, const glyph&  gl, int  x, int  y) const noexcept
-{
-  auto  p = &gl.data[0];
-
-    for(int  yy = 0;  yy < g_font_height;  yy += 1)
-    {
-      auto   dst = get_pixel_pointer(x,y+yy);
-      auto  code = *p++;
-
-        for(int  xx = 0;  xx < g_font_width;  xx += 1)
-        {
-            if(code&0x80)
-            {
-              dst->color = col;
-            }
-
-
-           dst  += 1;
-          code <<= 1;
-        }
-    }
-}
-*/
-
-
-void
-canvas::
-draw_glyph(color  col, const glyph&  gl, int  x, int  y) const noexcept
+draw_glyph_tmpl(const canvas&  cv, color  col, const glyph&  gl, int  x, int  y) noexcept
 {
   color  nega_col(~col.get_r7(),~col.get_g7(),~col.get_b7());
 
   auto  p = &gl.data[0];
 
+  uint32_t  t = 0;
+
+  int  xxx    ;
+  int  yyy = y;
+
     for(int  yy = 0;  yy < g_font_height;  yy += 1)
     {
-      auto       dst = get_pixel_pointer(x,y+yy);
       auto  code = *p++;
+
+      auto   dst = cv.get_pixel_pointer(x,y+yy);
+      auto  next = (yy < (g_font_height-1))? *p:0;
 
       auto  side_code = ((code<<1)|(code>>1))&~code;
 
-      int  t = code|(side_code<<8);
+      t &= 0xFFFF;
+      t |= (((t>>8)^code)<<16);
+      t |= ((       code)    );
+      t |= ((  side_code)<<16);
+      t |= ((  code^next)<<16);
+
+        if constexpr(PointCheck)
+        {
+          xxx = x;
+        }
+
 
         for(int  xx = 0;  xx < g_font_width;  xx += 1)
         {
-            if(t&0x80)
+          bool  c = true;
+
+            if constexpr(PointCheck)
             {
-              dst->color = col;
+              c = ((xxx >= 0) &&
+                   (yyy >= 0) &&
+                   (xxx < cv.get_width()) &&
+                   (yyy < cv.get_height()));
+
+              ++xxx;
             }
 
 
-            if(t&(0x80<<8))
+            if(c)
             {
-              dst->color = nega_col;
+                   if(t&(0x80    )){dst->color =      col;}
+              else if(t&(0x80<<16)){dst->color = nega_col;}
             }
 
 
           dst  += 1;
             t <<= 1;
         }
+
+
+        if constexpr(PointCheck)
+        {
+          ++yyy;
+        }
     }
+}
+
+
+void
+canvas::
+draw_glyph(color  col, const glyph&  gl, int  x, int  y) const noexcept
+{
+  draw_glyph_tmpl<false>(*this,col,gl,x,y);
 }
 
 
@@ -78,35 +89,7 @@ void
 canvas::
 draw_glyph_safely(color  col, const glyph&  gl, int  x, int  y) const noexcept
 {
-  auto  p = &gl.data[0];
-
-    for(int  yy = 0;  yy < g_font_height;  yy += 1)
-    {
-      auto   dst = get_pixel_pointer(x,y+yy);
-      auto  code = *p++;
-
-      int  yyy = y+yy;
-
-        if((yyy >= 0) && (yyy < get_height()))
-        {
-            for(int  xx = 0;  xx < g_font_width;  xx += 1)
-            {
-              int  xxx = x+xx;
-
-                if((xxx >= 0) && (xxx < get_width()))
-                {
-                    if(code&0x80)
-                    {
-                      dst->color = col;
-                    }
-                }
-
-
-               dst  += 1;
-              code <<= 1;
-            }
-        }
-    }
+  draw_glyph_tmpl<true>(*this,col,gl,x,y);
 }
 
 
