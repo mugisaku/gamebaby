@@ -1,21 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
-project(gamebaby)
-
-
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
-
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-  set(CCACHE_CMD "CCACHE_DIR=/tmp/ccachedir ccache")
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_CMD}")
-endif(CCACHE_FOUND)
 
 
 set(SOURCES
   sns_sha256.cpp
   sns_tester.cpp
+  sns_index_list.cpp
   sns_record.cpp
+  sns_record_table.cpp
   sns_article.cpp
   sns_account.cpp
   sns_account_observer.cpp
@@ -23,9 +13,6 @@ set(SOURCES
   sns_timeline.cpp
   sns_timeline_node.cpp
 )
-
-
-set(CMAKE_CXX_FLAGS "-std=c++17 -Og -O0 -Werror")
 
 
 include_directories(./ ../)

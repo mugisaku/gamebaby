@@ -2,7 +2,6 @@
 #define SNS_HPP_WAS_INCLUDED
 
 
-#include"libsns/sns_table.hpp"
 #include"libsns/sns_account.hpp"
 #include<list>
 #include<memory>
@@ -37,8 +36,9 @@ article
 
   timestamp  m_timestamp;
 
-  std::string  m_name;
-  std::string  m_date;
+  std::u16string  m_name;
+  std::u16string  m_date;
+
   std::string  m_content;
 
 public:
@@ -52,8 +52,8 @@ public:
 
   timestamp  get_timestamp() const noexcept{return m_timestamp;}
 
-  const std::string&  get_name() const noexcept{return m_name;}
-  const std::string&  get_date() const noexcept{return m_date;}
+  const std::u16string&  get_name() const noexcept{return m_name;}
+  const std::u16string&  get_date() const noexcept{return m_date;}
   const std::string&  get_content() const noexcept{return m_content;}
 
 };
@@ -64,22 +64,25 @@ timeline_node
 {
   account_observer  m_observer;
 
-  range  m_range=ranges::wrong;
+  uint64_t     m_head_index;
+  uint64_t  m_pretail_index;
 
 public:
   timeline_node() noexcept{}
   timeline_node(const account_observer&  obs) noexcept{set_observer(obs);}
 
-  operator bool() const noexcept{return m_range;}
+  operator bool() const noexcept{return m_observer->get_record_table();}
 
-  timeline_node&  set_observer(const account_observer&  obs) noexcept;
-
+  timeline_node&           set_observer(const account_observer&  obs) noexcept;
   const account_observer&  get_observer() const noexcept{return m_observer;}
 
-  const record*  fetch_head(timestamp  ts) noexcept;
-  const record*  fetch_tail(timestamp  ts) noexcept;
+  timeline_node&  reset() noexcept;
 
-  timestamp  get_next_tail_timestamp() const noexcept;
+  void  advance_head_index() noexcept{++m_head_index;}
+  void  advance_pretail_index() noexcept{--m_pretail_index;}
+
+  const record*  get_next_head() noexcept;
+  const record*  get_next_tail() noexcept;
 
 };
 
@@ -92,6 +95,7 @@ timeline
   std::vector<article>   m_main_table;
   std::vector<article>   m_temporary_table;
 
+  timestamp  m_head_ts;
   timestamp  m_tail_ts;
 
 public:
@@ -99,8 +103,10 @@ public:
 
   const std::vector<article>&  get_table() const noexcept{return m_main_table;}
 
-  void  fetch_forward(timestamp  ts) noexcept;
-  void  fetch_backward() noexcept;
+  void  ready(timestamp  ts) noexcept;
+
+  void  read_forward()  noexcept;
+  void  read_backward() noexcept;
 
 };
 

@@ -1,4 +1,4 @@
-#include"libsns/sns_table.hpp"
+#include"libsns/sns_record.hpp"
 
 
 

@@ -337,6 +337,35 @@ public:
 };
 
 
+template<typename  T>
+T
+post_increment(T&  x, T  amount) noexcept
+{
+  auto  t = x          ;
+            x += amount;
+
+  return t;
+}
+
+
+template<typename  T>
+class
+post_incrementor
+{
+  T&  m_value;
+
+public:
+  post_incrementor(T&  v) noexcept: m_value(v){}
+
+  T  operator()(int  amount) noexcept
+  {
+    auto  t = m_value          ;
+              m_value += amount;
+
+    return t;
+  }
+
+};
 
 
 }

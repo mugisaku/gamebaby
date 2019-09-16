@@ -51,6 +51,14 @@ add_record(timestamp  ts, std::string_view  sv) noexcept
 }
 
 
+timestamp
+account::
+get_last_post_timestamp() const noexcept
+{
+  return m_record_table? m_record_table.get_last().get_timestamp():timestamp();
+}
+
+
 
 
 namespace{

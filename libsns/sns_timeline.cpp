@@ -20,26 +20,64 @@ auto  cmp =
 
 void
 timeline::
-fetch_forward(timestamp  ts) noexcept
+ready(timestamp  ts) noexcept
+{
+  m_head_ts = ts;
+  m_tail_ts = ts;
+
+    for(auto&  nd: m_nodes)
+    {
+      nd.reset();
+    }
+}
+
+
+void
+timeline::
+read_forward() noexcept
 {
   m_temporary_table.clear();
 
     for(auto&  nd: m_nodes)
     {
-        if(nd)
+      auto  recptr = nd.get_next_head();
+
+        if(recptr)
         {
-            for(;;)
+          auto  ts = recptr->get_timestamp();
+
+            if(ts > m_head_ts)
             {
-              auto  ptr = nd.fetch_head(ts);
-
-                if(!ptr)
-                {
-                  break;
-                }
-
-
-              m_temporary_table.emplace_back(nd.get_observer(),*ptr);
+              m_head_ts = ts;
             }
+        }
+    }
+
+
+  m_temporary_table.clear();
+
+    for(auto&  nd: m_nodes)
+    {
+        for(;;)
+        {
+          auto  recptr = nd.get_next_head();
+
+            if(recptr)
+            {
+              auto  ts = recptr->get_timestamp();
+
+                if(ts >= m_tail_ts)
+                {
+                  m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+
+                  nd.advance_head_index();
+
+                  continue;
+                }
+            }
+
+
+          break;
         }
     }
 
@@ -64,13 +102,15 @@ fetch_forward(timestamp  ts) noexcept
 
 void
 timeline::
-fetch_backward() noexcept
+read_backward() noexcept
 {
     for(auto&  nd: m_nodes)
     {
-        if(nd)
+      auto  recptr = nd.get_next_tail();
+
+        if(recptr)
         {
-          auto  ts = nd.get_next_tail_timestamp();
+          auto  ts = recptr->get_timestamp();
 
             if(ts < m_tail_ts)
             {
@@ -84,20 +124,26 @@ fetch_backward() noexcept
 
     for(auto&  nd: m_nodes)
     {
-        if(nd)
+        for(;;)
         {
-            for(;;)
+          auto  recptr = nd.get_next_tail();
+
+            if(recptr)
             {
-              auto  ptr = nd.fetch_tail(m_tail_ts);
+              auto  ts = recptr->get_timestamp();
 
-                if(!ptr)
+                if(ts <= m_tail_ts)
                 {
-                  break;
+                  m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+
+                  nd.advance_pretail_index();
+
+                  continue;
                 }
-
-
-              m_temporary_table.emplace_back(nd.get_observer(),*ptr);
             }
+
+
+          break;
         }
     }
 

@@ -2,8 +2,7 @@
 #define SNS_ACCOUNT_HPP_WAS_INCLUDED
 
 
-#include"libsns/sns_table.hpp"
-#include"libsns/sns_sha256.hpp"
+#include"libsns/sns_record.hpp"
 #include<list>
 
 
@@ -99,7 +98,7 @@ account
   timestamp  m_create_timestamp;
   timestamp  m_modify_timestamp;
 
-  table<record>  m_record_table;
+  record_table  m_record_table;
 
   std::list<account_observer>    m_follow_list;
   std::list<account_observer>  m_follower_list;
@@ -127,9 +126,11 @@ public:
 
   const account_observer&  get_observer() const noexcept{return m_observer;}
 
-  const table<record>&  get_record_table() const noexcept{return m_record_table;}
+  const record_table&  get_record_table() const noexcept{return m_record_table;}
 
   account&  add_record(timestamp  ts, std::string_view  sv) noexcept;
+
+  timestamp  get_last_post_timestamp() const noexcept;
 
   void  add_follow(  const account_observer&  obs) noexcept;
   void  add_follower(const account_observer&  obs) noexcept;

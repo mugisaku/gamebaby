@@ -10,6 +10,7 @@ if(CCACHE_FOUND)
   set(CCACHE_CMD "CCACHE_DIR=/tmp/ccachedir ccache")
 
   if(SLOW)
+message("I am sleepy.")
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "sleep 1;  ${CCACHE_CMD}")
   else()
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_CMD}")
