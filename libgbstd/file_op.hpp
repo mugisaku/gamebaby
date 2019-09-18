@@ -5,6 +5,8 @@
 #include<cstdio>
 #include<cstdint>
 #include<cstdlib>
+#include<string>
+#include<string_view>
 #include<utility>
 #include<vector>
 
@@ -12,6 +14,7 @@
 namespace gbstd{
 
 
+std::string  make_string_from_file(const char*  filepath) noexcept;
 void  write_to_file(const void*  ptr, size_t  size, const char*  filepath) noexcept;
 
 

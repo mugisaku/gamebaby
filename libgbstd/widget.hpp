@@ -4,6 +4,8 @@
 
 #include"libgbstd/image.hpp"
 #include"libgbstd/utility.hpp"
+#include"libgbstd/misc.hpp"
+#include"libgbstd/control.hpp"
 #include"libgbstd/menu.hpp"
 #include<memory>
 #include<cstdio>

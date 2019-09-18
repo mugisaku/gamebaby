@@ -1,6 +1,19 @@
 
 
 set(SOURCES
+  math.cpp
+  random.cpp
+  sha256.cpp
+  sns/sns_record.cpp
+  sns/sns_record_table.cpp
+  sns/sns_platform.cpp
+  sns/sns_article.cpp
+  sns/sns_account.cpp
+  sns/sns_account_observer.cpp
+  sns/sns_timeline.cpp
+  sns/sns_timeline_node.cpp
+  sns/sns_tester.cpp
+  sns/sns_index_list.cpp
   parsers/token.cpp
   parsers/token_block.cpp
   parsers/tokenizer.cpp
@@ -16,9 +29,9 @@ set(SOURCES
   images/canvas__draw.cpp
   images/canvas__draw_string.cpp
   images/liner.cpp
-  gadgets/tile_source.cpp
-  gadgets/tile_map.cpp
-  gadgets/tile_map_view.cpp
+  tile_maps/tile_source.cpp
+  tile_maps/tile_map.cpp
+  tile_maps/tile_map_view.cpp
   values/object.cpp
   values/array.cpp
   values/object.cpp
@@ -54,14 +67,11 @@ set(SOURCES
   sounds/noise_device.cpp
   sounds/short_noise_device.cpp
   sounds/scale_table.cpp
-  weak_reference_counter.cpp
-  instruction_queue.cpp
   processes/timer.cpp
   processes/clock.cpp
   processes/task.cpp
   processes/process.cpp
   utility.cpp
-  utility_sincos.cpp
   control.cpp
 )
 

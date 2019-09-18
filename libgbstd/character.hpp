@@ -1,10 +1,11 @@
-#ifndef gbstd_text_HPP
-#define gbstd_text_HPP
+#ifndef gbstd_character_HPP
+#define gbstd_character_HPP
 
 
-#include"libgbstd/control.hpp"
 #include<string>
 #include<cstring>
+#include<vector>
+#include"libgbstd/utility.hpp"
 
 
 
@@ -28,6 +29,27 @@ glyph
 
 
 const glyph&  get_glyph(char16_t  c) noexcept;
+
+
+
+
+class
+string_form
+{
+  char  m_buffer[512] = {0};
+
+  int  m_length=0;
+
+public:
+  string_form() noexcept{}
+  string_form(const char*  fmt, ...) noexcept;
+
+  const char*  operator()(const char*  fmt, ...) noexcept;
+  const char*  operator()() const noexcept{return m_buffer;}
+
+  int  size() const noexcept{return m_length;}
+
+};
 
 
 

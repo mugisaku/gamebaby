@@ -3,6 +3,7 @@
 
 
 #include"libgbstd/utility.hpp"
+#include"libgbstd/misc.hpp"
 #include"libgbstd/image.hpp"
 #include<vector>
 

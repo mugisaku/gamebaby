@@ -3,6 +3,8 @@
 
 
 #include"libgbstd/utility.hpp"
+#include"libgbstd/misc.hpp"
+#include"libgbstd/math.hpp"
 
 
 namespace gbstd{

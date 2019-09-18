@@ -1,5 +1,5 @@
-#ifndef GMBB_GUI_IMAGE_HPP
-#define GMBB_GUI_IMAGE_HPP
+#ifndef GBSTD_IMAGE_HPP
+#define GBSTD_IMAGE_HPP
 
 
 #include"libgbstd/utility.hpp"
@@ -55,6 +55,190 @@ constexpr color       green = color(0,7,0);
 constexpr color        blue = color(0,0,7);
 constexpr color      yellow = color(7,7,0);
 }
+
+
+
+
+template<typename  T>
+struct
+basic_point
+{
+  T  x;
+  T  y;
+
+  constexpr basic_point(T  x_=0, T  y_=0) noexcept:
+  x(x_),
+  y(y_){}
+
+  template<typename  U>
+  constexpr basic_point(basic_point<U>  rhs) noexcept:
+  x(rhs.x),
+  y(rhs.y){}
+
+  template<typename  U>
+  basic_point&  operator=(basic_point<U>  rhs) noexcept
+  {
+    x = static_cast<T>(rhs.x);
+    y = static_cast<T>(rhs.y);
+
+    return *this;
+  }
+
+
+  constexpr bool  operator==(basic_point  rhs) const noexcept
+  {
+    return(x == rhs.x) &&
+          (y == rhs.y);
+  }
+
+  constexpr bool  operator!=(basic_point  rhs) const noexcept
+  {
+    return(x != rhs.x) ||
+          (y != rhs.y);
+  }
+
+  constexpr basic_point  operator+(basic_point  rhs) const noexcept{return basic_point(x+rhs.x,y+rhs.y);}
+  constexpr basic_point  operator-(basic_point  rhs) const noexcept{return basic_point(x-rhs.x,y-rhs.y);}
+  constexpr basic_point  operator*(basic_point  rhs) const noexcept{return basic_point(x*rhs.x,y*rhs.y);}
+  constexpr basic_point  operator/(basic_point  rhs) const noexcept{return basic_point(x/rhs.x,y/rhs.y);}
+  constexpr basic_point  operator%(basic_point  rhs) const noexcept{return basic_point(x%rhs.x,y%rhs.y);}
+  constexpr basic_point  operator-() const noexcept{return basic_point(-x,-y);}
+
+  basic_point&  operator+=(basic_point  rhs) noexcept{  x += rhs.x;  y += rhs.y;  return *this;}
+  basic_point&  operator-=(basic_point  rhs) noexcept{  x -= rhs.x;  y -= rhs.y;  return *this;}
+  basic_point&  operator*=(basic_point  rhs) noexcept{  x *= rhs.x;  y *= rhs.y;  return *this;}
+  basic_point&  operator/=(basic_point  rhs) noexcept{  x /= rhs.x;  y /= rhs.y;  return *this;}
+  basic_point&  operator%=(basic_point  rhs) noexcept{  x %= rhs.x;  y %= rhs.y;  return *this;}
+
+  void  print() const noexcept{printf("{x:%3d,y:%3d}",static_cast<int>(x),static_cast<int>(y));}
+
+};
+
+
+using point = basic_point<int>;
+
+
+struct
+rectangle
+{
+  int  x;
+  int  y;
+  int  w;
+  int  h;
+
+  static constexpr int  abs(int  i) noexcept{return (i < 0)? -i:i;}
+
+  constexpr rectangle(int  x_=0, int  y_=0, int  w_=0, int  h_=0) noexcept:
+  x(x_), y(y_), w(w_), h(h_){}
+
+  constexpr rectangle(point  pt, int  w_=0, int  h_=0) noexcept:
+  x(pt.x), y(pt.y), w(w_), h(h_){}
+
+  constexpr rectangle(point  a, point  b) noexcept:
+  x(std::min(a.x,b.x)), y(std::min(a.y,b.y)), w(1+abs(a.x-b.x)), h(1+abs(a.y-b.y)){}
+
+  constexpr bool  test_point(const point&  pt) const noexcept
+  {
+    return((pt.x >= (x  )) &&
+           (pt.y >= (y  )) &&
+           (pt.x <  (x+w)) &&
+           (pt.y <  (y+h)));
+  }
+
+
+  constexpr int  get_x()     const noexcept{return x  ;}
+  constexpr int  get_x_end() const noexcept{return x+w;}
+  constexpr int  get_y()     const noexcept{return y  ;}
+  constexpr int  get_y_end() const noexcept{return y+h;}
+
+  constexpr int  get_w() const noexcept{return w;}
+  constexpr int  get_h() const noexcept{return h;}
+
+  static constexpr int  get_left(const rectangle&  a, const rectangle&  b) noexcept
+  {
+    return (a.x < b.x)? b.x:a.x;
+ }
+
+
+  static constexpr int  get_top(const rectangle&  a, const rectangle&  b) noexcept
+  {
+    return (a.y < b.y)? b.y:a.y;
+  }
+
+
+  static constexpr int  get_right(const rectangle&  a, const rectangle&  b) noexcept
+  {
+    return (a.get_x_end() < b.get_x_end())? a.get_x_end():b.get_x_end();
+  }
+
+
+  static constexpr int  get_bottom(const rectangle&  a, const rectangle&  b) noexcept
+  {
+    return (a.get_y_end() < b.get_y_end())? a.get_y_end():b.get_y_end();
+  }
+
+
+  static constexpr rectangle  get_overlap(const rectangle&  a, const rectangle&  b) noexcept
+  {
+    return rectangle(get_left(a,b),
+                     get_top(a,b),
+                     get_right(a,b)-get_left(a,b)+1,
+                     get_bottom(a,b)-get_top(a,b)+1);
+  }
+
+  constexpr rectangle  operator&(const rectangle&  rhs) const noexcept
+  {
+    return get_overlap(*this,rhs);
+  }
+
+  rectangle&  operator&=(const rectangle&  rhs) noexcept
+  {
+           *this = (*this)&rhs;
+    return *this              ;
+  }
+
+  void  print() const noexcept{printf("{x:%3d,y:%3d,w:%3d,h:%3d}",x,y,w,h);}
+
+};
+
+
+
+
+struct
+area
+{
+  int     top=0;
+  int    left=0;
+  int   right=0;
+  int  bottom=0;
+
+
+  static constexpr bool  test_x_collision(const area&  a, const area&  b) noexcept
+  {
+      if(a.left < b.left){return a.right >= b.left;}
+    else                 {return b.right >= a.left;}
+  }
+
+
+  static constexpr bool  test_y_collision(const area&  a, const area&  b) noexcept
+  {
+      if(a.top < b.top){return a.bottom >= b.top;}
+    else               {return b.bottom >= a.top;}
+  }
+
+
+  static constexpr bool  test_collision(const area&  a, const area&  b) noexcept
+  {
+    return(test_x_collision(a,b) &&
+           test_y_collision(a,b));
+  }
+
+  void  print() const noexcept
+  {
+    printf("area:{top:%4d,left:%4d,right:%4d,bottom:%4d}\n",top,left,right,bottom);
+  }
+
+};
 
 
 
