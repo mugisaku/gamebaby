@@ -10,120 +10,136 @@ namespace gbstd{
 
 
 
-uint32_t  g_time;
-
-std::vector<point>  g_point_buffer;
-
 std::vector<uint8_t>  g_dropped_file;
-
-bool  g_needed_to_redraw;
-
-bool  g_restain;
-
-user_input  g_modified_input;
-user_input           g_input;
 
 
 namespace{
-uint32_t  g_user_time;
-uint32_t  g_anti_time;
-uint32_t  g_stop_time;
-uint32_t  g_vtime;
-bool  g_user_time_flowing;
-uint32_t  g_unbarrier_time;
+bool  g_redraw_flag=true;
+
+uint32_t  g_time;
+
+key_state  g_previous_keys;
+key_state  g_modified_keys;
+key_state           g_keys;
+key_state      g_null_keys;
+
+uint32_t  g_unbarrier_timepoint;
+
+point  g_a_point;
+point  g_b_point;
+
+
+image   g_screen_image;
+canvas  g_screen_canvas;
+
+
+}
+
+
+
+
+void
+set_redraw_flag() noexcept
+{
+  g_redraw_flag = true;
 }
 
 
 void
-barrier_input(uint32_t  interval) noexcept
+unset_redraw_flag() noexcept
 {
-  g_unbarrier_time = g_time+interval;
+  g_redraw_flag = false;
 }
 
 
 bool
-test_input_barrier() noexcept
+test_redraw_flag() noexcept
 {
-  return (g_time <= g_unbarrier_time);
+  return g_redraw_flag;
 }
 
 
-bool
-is_user_time_flowing() noexcept
+
+
+uint32_t    get_time(           ) noexcept{return g_time;}
+void     update_time(uint32_t  t) noexcept{g_time = t;}
+
+const key_state&
+get_modified_keys() noexcept
 {
-  return g_user_time_flowing;
+  return g_modified_keys;
+}
+
+
+const key_state&
+get_keys() noexcept
+{
+  return (g_time >= g_unbarrier_timepoint)? g_keys:g_null_keys;
 }
 
 
 void
-start_user_time() noexcept
+update_keys(const key_state&  keys) noexcept
 {
-    if(!g_user_time_flowing)
-    {
-      g_user_time_flowing = true;
+  g_modified_keys = g_previous_keys^keys;
 
-      g_anti_time += g_time-g_stop_time;
+  g_previous_keys = g_keys       ;
+                    g_keys = keys;
+
+    if(g_modified_keys)
+    {
+      g_unbarrier_timepoint = 0;
     }
 }
 
 
 void
-stop_user_time() noexcept
+barrier_keys(uint32_t  interval) noexcept
 {
-    if(g_user_time_flowing)
-    {
-      g_user_time_flowing = false;
-
-      g_stop_time = g_time            ;
-      g_user_time = g_time-g_anti_time;
-    }
-}
-
-
-uint32_t
-get_user_time() noexcept
-{
-  return g_user_time_flowing? (g_time-g_anti_time):g_user_time;
-}
-
-
-uint32_t
-get_system_time() noexcept
-{
-  return g_time;
+  g_unbarrier_timepoint = g_time+interval;
 }
 
 
 void
-add_virtual_time(uint32_t  ms) noexcept
+update_point(point  pt) noexcept
 {
-  g_vtime += ms;
+  g_b_point = pt;
 }
 
 
-uint32_t
-get_virtual_time() noexcept
+liner
+make_liner() noexcept
 {
-  return g_vtime;
+  liner  ln(g_a_point,g_b_point);
+
+  g_a_point = g_b_point;
+
+  return ln;
 }
 
 
-void
-print_time_status() noexcept
+
+
+const canvas&
+set_screen_size(int  w, int  h) noexcept
 {
-  uint32_t  at = g_anti_time;
+  g_screen_image.resize(w,h);
 
-    if(!g_user_time_flowing)
-    {
-      at += g_time-g_stop_time;
-    }
+  return g_screen_canvas.assign(g_screen_image);
+}
 
 
-  printf("sys:%8d, usr:%8d, stp:%8d, %s\n",
-    g_time,
-    get_user_time(),
-    at,
-    g_user_time_flowing?"":"stopped");
+const canvas&
+get_screen_canvas() noexcept
+{
+  return g_screen_canvas;
+}
+
+
+const image&
+get_screen_image() noexcept
+{
+  return g_screen_image;
 }
 
 

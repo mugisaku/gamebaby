@@ -260,6 +260,12 @@ public:
   liner(int  x0=0, int  y0=0, int  x1=0, int  y1=0) noexcept{reset(x0,y0,x1,y1);}
   liner(point  a, point  b) noexcept{reset(a,b);}
 
+  operator bool() const noexcept{return !get_distance();}
+
+  liner&  operator++() noexcept{  step();  return *this;}
+
+  point  operator*() const noexcept{return point(get_x(),get_y());}
+
   void  reset(int  x0=0, int  y0=0, int  x1=0, int  y1=0) noexcept;
   void  reset(point  a, point  b) noexcept{reset(a.x,a.y,b.x,b.y);}
 
@@ -273,6 +279,18 @@ public:
 };
 
 
+struct
+line
+{
+  point  a;
+  point  b;
+
+  constexpr line(int  x0=0, int  y0=0, int  x1=0, int  y1=0) noexcept: a(x0,y0), b(x1,y1){}
+  constexpr line(point  a_, point  b_) noexcept: a(a_), b(b_){}
+
+  liner  make_liner() const noexcept{return liner(a,b);}
+
+};
 
 
 class

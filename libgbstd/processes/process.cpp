@@ -140,8 +140,10 @@ operator()() noexcept
 
   m_status.set(flags::busy);
 
-  auto  diff = g_time-m_last_time         ;
-                      m_last_time = g_time;
+  auto  tm = get_time();
+
+  auto  diff = tm-m_last_time     ;
+                  m_last_time = tm;
 
   update_clocks(diff);
   process_timers(diff);
@@ -171,13 +173,13 @@ operator()() noexcept
 
   m_status.unset(flags::interrupt);
 
-    if(g_time >= m_next_time)
+    if(tm >= m_next_time)
     {
       m_canvas.fill(m_background_color);
 
       process_tasks(&m_canvas);
 
-      m_next_time = g_time+m_interval;
+      m_next_time = tm+m_interval;
 
       m_status.unset(flags::busy);
 

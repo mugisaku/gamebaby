@@ -10,7 +10,7 @@
 namespace sdl{
 
 
-void  update_screen(const gbstd::canvas&  cv) noexcept;
+void  update_screen() noexcept;
 
 void  delay(uint32_t  ms) noexcept;
 
@@ -44,15 +44,11 @@ void  play_sound(const char*  name) noexcept;
 void  start_sound_playing() noexcept;
 void   stop_sound_playing() noexcept;
 
-void  resize_screen(int  w, int  h) noexcept;
-
 void  screenshot() noexcept;
 
 void  start_screen_recording() noexcept;
 void    end_screen_recording() noexcept;
 bool   test_screen_recording() noexcept;
-
-gbstd::canvas  make_screen_canvas() noexcept;
 
 void  update_control() noexcept;
 

@@ -83,7 +83,7 @@ void
 color_holder::
 on_mouse_act(gbstd::point  mouse_pos) noexcept
 {
-    if(gbstd::g_input.test_mouse_left())
+    if(gbstd::get_keys().test_mol())
     {
       m_index = mouse_pos.y/rect_size;
 

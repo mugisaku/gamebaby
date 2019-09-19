@@ -66,18 +66,21 @@ read_forward() noexcept
             {
               auto  ts = recptr->get_timestamp();
 
-                if(ts >= m_tail_ts)
+                if(ts < m_head_ts)
                 {
-                  m_temporary_table.emplace_back(nd.get_observer(),*recptr);
-
-                  nd.advance_head_index();
-
-                  continue;
+                  break;
                 }
+
+
+              m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+
+              nd.advance_head_index();
             }
 
-
-          break;
+          else
+            {
+              break;
+            }
         }
     }
 
@@ -132,18 +135,21 @@ read_backward() noexcept
             {
               auto  ts = recptr->get_timestamp();
 
-                if(ts <= m_tail_ts)
+                if(ts < m_tail_ts)
                 {
-                  m_temporary_table.emplace_back(nd.get_observer(),*recptr);
-
-                  nd.advance_pretail_index();
-
-                  continue;
+                  break;
                 }
+
+
+              m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+
+              nd.advance_pretail_index();
             }
 
-
-          break;
+          else
+            {
+              break;
+            }
         }
     }
 

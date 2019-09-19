@@ -14,125 +14,128 @@ namespace gbstd{
 
 
 class
-user_input
+key_state
 {
-  int  m_state;
+  int  m_value;
 
   struct flags{
-    static constexpr int     up = 0x001;
-    static constexpr int   left = 0x002;
-    static constexpr int  right = 0x004;
-    static constexpr int   down = 0x008;
-    static constexpr int  shift = 0x010;
-    static constexpr int  start = 0x020;
-    static constexpr int      p = 0x100;
-    static constexpr int      n = 0x200;
-    static constexpr int      l = 0x400;
-    static constexpr int      r = 0x800;
+    static constexpr int  diu = 0x001;
+    static constexpr int  dil = 0x002;
+    static constexpr int  dir = 0x004;
+    static constexpr int  did = 0x008;
+    static constexpr int  acu = 0x010;
+    static constexpr int  acl = 0x020;
+    static constexpr int  acr = 0x040;
+    static constexpr int  acd = 0x080;
+    static constexpr int  opl = 0x100;
+    static constexpr int  opr = 0x200;
+    static constexpr int  shl = 0x400;
+    static constexpr int  shr = 0x800;
 
-    static constexpr int  mouse_left  = 0x1000;
-    static constexpr int  mouse_right = 0x2000;
+    static constexpr int  mol = 0x1000;
+    static constexpr int  mor = 0x2000;
+
   };
 
-  bool   test(int  flag) const noexcept{return m_state&flag;}
+  bool   test(int  flag) const noexcept{return m_value&flag;}
 
-  void    set(int  flag) noexcept{m_state |=  flag;}
-  void  unset(int  flag) noexcept{m_state &= ~flag;}
+  key_state&    set(int  flag) noexcept{  m_value |=  flag;  return *this;}
+  key_state&  unset(int  flag) noexcept{  m_value &= ~flag;  return *this;}
 
 public:
-  user_input(int  state=0) noexcept: m_state(state){}
+  key_state(int  v=0) noexcept: m_value(v){}
 
-  user_input  operator^(user_input  rhs) const noexcept{return user_input(m_state^rhs.m_state);}
+  key_state  operator^(key_state  rhs) const noexcept{return key_state(m_value^rhs.m_value);}
 
-  operator bool() const noexcept{return m_state;}
+  operator bool() const noexcept{return m_value;}
 
-  void  clear() noexcept{m_state = 0;}
+  void  clear() noexcept{m_value = 0;}
 
-  int  get_code() const noexcept{return m_state;}
+  int  get_value() const noexcept{return m_value;}
 
-  bool    test_all() const noexcept{return m_state;}
-  bool     test_up() const noexcept{return test(flags::up);}
-  bool   test_left() const noexcept{return test(flags::left);}
-  bool  test_right() const noexcept{return test(flags::right);}
-  bool   test_down() const noexcept{return test(flags::down);}
+  bool  test_acu() const noexcept{return test(flags::acu);}
+  bool  test_acl() const noexcept{return test(flags::acl);}
+  bool  test_acr() const noexcept{return test(flags::acr);}
+  bool  test_acd() const noexcept{return test(flags::acd);}
 
-  bool   test_mouse_left() const noexcept{return test(flags::mouse_left);}
-  bool  test_mouse_right() const noexcept{return test(flags::mouse_right);}
+  bool  test_diu() const noexcept{return test(flags::diu);}
+  bool  test_dil() const noexcept{return test(flags::dil);}
+  bool  test_dir() const noexcept{return test(flags::dir);}
+  bool  test_did() const noexcept{return test(flags::did);}
 
-  bool  test_p() const noexcept{return test(flags::p);}
-  bool  test_n() const noexcept{return test(flags::n);}
-  bool  test_l() const noexcept{return test(flags::l);}
-  bool  test_r() const noexcept{return test(flags::r);}
+  bool  test_opl() const noexcept{return test(flags::opl);}
+  bool  test_opr() const noexcept{return test(flags::opr);}
+  bool  test_shl() const noexcept{return test(flags::shl);}
+  bool  test_shr() const noexcept{return test(flags::shr);}
 
-  bool  test_shift() const noexcept{return test(flags::shift);}
-  bool  test_start() const noexcept{return test(flags::start);}
-
-
-  void     set_up() noexcept{set(flags::up);}
-  void   set_left() noexcept{set(flags::left);}
-  void  set_right() noexcept{set(flags::right);}
-  void   set_down() noexcept{set(flags::down);}
-
-  void   set_mouse_left() noexcept{set(flags::mouse_left);}
-  void  set_mouse_right() noexcept{set(flags::mouse_right);}
-
-  void  set_p() noexcept{set(flags::p);}
-  void  set_n() noexcept{set(flags::n);}
-
-  void  set_l() noexcept{set(flags::l);}
-  void  set_r() noexcept{set(flags::r);}
-
-  void  set_shift() noexcept{set(flags::shift);}
-  void  set_start() noexcept{set(flags::start);}
+  bool  test_mol() const noexcept{return test(flags::mol);}
+  bool  test_mor() const noexcept{return test(flags::mor);}
 
 
-  void     unset_up() noexcept{unset(flags::up);}
-  void   unset_left() noexcept{unset(flags::left);}
-  void  unset_right() noexcept{unset(flags::right);}
-  void   unset_down() noexcept{unset(flags::down);}
+  key_state&  set_diu() noexcept{return set(flags::diu);}
+  key_state&  set_dil() noexcept{return set(flags::dil);}
+  key_state&  set_dir() noexcept{return set(flags::dir);}
+  key_state&  set_did() noexcept{return set(flags::did);}
 
-  void   unset_mouse_left() noexcept{unset(flags::mouse_left);}
-  void  unset_mouse_right() noexcept{unset(flags::mouse_right);}
+  key_state&  set_acu() noexcept{return set(flags::acu);}
+  key_state&  set_acl() noexcept{return set(flags::acl);}
+  key_state&  set_acr() noexcept{return set(flags::acr);}
+  key_state&  set_acd() noexcept{return set(flags::acd);}
 
-  void  unset_p() noexcept{unset(flags::p);}
-  void  unset_n() noexcept{unset(flags::n);}
-  void  unset_l() noexcept{unset(flags::l);}
-  void  unset_r() noexcept{unset(flags::r);}
+  key_state&  set_opl() noexcept{return set(flags::opl);}
+  key_state&  set_opr() noexcept{return set(flags::opr);}
+  key_state&  set_shl() noexcept{return set(flags::shl);}
+  key_state&  set_shr() noexcept{return set(flags::shr);}
 
-  void  unset_shift() noexcept{unset(flags::shift);}
-  void  unset_start() noexcept{unset(flags::start);}
+  key_state&  set_mol() noexcept{return set(flags::mol);}
+  key_state&  set_mor() noexcept{return set(flags::mor);}
+
+
+  key_state&  unset_diu() noexcept{return unset(flags::diu);}
+  key_state&  unset_dil() noexcept{return unset(flags::dil);}
+  key_state&  unset_dir() noexcept{return unset(flags::dir);}
+  key_state&  unset_did() noexcept{return unset(flags::did);}
+
+  key_state&  unset_acu() noexcept{return unset(flags::acu);}
+  key_state&  unset_acl() noexcept{return unset(flags::acl);}
+  key_state&  unset_acr() noexcept{return unset(flags::acr);}
+  key_state&  unset_acd() noexcept{return unset(flags::acd);}
+
+  key_state&  unset_opl() noexcept{return unset(flags::opl);}
+  key_state&  unset_opr() noexcept{return unset(flags::opr);}
+  key_state&  unset_shl() noexcept{return unset(flags::shl);}
+  key_state&  unset_shr() noexcept{return unset(flags::shr);}
+
+  key_state&  unset_mol() noexcept{return unset(flags::mol);}
+  key_state&  unset_mor() noexcept{return unset(flags::mor);}
 
 };
 
 
-extern uint32_t  g_time;
 
-extern std::vector<point>  g_point_buffer;
+
+void    set_redraw_flag() noexcept;
+void  unset_redraw_flag() noexcept;
+bool   test_redraw_flag() noexcept;
+
+uint32_t     get_time(           ) noexcept;
+void      update_time(uint32_t  t) noexcept;
+
+const key_state&  get_modified_keys(                      ) noexcept;
+const key_state&           get_keys(                      ) noexcept;
+void                    update_keys(const key_state&  keys) noexcept;
+
+void  barrier_keys(uint32_t  interval=240) noexcept;
+
+void   update_point(point  pt) noexcept;
+liner  make_liner() noexcept;
+
+const canvas&  set_screen_size(int  w, int  h) noexcept;
+const canvas&  get_screen_canvas() noexcept;
+const image&    get_screen_image() noexcept;
 
 extern std::vector<uint8_t>  g_dropped_file;
 
-extern bool  g_needed_to_redraw;
-
-extern user_input  g_modified_input;
-extern user_input           g_input;
-
-void  barrier_input(uint32_t  interval=240) noexcept;
-bool  test_input_barrier() noexcept;
-
-bool  is_user_time_flowing() noexcept;
-
-void  start_user_time() noexcept;
-void   stop_user_time() noexcept;
-
-uint32_t    get_user_time() noexcept;
-uint32_t  get_system_time() noexcept;
-
-
-void  add_virtual_time(uint32_t  ms) noexcept;
-
-uint32_t  get_virtual_time() noexcept;
-
-void  print_time_status() noexcept;
 
 
 }

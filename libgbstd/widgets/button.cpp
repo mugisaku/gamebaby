@@ -62,7 +62,7 @@ on_mouse_act(point  mouse_pos) noexcept
 {
     if(is_released())
     {
-        if(g_input.test_mouse_left())
+        if(get_keys().test_mol())
         {
           m_state = state::pressed;
 
@@ -78,7 +78,7 @@ on_mouse_act(point  mouse_pos) noexcept
 
   else
     {
-        if(!g_input.test_mouse_left())
+        if(!get_keys().test_mol())
         {
           on_mouse_leave();
         }

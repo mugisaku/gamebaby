@@ -27,8 +27,8 @@ on_mouse_act(point  pt) noexcept
 
   auto  flag = 0x80>>m_cursor_position.x;
 
-       if(g_input.test_mouse_left() ){  ln |=  flag;  m_editor.m_chrsel.request_redraw();  m_editor.m_cmbsel.request_redraw();}
-  else if(g_input.test_mouse_right()){  ln &= ~flag;  m_editor.m_chrsel.request_redraw();  m_editor.m_cmbsel.request_redraw();}
+       if(get_keys().test_mol()){  ln |=  flag;  m_editor.m_chrsel.request_redraw();  m_editor.m_cmbsel.request_redraw();}
+  else if(get_keys().test_mor()){  ln &= ~flag;  m_editor.m_chrsel.request_redraw();  m_editor.m_cmbsel.request_redraw();}
 
 
   request_redraw();

@@ -174,9 +174,9 @@ check() noexcept
 {
     if(m_points.size())
     {
-        if(gbstd::g_time >= m_next_time)
+        if(gbstd::get_time() >= m_next_time)
         {
-          m_next_time = (gbstd::g_time+m_delay_time);
+          m_next_time = (gbstd::get_time()+m_delay_time);
 
             if(++m_index >= m_points.size())
             {

@@ -71,7 +71,7 @@ on_mouse_act(point  mouse_pos) noexcept
 {
     if(m_callback)
     {
-        if(g_input.test_mouse_left())
+        if(get_keys().test_mol())
         {
           m_whether_touched = true;
         }

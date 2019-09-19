@@ -65,11 +65,11 @@ on_mouse_act(point  mouse_pos) noexcept
     }
 
 
-    if(g_modified_input.test_mouse_left())
+    if(get_modified_keys().test_mol())
     {
       m_current_pos = current;
 
-        if(g_input.test_mouse_left())
+        if(get_keys().test_mol())
         {
           call(menu_event::kind::press);
         }

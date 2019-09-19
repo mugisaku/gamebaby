@@ -210,7 +210,7 @@ void
 checkbox::
 on_mouse_act(point  mouse_pos) noexcept
 {
-    if(!g_input.test_mouse_left() && g_modified_input.test_mouse_left())
+    if(!get_keys().test_mol() && get_modified_keys().test_mol())
     {
         if(m_data->m_radio_mark)
         {

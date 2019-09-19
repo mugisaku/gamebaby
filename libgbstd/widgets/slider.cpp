@@ -134,7 +134,7 @@ void
 slider::
 on_mouse_act(point  mouse_pos) noexcept
 {
-    if(g_input.test_mouse_left())
+    if(get_keys().test_mol())
     {
       int  v = is_vertical()? mouse_pos.y:mouse_pos.x;
 

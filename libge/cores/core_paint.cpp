@@ -170,7 +170,7 @@ operator()() noexcept
     switch(m_mode)
     {
   case(mode::draw_dot):
-        if(gbstd::g_input.test_mouse_left())
+        if(gbstd::get_keys().test_mol())
         {
           modify_dot(cv,m_drawing_color,m_drawing_point);
 
@@ -178,7 +178,7 @@ operator()() noexcept
         }
 
       else
-        if(gbstd::g_input.test_mouse_right())
+        if(gbstd::get_keys().test_mor())
         {
           modify_dot(cv,gbstd::color(),m_drawing_point);
 
@@ -188,7 +188,7 @@ operator()() noexcept
   case(mode::draw_line):
         if(m_pointing_count)
         {
-            if(gbstd::g_input.test_mouse_left())
+            if(gbstd::get_keys().test_mol())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -200,7 +200,7 @@ operator()() noexcept
             }
 
           else
-            if(gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mor())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -221,8 +221,8 @@ operator()() noexcept
 
       else
         {
-            if(gbstd::g_input.test_mouse_left() ||
-               gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mol() ||
+               gbstd::get_keys().test_mor())
             {
               m_saved_drawing_point = m_drawing_point;
 
@@ -235,7 +235,7 @@ operator()() noexcept
         {
           gbstd::rectangle  rect(m_saved_drawing_point,m_drawing_point);
 
-            if(gbstd::g_input.test_mouse_left())
+            if(gbstd::get_keys().test_mol())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -247,7 +247,7 @@ operator()() noexcept
             }
 
           else
-            if(gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mor())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -268,8 +268,8 @@ operator()() noexcept
 
       else
         {
-            if(gbstd::g_input.test_mouse_left() ||
-               gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mol() ||
+               gbstd::get_keys().test_mor())
             {
               m_saved_drawing_point = m_drawing_point;
 
@@ -282,7 +282,7 @@ operator()() noexcept
         {
           gbstd::rectangle  rect(m_saved_drawing_point,m_drawing_point);
 
-            if(gbstd::g_input.test_mouse_left())
+            if(gbstd::get_keys().test_mol())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -294,7 +294,7 @@ operator()() noexcept
             }
 
           else
-            if(gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mor())
             {
                 if(!m_drawing_is_fixed)
                 {
@@ -315,8 +315,8 @@ operator()() noexcept
 
       else
         {
-            if(gbstd::g_input.test_mouse_left() ||
-               gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mol() ||
+               gbstd::get_keys().test_mor())
             {
               m_saved_drawing_point = m_drawing_point;
 
@@ -325,13 +325,13 @@ operator()() noexcept
         }
       break;
   case(mode::fill_area):
-        if(gbstd::g_input.test_mouse_left())
+        if(gbstd::get_keys().test_mol())
         {
           fill_area(m_drawing_color);
         }
 
       else
-        if(gbstd::g_input.test_mouse_right())
+        if(gbstd::get_keys().test_mor())
         {
           fill_area(gbstd::color());
         }
@@ -339,7 +339,7 @@ operator()() noexcept
   case(mode::select):
         if(m_pointing_count)
         {
-            if(gbstd::g_input.test_mouse_left())
+            if(gbstd::get_keys().test_mol())
             {
               m_operation_rect = gbstd::rectangle(m_saved_drawing_point,m_drawing_point);
 
@@ -354,7 +354,7 @@ operator()() noexcept
 
       else
         {
-            if(gbstd::g_input.test_mouse_left())
+            if(gbstd::get_keys().test_mol())
             {
               m_saved_drawing_point = m_drawing_point;
 
@@ -362,7 +362,7 @@ operator()() noexcept
             }
 
           else
-            if(gbstd::g_input.test_mouse_right())
+            if(gbstd::get_keys().test_mor())
             {
               auto  cv = m_core.get_canvas();
 
@@ -373,7 +373,7 @@ operator()() noexcept
         }
       break;
   case(mode::paste):
-        if(gbstd::g_input.test_mouse_left())
+        if(gbstd::get_keys().test_mol())
         {
           m_drawing_is_fixed = true;
         }
@@ -394,7 +394,7 @@ operator()() noexcept
       m_saved_drawing_point = m_drawing_point;
       break;
   case(mode::layer):
-        if(gbstd::g_input.test_mouse_left())
+        if(gbstd::get_keys().test_mol())
         {
           m_drawing_is_fixed = true;
         }

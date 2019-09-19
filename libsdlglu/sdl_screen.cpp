@@ -12,8 +12,6 @@ namespace{
 
 
 SDL_Window*      g_window;
-SDL_Renderer*  g_renderer;
-SDL_Texture*    g_texture;
 SDL_Surface*    g_surface;
 
 bool  g_recording_flag;
@@ -22,59 +20,31 @@ gbpng::animation_builder
 g_apng_builder;
 
 
-int  g_width;
-int  g_height;
-
-gbstd::image
-g_image;
-
-SDL_Rect  g_dst_rect;
-
 uint32_t
 g_color_table[0b1000000000];
 
 
-void
-transfer(const gbstd::canvas&  cv, uint8_t*  p_base, int  pitch) noexcept
-{
-    for(int  y = 0;  y < g_height;  ++y)
-    {
-      auto  p = reinterpret_cast<uint16_t*>(p_base)        ;
-                                            p_base += pitch;
-
-      auto  src = cv.get_pixel_pointer(0,y);
-
-        for(int  x = 0;  x < g_width;  ++x)
-        {
-          *p++ = src++->color.code;
-/*
-          auto  c = src.get_const_pixel(x,y).color;
-
-          *p++ = c.get_r255();
-          *p++ = c.get_g255();
-          *p++ = c.get_b255();
-*/
-        }
-    }
-}
-
-
 template<typename  T>
 void
-transfer(const gbstd::canvas&  cv) noexcept
+transfer() noexcept
 {
+  const gbstd::canvas&  cv = gbstd::get_screen_canvas();
+
   auto  p_base = static_cast<uint8_t*>(g_surface->pixels);
 
   int  pitch = g_surface->pitch;
 
-    for(int  y = 0;  y < g_height;  ++y)
+  auto  w = g_surface->w;
+  auto  h = g_surface->h;
+
+    for(int  y = 0;  y < h;  ++y)
     {
       auto  p = p_base         ;
                 p_base += pitch;
 
       auto  src = cv.get_pixel_pointer(0,y);
 
-        for(int  x = 0;  x < g_width;  ++x)
+        for(int  x = 0;  x < w;  ++x)
         {
           *reinterpret_cast<T*>(p) = g_color_table[src++->color.code&0x7FFF];
 
@@ -90,16 +60,16 @@ transfer(const gbstd::canvas&  cv) noexcept
 
 
 void
-update_screen(const gbstd::canvas&  cv) noexcept
+update_screen() noexcept
 {
     if(SDL_LockSurface(g_surface) == 0)
     {
         switch(g_surface->format->BytesPerPixel)
         {
-      case(1): transfer<uint8_t >(cv);break;
-      case(2): transfer<uint16_t>(cv);break;
-      case(3): transfer<uint32_t>(cv);break;
-      case(4): transfer<uint32_t>(cv);break;
+      case(1): transfer<uint8_t >();break;
+      case(2): transfer<uint16_t>();break;
+      case(3): transfer<uint32_t>();break;
+      case(4): transfer<uint32_t>();break;
         }
 
 
@@ -107,20 +77,23 @@ update_screen(const gbstd::canvas&  cv) noexcept
 
       SDL_UnlockSurface(g_surface);
 
-      gbstd::g_needed_to_redraw = false;
+      gbstd::unset_redraw_flag();
     }
 
 
     if(g_recording_flag)
     {
-      gbpng::direct_color_image  img(g_width,g_height);
+      auto  w = g_surface->w;
+      auto  h = g_surface->h;
+
+      gbpng::direct_color_image  img(w,h);
 
       auto  dst = img.get_row_pointer(0);
-      auto  src = g_image.get_pixel_pointer(0,0);
+      auto  src = gbstd::get_screen_canvas().get_pixel_pointer(0,0);
 
-        for(int  y = 0;  y < g_height;  ++y)
+        for(int  y = 0;  y < h;  ++y)
         {
-            for(int  x = 0;  x < g_width;  ++x)
+            for(int  x = 0;  x < w;  ++x)
             {
               auto  color = (*src++).color;
 
@@ -163,8 +136,6 @@ quit() noexcept
     }
 
 
-//  SDL_DestroyTexture(g_texture);
-//  SDL_DestroyRenderer(g_renderer);
   SDL_DestroyWindow(g_window);
 
   SDL_Quit();
@@ -176,21 +147,11 @@ quit() noexcept
 void
 init(int  w, int  h, double  scale) noexcept
 {
-  g_width  = w;
-  g_height = h;
-
-  g_dst_rect.x = 0;
-  g_dst_rect.y = 0;
-  g_dst_rect.w = w*scale;
-  g_dst_rect.h = h*scale;
-
-
   SDL_Init(SDL_INIT_VIDEO);
 
   g_window = SDL_CreateWindow("GAME BABY - " __DATE__,SDL_WINDOWPOS_CENTERED,
                                                       SDL_WINDOWPOS_CENTERED,
-                                                      g_dst_rect.w,
-                                                      g_dst_rect.h,0);
+                                                      w,h,0);
 
     if(!g_window)
     {
@@ -198,8 +159,6 @@ init(int  w, int  h, double  scale) noexcept
     }
 
 
-//  g_renderer = SDL_CreateRenderer(g_window,-1,SDL_RENDERER_ACCELERATED);
-//  g_texture  = SDL_CreateTexture(g_renderer,SDL_PIXELFORMAT_ARGB1555,SDL_TEXTUREACCESS_STREAMING,w,h);
   g_surface  = SDL_GetWindowSurface(g_window);
 
     for(int  b = 0;  b < 8;  ++b){
@@ -211,7 +170,7 @@ init(int  w, int  h, double  scale) noexcept
     }}}
 
 
-  g_image.resize(w,h);
+  gbstd::set_screen_size(w,h);
 }
 
 
@@ -235,13 +194,7 @@ resize_screen(int  w, int  h) noexcept
   else
     {
       SDL_SetWindowSize(g_window,w,h);
-
-      SDL_DestroyTexture(g_texture);
-                         g_texture  = SDL_CreateTexture(g_renderer,SDL_PIXELFORMAT_ARGB1555,SDL_TEXTUREACCESS_STREAMING,w,h);
     }
-
-
-  gbstd::g_needed_to_redraw = true;
 }
 
 
@@ -249,17 +202,10 @@ void
 screenshot() noexcept
 {
 #ifndef __EMSCRIPTEN__
-  auto  png = g_image.make_png_stream();
+  auto  png = gbstd::get_screen_image().make_png_stream();
 
   gbstd::write_to_file(png.data(),png.size(),"__screenshot.png");
 #endif
-}
-
-
-gbstd::canvas
-make_screen_canvas() noexcept
-{
-  return gbstd::canvas(g_image);
 }
 
 
@@ -268,7 +214,10 @@ start_screen_recording() noexcept
 {
     if(!g_recording_flag)
     {
-      gbpng::image_header  ihdr(g_width,g_height);
+      auto  w = g_surface->w;
+      auto  h = g_surface->h;
+
+      gbpng::image_header  ihdr(w,h);
 
       g_apng_builder.reset(ihdr,80);
 

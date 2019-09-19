@@ -105,8 +105,8 @@ process_by_mouse_position(point&  pt) noexcept
   else
     if(!m_current->test_by_point(pt))
     {
-        if(g_input.test_mouse_left() ||
-           g_input.test_mouse_right())
+        if(get_keys().test_mol() ||
+           get_keys().test_mor())
         {
           auto  cnt_pt = m_current->get_content_position();
 

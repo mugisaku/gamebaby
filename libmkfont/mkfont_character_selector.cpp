@@ -28,7 +28,7 @@ on_mouse_act(point  pt) noexcept
 
   sf("U+%04X",c.m_unicode);
 
-    if(g_input.test_mouse_left())
+    if(get_keys().test_mol())
     {
       g_current_character = std::ref(c);
 
