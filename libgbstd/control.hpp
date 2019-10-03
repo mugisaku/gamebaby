@@ -1,11 +1,12 @@
-#ifndef ControlDevice_hpp_was_included
-#define ControlDevice_hpp_was_included
+#ifndef GBSTD_Control_hpp_was_included
+#define GBSTD_Control_hpp_was_included
 
 
 #include<cstdint>
 #include<cstdio>
 #include<vector>
 #include"libgbstd/image.hpp"
+#include"libgbstd/misc.hpp"
 
 
 namespace gbstd{
@@ -114,14 +115,132 @@ public:
 
 
 
-void    set_redraw_flag() noexcept;
-void  unset_redraw_flag() noexcept;
-bool   test_redraw_flag() noexcept;
+class
+clock
+{
+  status_value<int>  m_status;
+
+  struct flags{
+    static constexpr int    stop = 1;
+    static constexpr int   pause = 2;
+  };
+
+  int  m_permil=1000;
+
+  uint32_t  m_time_integer=0;
+  uint32_t  m_time_fraction=0;
+
+public:
+  operator bool() const noexcept{return !m_status;}
+
+  bool   is_stopped() const noexcept{return m_status.test(flags::stop);}
+  bool    is_paused() const noexcept{return m_status.test(flags::pause);}
+
+  clock&  start() noexcept{  m_status.unset(flags::stop);  return *this;}
+  clock&   stop() noexcept{  m_status.set(  flags::stop);  return *this;}
+
+  clock&    pause() noexcept{  m_status.set(  flags::pause);  return *this;}
+  clock&  unpause() noexcept{  m_status.unset(flags::pause);  return *this;}
+
+  const int&  get_permil(      ) const noexcept{return m_permil;}
+  clock&      set_permil(int  v)       noexcept{  m_permil = v;  return *this;}
+
+  const uint32_t&  get_time() const noexcept{return m_time_integer;}
+
+  clock&  operator>>=(uint32_t  t) noexcept;
+
+};
+
+
+class
+timer
+{
+  status_value<int>  m_status;
+
+  struct flags{
+    static constexpr int    stop = 1;
+    static constexpr int   pause = 2;
+    static constexpr int    lock = 4;
+  };
+
+
+  const clock*  m_clock_pointer=nullptr;
+
+  uint32_t  m_interval=1000;
+  uint32_t  m_next_time=0;
+
+  callback_wrapper  m_callback;
+
+public:
+  timer() noexcept{}
+  timer(const clock&  clk, uint32_t  interval, callback_wrapper  cb) noexcept:
+  m_clock_pointer(&clk), m_interval(interval), m_callback(cb){}
+
+  bool  is_stopped() const noexcept{return m_status.test(flags::stop);}
+  bool   is_paused() const noexcept{return m_status.test(flags::pause);}
+
+  timer&  start() noexcept{  m_status.unset(flags::stop);  return *this;}
+  timer&   stop() noexcept{  m_status.set(  flags::stop);  return *this;}
+
+  timer&    pause() noexcept{  m_status.set(  flags::pause);  return *this;}
+  timer&  unpause() noexcept{  m_status.unset(flags::pause);  return *this;}
+
+  const uint32_t&  get_interval(           ) const noexcept{return m_interval;}
+  timer&           set_interval(uint32_t  v)       noexcept{  m_interval = v;  return *this;}
+
+  const clock*  get_clock_pointer(                 ) const noexcept{return m_clock_pointer;}
+  timer&        set_clock_pointer(const clock&  clk)       noexcept{  m_clock_pointer = &clk;  return *this;}
+
+  timer&  set_callback(callback_wrapper  cb) noexcept{  m_callback = cb;  return *this;}
+
+  timer&  operator()() noexcept;
+
+};
+
+
+class
+auto_counter: public timer
+{
+  int  m_value    =0;
+  int  m_increment=1;
+
+public:
+  const int&  get_value(      ) const noexcept{return m_value;}
+  timer&      set_value(int  v)       noexcept{  m_value = v;  return *this;}
+
+  const int&  get_increment(      ) const noexcept{return m_increment;}
+  timer&      set_increment(int  v)       noexcept{  m_increment = v;  return *this;}
+
+  void  drive() noexcept{m_value += m_increment;}
+
+};
+
+
+
+
+void  push_execution(callback_wrapper  cb) noexcept;
+void   pop_execution(int  v=0) noexcept;
+void  step_execution() noexcept;
+
+int  get_control_value() noexcept;
+
+void  interrupt_execution() noexcept;
+
 
 uint32_t     get_time(           ) noexcept;
 void      update_time(uint32_t  t) noexcept;
 
+
+void  allocate_clocks(int  n) noexcept;
+clock&  get_clock(int  i) noexcept;
+
+
+void  allocate_timers(int  n) noexcept;
+timer&  get_timer(int  i) noexcept;
+
+
 const key_state&  get_modified_keys(                      ) noexcept;
+const key_state&   get_pressed_keys(                      ) noexcept;
 const key_state&           get_keys(                      ) noexcept;
 void                    update_keys(const key_state&  keys) noexcept;
 
@@ -129,10 +248,6 @@ void  barrier_keys(uint32_t  interval=240) noexcept;
 
 void   update_point(point  pt) noexcept;
 liner  make_liner() noexcept;
-
-const canvas&  set_screen_size(int  w, int  h) noexcept;
-const canvas&  get_screen_canvas() noexcept;
-const image&    get_screen_image() noexcept;
 
 extern std::vector<uint8_t>  g_dropped_file;
 

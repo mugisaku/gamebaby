@@ -5,6 +5,7 @@
 #include<cstdarg>
 #include<cstdlib>
 #include<cstdio>
+#include<cstring>
 #include<cstdint>
 #include<stdexcept>
 
@@ -108,6 +109,8 @@ status_value
 public:
   status_value(T  flag=0) noexcept: m_data(flag){}
 
+  operator bool() const noexcept{return m_data;}
+
   void  clear() noexcept{m_data = 0;}
 
   void  reverse(T  flag) noexcept
@@ -123,6 +126,86 @@ public:
 };
 
 
+class canvas;
+
+
+class
+callback_wrapper
+{
+  void*  m_userdata=nullptr;
+
+  union{
+    void  (       *fnptr)();
+    void  (       *cv_fnptr)(const canvas&);
+    void  (dummy::*membfnptr)();
+    void  (dummy::*cv_membfnptr)(const canvas&);
+  } m_callback;
+
+public:
+  callback_wrapper() noexcept{m_callback.fnptr = nullptr;}
+
+  template<typename  T>
+  callback_wrapper(T&  t, void  (T::*cb)()) noexcept{assign(t,cb);}
+
+  template<typename  T>
+  callback_wrapper(T&  t, void  (T::*cb)(const canvas&)) noexcept{assign(t,cb);}
+
+  callback_wrapper(void  (*cb)(             )) noexcept{assign(cb);}
+  callback_wrapper(void  (*cb)(const canvas&)) noexcept{assign(cb);}
+
+
+  callback_wrapper&  operator=(void  (*cb)(             )) noexcept {return assign(cb);}
+  callback_wrapper&  operator=(void  (*cb)(const canvas&)) noexcept {return assign(cb);}
+
+
+  callback_wrapper&  assign(void(*cb)()) noexcept
+  {
+    m_userdata       = nullptr;
+    m_callback.fnptr =      cb;
+
+    return *this;
+  }
+
+  callback_wrapper&  assign(void(*cb)(const canvas&)) noexcept
+  {
+    m_userdata          = nullptr;
+    m_callback.cv_fnptr =      cb;
+
+    return *this;
+  }
+
+  template<typename  T>
+  callback_wrapper&  assign(T&  t, void(T::*cb)()) noexcept
+  {
+    m_userdata           =                                     &t;
+    m_callback.membfnptr = reinterpret_cast<void(dummy::*)()>(cb);
+
+    return *this;
+  }
+
+  template<typename  T>
+  callback_wrapper&  assign(T&  t, void(T::*cb)(const canvas&)) noexcept
+  {
+    m_userdata              =                                                  &t;
+    m_callback.cv_membfnptr = reinterpret_cast<void(dummy::*)(const canvas&)>(cb);
+
+    return *this;
+  }
+
+
+  void  operator()() const noexcept
+  {
+      if(m_userdata){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.membfnptr)();}
+    else            {m_callback.fnptr();}
+  }
+
+  void  operator()(const canvas&  cv) const noexcept
+  {
+      if(m_userdata){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.cv_membfnptr)(cv);}
+    else            {m_callback.cv_fnptr(cv);}
+  }
+
+};
 
 
 }

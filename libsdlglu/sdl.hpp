@@ -4,6 +4,7 @@
 
 #include"libgbstd/image.hpp"
 #include"libgbstd/control.hpp"
+#include"libgbstd/screen.hpp"
 #include"libgbstd/sound.hpp"
 
 

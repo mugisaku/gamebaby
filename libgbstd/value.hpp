@@ -3,7 +3,6 @@
 
 
 #include"libgbstd/utility.hpp"
-#include"libgbstd/control.hpp"
 #include<new>
 #include<utility>
 #include<string>

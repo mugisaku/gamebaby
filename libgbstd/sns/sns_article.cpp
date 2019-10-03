@@ -34,6 +34,17 @@ assign(const account_observer&  obs, const record&  rec) noexcept
 }
 
 
+void
+article::
+link(article*  f, article*  b) noexcept
+{
+    if(f){f->m_backward = b;}
+    if(b){b->m_forward  = f;}
+}
+
+
+
+
 }}
 
 

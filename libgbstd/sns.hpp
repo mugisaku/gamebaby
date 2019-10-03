@@ -10,6 +10,8 @@
 #include<vector>
 #include<memory>
 #include"libgbstd/sha256.hpp"
+#include"libgbstd/misc.hpp"
+#include"libgbstd/utility.hpp"
 
 
 
@@ -407,8 +409,8 @@ public:
 
   operator bool() const noexcept;
 
-  account_observer&  operator=(const account_observer&   rhs) noexcept{assign(rhs);}
-  account_observer&  operator=(      account_observer&&  rhs) noexcept{assign(std::move(rhs));}
+  account_observer&  operator=(const account_observer&   rhs) noexcept{return assign(rhs);}
+  account_observer&  operator=(      account_observer&&  rhs) noexcept{return assign(std::move(rhs));}
 
   account&  operator *() const noexcept;
   account*  operator->() const noexcept;
@@ -538,6 +540,9 @@ public:
 class
 article
 {
+  friend class  timeline     ;
+  friend class  timeline_view;
+
   account_observer  m_observer;
 
   timestamp  m_timestamp;
@@ -547,13 +552,15 @@ article
 
   std::string  m_content;
 
-public:
+  article*   m_forward=nullptr;
+  article*  m_backward=nullptr;
+
   article() noexcept{}
   article(const account_observer&  obs, const record&  rec) noexcept{assign(obs,rec);}
 
   article&  assign(const account_observer&  obs, const record&  rec) noexcept;
 
-
+public:
   const account_observer&  get_observer() const noexcept{return m_observer;}
 
   timestamp  get_timestamp() const noexcept{return m_timestamp;}
@@ -561,6 +568,8 @@ public:
   const std::u16string&  get_name() const noexcept{return m_name;}
   const std::u16string&  get_date() const noexcept{return m_date;}
   const std::string&  get_content() const noexcept{return m_content;}
+
+  static void  link(article*  f, article*  b) noexcept;
 
 };
 
@@ -570,8 +579,19 @@ timeline_node
 {
   account_observer  m_observer;
 
+  struct flags{
+    static constexpr int    initialize = 1;
+    static constexpr int          lock = 2;
+    static constexpr int  reach_bottom = 4;
+
+  };
+
+  status_value<int>  m_status;
+
   uint64_t     m_head_index;
   uint64_t  m_pretail_index;
+
+  bool  initialize() noexcept;
 
 public:
   timeline_node() noexcept{}
@@ -584,8 +604,13 @@ public:
 
   timeline_node&  reset() noexcept;
 
+  timeline_node&    lock() noexcept{  m_status.set(flags::lock);  return *this;}
+  timeline_node&  unlock() noexcept{  m_status.unset(flags::lock);  return *this;}
+
+  bool  is_locked() const noexcept{return m_status.test(flags::lock);}
+
   void  advance_head_index() noexcept{++m_head_index;}
-  void  advance_pretail_index() noexcept{--m_pretail_index;}
+  void  advance_pretail_index() noexcept;
 
   const record*  get_next_head() noexcept;
   const record*  get_next_tail() noexcept;
@@ -598,21 +623,135 @@ timeline
 {
   std::vector<timeline_node>  m_nodes;
 
-  std::vector<article>   m_main_table;
-  std::vector<article>   m_temporary_table;
+  std::vector<article*>  m_temporary_table;
+
+  article*  m_top=nullptr;
+  article*  m_bottom=nullptr;
+
+  int  m_number_of_articles=0;
 
   timestamp  m_head_ts;
   timestamp  m_tail_ts;
 
+  void  push_forward(article*  a) noexcept;
+  void  push_backward(article*  a) noexcept;
+
 public:
+   timeline() noexcept{}
+   timeline(const timeline&   rhs) noexcept=delete;//{assign(rhs);}
+   timeline(      timeline&&  rhs) noexcept{assign(std::move(rhs));}
+  ~timeline(){clear();}
+
+  timeline&  operator=(const timeline&   rhs) noexcept=delete;//{return assign(rhs);}
+  timeline&  operator=(      timeline&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  operator bool() const noexcept{return m_number_of_articles;}
+
+
+//  timeline&  assign(const timeline&   rhs) noexcept;
+  timeline&  assign(      timeline&&  rhs) noexcept;
+
+  void  clear() noexcept;
+
   void  add(const account_observer&  obs) noexcept{m_nodes.emplace_back(obs);}
 
-  const std::vector<article>&  get_table() const noexcept{return m_main_table;}
+  int  get_number_of_articles() const noexcept{return m_number_of_articles;}
 
   void  ready(timestamp  ts) noexcept;
 
-  void  read_forward()  noexcept;
-  void  read_backward() noexcept;
+  uint64_t  read_forward()  noexcept;
+  uint64_t  read_backward() noexcept;
+
+  class iterator{
+  protected:  const article*  m_pointer;
+  public:
+    constexpr iterator(const article*  ptr=nullptr) noexcept: m_pointer(ptr){}
+
+    constexpr operator bool() const noexcept{return m_pointer;}
+
+    constexpr const article&  operator*()  const noexcept{return *m_pointer;}
+    constexpr const article*  operator->() const noexcept{return  m_pointer;}
+
+    constexpr bool  operator==(const iterator&  rhs) const noexcept{return m_pointer == rhs.m_pointer;}
+    constexpr bool  operator!=(const iterator&  rhs) const noexcept{return m_pointer != rhs.m_pointer;}
+
+    iterator&  operator+=(int  n) noexcept{  *this = (*this)+n;  return *this;}
+    iterator&  operator-=(int  n) noexcept{  *this = (*this)-n;  return *this;}
+
+    iterator&  operator++() noexcept{  m_pointer = m_pointer->m_forward ;   return *this;}
+    iterator&  operator--() noexcept{  m_pointer = m_pointer->m_backward;  return *this;}
+
+    iterator  operator++(int) noexcept{  auto  p = m_pointer;  m_pointer = p->m_forward;   return p;}
+    iterator  operator--(int) noexcept{  auto  p = m_pointer;  m_pointer = p->m_backward;  return p;}
+
+    iterator  operator+(int  n) const noexcept;
+    iterator  operator-(int  n) const noexcept;
+
+    const article*  to_pointer() const noexcept{return m_pointer;}
+
+  };
+
+  iterator  begin() const noexcept{return m_bottom;}
+  iterator    end() const noexcept{return nullptr;}
+
+  class reverse_iterator: public iterator{
+  public:
+    using iterator::iterator;
+
+    constexpr reverse_iterator(iterator  it) noexcept: iterator(&*it){}
+
+    reverse_iterator&  operator+=(int  n) noexcept{  *this = (*this)+n;  return *this;}
+    reverse_iterator&  operator-=(int  n) noexcept{  *this = (*this)-n;  return *this;}
+
+    reverse_iterator&  operator++() noexcept{  m_pointer = m_pointer->m_backward;  return *this;}
+    reverse_iterator&  operator--() noexcept{  m_pointer = m_pointer->m_forward;   return *this;}
+
+    reverse_iterator  operator++(int) noexcept{  auto  p = m_pointer;  m_pointer = p->m_backward;  return p;}
+    reverse_iterator  operator--(int) noexcept{  auto  p = m_pointer;  m_pointer = p->m_forward;   return p;}
+
+    reverse_iterator  operator+(int  n) const noexcept;
+    reverse_iterator  operator-(int  n) const noexcept;
+
+  };
+
+  reverse_iterator  rbegin() const noexcept{return m_top;}
+  reverse_iterator    rend() const noexcept{return nullptr;}
+
+};
+
+
+class
+timeline_view
+{
+  const timeline*  m_timeline=nullptr;
+
+  const article*  m_head;
+  const article*  m_tail;
+
+  int  m_distance=0;
+
+public:
+  timeline_view() noexcept;
+  timeline_view(const timeline&  tl) noexcept{assign(tl);}
+
+  timeline_view&  operator=(const timeline&  tl) noexcept{return assign(tl);}
+  timeline_view&  assign(const timeline&  tl) noexcept;
+
+  timeline_view&  reset() noexcept;
+
+  int  get_number_of_articles() const noexcept;
+
+  int  set_distance(int  n) noexcept;
+  int  get_distance(      ) noexcept{return m_distance;}
+
+  void  move_forward( int  n=1) noexcept;
+  void  move_backward(int  n=1) noexcept;
+
+  timeline::iterator  begin() const noexcept{return m_tail;}
+  timeline::iterator    end() const noexcept{return m_head? m_head->m_forward:nullptr;}
+
+  timeline::reverse_iterator  rbegin() const noexcept{return m_head;}
+  timeline::reverse_iterator    rend() const noexcept{return m_tail? m_tail->m_backward:nullptr;}
 
 };
 

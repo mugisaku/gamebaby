@@ -117,17 +117,6 @@ discard_when_die() noexcept
 
 task&
 task::
-set_blinking_rate(int  show, int  hide) noexcept
-{
-  m_blink_show_value = show;
-  m_blink_hide_value = hide;
-
-  return *this;
-}
-
-
-task&
-task::
 update_next_time() noexcept
 {
   m_last_time = m_clock_watch.get_time();
@@ -193,30 +182,6 @@ redraw(const canvas&  cv) noexcept
 {
     if(is_living())
     {
-        if(is_blinking())
-        {
-            if(m_blink_counter)
-            {
-              --m_blink_counter;
-            }
-
-          else
-            {
-              m_blink_counter = m_status.test(flags::blink_bit)? m_blink_show_value
-                               :                                 m_blink_hide_value;
-
-              m_status.reverse(flags::blink_bit);
-            }
-        }
-
-
-        if(is_showing())
-        {
-            if(!is_blinking() || m_status.test(flags::blink_bit))
-            {
-              render(cv);
-            }
-        }
     }
 }
 

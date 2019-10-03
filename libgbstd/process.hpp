@@ -20,131 +20,6 @@ namespace gbstd{
 
 
 class
-timer
-{
-  std::string  m_name;
-  std::string    m_id;
-
-  uint32_t  m_initial_time=0;
-  uint32_t  m_remain_time=0;
-
-  uint32_t  m_counter=0;
-
-  struct flags{
-    static constexpr int  working = 1;
-    static constexpr int  pausing = 2;
-  };
-
-  status_value<int>  m_status;
-
-public:
-  virtual ~timer(){}
-
-  operator bool() const noexcept{return m_counter;}
-
-  timer&  set_name(std::string_view  sv) noexcept{  m_name = sv;  return *this;}
-  timer&    set_id(std::string_view  sv) noexcept{  m_id   = sv;  return *this;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-  const std::string&    get_id() const noexcept{return m_id;}
-
-  bool  is_working() const noexcept{return m_status.test(flags::working);}
-  bool  is_pausing() const noexcept{return m_status.test(flags::pausing);}
-
-  timer&   turnon() noexcept{  m_status.set(  flags::working);  return *this;}
-  timer&  turnoff() noexcept{  m_status.unset(flags::working);  return *this;}
-
-  timer&    pause() noexcept{  m_status.set(  flags::pausing);  return *this;}
-  timer&  unpause() noexcept{  m_status.unset(flags::pausing);  return *this;}
-
-  uint32_t  get_initial_time() const noexcept{return m_initial_time;}
-  uint32_t   get_remain_time() const noexcept{return m_remain_time;}
-
-  timer&  reset(                 ) noexcept;
-  timer&  reset(uint32_t  init_tm) noexcept;
-
-  uint32_t  operator()() const noexcept{return m_counter;}
-  uint32_t  operator()(uint32_t  t) noexcept;
-
-};
-
-
-class
-clock
-{
-  std::string  m_name;
-  std::string    m_id;
-
-  int  m_permil=1000;
-
-  uint32_t  m_time=0;
-  uint32_t  m_fraction=0;
-
-  status_value<int>  m_status;
-
-  struct flags{
-    static constexpr int  working = 1;
-    static constexpr int  pausing = 2;
-  };
-
-public:
-  clock() noexcept{turnon();}
-
-  clock&  clear() noexcept;
-  clock&  reset(uint32_t  time=0, uint32_t  fraction=0) noexcept;
-
-  clock&  add(uint32_t  t) noexcept;
-
-  operator bool() const noexcept{return m_status.test(flags::working) && !m_status.test(flags::pausing);}
-
-  clock&  set_name(std::string_view  sv) noexcept{  m_name = sv;  return *this;}
-  clock&    set_id(std::string_view  sv) noexcept{  m_id   = sv;  return *this;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-  const std::string&  get_id()   const noexcept{return m_id;}
-
-  const uint32_t&   get_time() const noexcept{return m_time;}
-
-  bool  is_working() const noexcept{return m_status.test(flags::working);}
-  bool  is_pausing() const noexcept{return m_status.test(flags::pausing);}
-
-  clock&   turnon() noexcept{  m_status.set(  flags::working);  return *this;}
-  clock&  turnoff() noexcept{  m_status.unset(flags::working);  return *this;}
-
-  clock&    pause() noexcept{  m_status.set(  flags::pausing);  return *this;}
-  clock&  unpause() noexcept{  m_status.unset(flags::pausing);  return *this;}
-
-  int     get_permil(      ) const noexcept{return m_permil;}
-  clock&  set_permil(int  v)       noexcept{  m_permil = v;  return *this;}
-
-};
-
-
-namespace clocks{
-extern const clock  null;
-}
-
-
-class
-clock_watch
-{
-  const clock*  m_pointer=&clocks::null;
-
-public:
-  clock_watch() noexcept{}
-  clock_watch(const clock&  ref) noexcept: m_pointer(&ref){}
-
-  const std::string&  get_name() const noexcept{return m_pointer->get_name();}
-  const std::string&  get_id()   const noexcept{return m_pointer->get_id();}
-
-  const uint32_t&   get_time() const noexcept{return m_pointer->get_time();}
-
-};
-
-
-
-
-class
 task
 {
   std::string  m_name;
@@ -156,9 +31,6 @@ task
     static constexpr int              live =   1;
     static constexpr int             sleep =   2;
     static constexpr int             alarm =   4;
-    static constexpr int              show =   8;
-    static constexpr int             blink =  32;
-    static constexpr int         blink_bit =  64;
     static constexpr int    die_when_getup = 128;
     static constexpr int  discard_when_die = 256;
     static constexpr int           discard = 512;
@@ -175,10 +47,6 @@ task
   uint32_t  m_living_time=0;
   uint32_t  m_getup_count=0;
   uint32_t  m_die_count=0;
-
-  uint32_t  m_blink_show_value=0;
-  uint32_t  m_blink_hide_value=0;
-  uint32_t  m_blink_counter=0;
 
   void  redraw(const canvas&  cv) noexcept;
 
@@ -204,22 +72,12 @@ public:
   task&  sleep(uint32_t  t) noexcept;
   task&  getup(           ) noexcept;
 
-  task&  show() noexcept{  m_status.set(  flags::show);  return *this;}
-  task&  hide() noexcept{  m_status.unset(flags::show);  return *this;}
-
-  task&    blink() noexcept{  m_status.set(  flags::blink);  return *this;}
-  task&  unblink() noexcept{  m_status.unset(flags::blink);  return *this;}
-
   task&  discard() noexcept{  m_status.set(flags::discard);  return *this;}
 
   task&  discard_when_die() noexcept;
 
-  task&  set_blinking_rate(int  show, int  hide) noexcept;
-
   bool  is_living()   const noexcept{return m_status.test(flags::live);}
   bool  is_sleeping() const noexcept{return m_status.test(flags::sleep);}
-  bool  is_blinking() const noexcept{return m_status.test(flags::blink);}
-  bool  is_showing()  const noexcept{return m_status.test(flags::show);}
   bool  is_discarded()  const noexcept{return m_status.test(flags::discard);}
 
   uint32_t  get_interval(           ) const noexcept{return m_interval                   ;}

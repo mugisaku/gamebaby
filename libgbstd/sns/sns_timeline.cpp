@@ -1,4 +1,5 @@
 #include"libgbstd/sns.hpp"
+#include"libgbstd/utility.hpp"
 #include<algorithm>
 
 
@@ -9,11 +10,58 @@ namespace sns{
 
 
 
+timeline&
+timeline::
+assign(timeline&&  rhs) noexcept
+{
+    if(this != &rhs)
+    {
+      clear();
+
+      std::swap(m_nodes             ,rhs.m_nodes             );
+      std::swap(m_top               ,rhs.m_top               );
+      std::swap(m_bottom            ,rhs.m_bottom            );
+      std::swap(m_number_of_articles,rhs.m_number_of_articles);
+      std::swap(m_head_ts           ,rhs.m_head_ts           );
+      std::swap(m_tail_ts           ,rhs.m_tail_ts           );
+    }
+
+
+  return *this;
+}
+
+
+
+
+void
+timeline::
+clear() noexcept
+{
+  auto  ptr = m_top;
+
+    while(ptr)
+    {
+      auto  tmp = ptr->m_backward;
+
+      delete ptr      ;
+             ptr = tmp;
+    }
+
+
+  m_top    = nullptr;
+  m_bottom = nullptr;
+
+  m_number_of_articles = 0;
+}
+
+
+
+
 namespace{
 auto  cmp =
-[](const article&  a, const article&  b)->bool
+[](const article*  a, const article*  b)->bool
 {
-  return a.get_timestamp() > b.get_timestamp();
+  return a->get_timestamp() < b->get_timestamp();
 };
 }
 
@@ -29,14 +77,17 @@ ready(timestamp  ts) noexcept
     {
       nd.reset();
     }
+
+
+  clear();
 }
 
 
-void
+uint64_t
 timeline::
 read_forward() noexcept
 {
-  m_temporary_table.clear();
+  uint64_t  n = 0;
 
     for(auto&  nd: m_nodes)
     {
@@ -72,7 +123,7 @@ read_forward() noexcept
                 }
 
 
-              m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+              m_temporary_table.emplace_back(new article(nd.get_observer(),*recptr));
 
               nd.advance_head_index();
             }
@@ -88,25 +139,30 @@ read_forward() noexcept
     if(m_temporary_table.size())
     {
       auto  p = m_temporary_table.data();
-      auto  n = m_temporary_table.size();
+            n = m_temporary_table.size();
 
       std::stable_sort(p,p+n,cmp);
 
-        for(auto&  art: m_main_table)
+      auto      it = m_temporary_table.begin();
+      auto  end_it = m_temporary_table.end();
+
+        while(it != end_it)
         {
-          m_temporary_table.emplace_back(std::move(art));
+          push_forward(*it++);
         }
-
-
-      std::swap(m_main_table,m_temporary_table);
     }
+
+
+  return n;
 }
 
 
-void
+uint64_t
 timeline::
 read_backward() noexcept
 {
+  uint64_t  n = 0;
+
     for(auto&  nd: m_nodes)
     {
       auto  recptr = nd.get_next_tail();
@@ -141,7 +197,7 @@ read_backward() noexcept
                 }
 
 
-              m_temporary_table.emplace_back(nd.get_observer(),*recptr);
+              m_temporary_table.emplace_back(new article(nd.get_observer(),*recptr));
 
               nd.advance_pretail_index();
             }
@@ -157,15 +213,113 @@ read_backward() noexcept
     if(m_temporary_table.size())
     {
       auto  p = m_temporary_table.data();
-      auto  n = m_temporary_table.size();
+            n = m_temporary_table.size();
 
       std::stable_sort(p,p+n,cmp);
 
-        for(auto&  art: m_temporary_table)
+      auto      it = m_temporary_table.begin();
+      auto  end_it = m_temporary_table.end();
+
+        while(it != end_it)
         {
-          m_main_table.emplace_back(std::move(art));
+          push_backward(*it++);
         }
     }
+
+
+  return n;
+}
+
+
+void
+timeline::
+push_forward(article*  a) noexcept
+{
+  article::link(a,m_top);
+
+  m_top = a;
+
+    if(!m_bottom)
+    {
+      m_bottom = a;
+    }
+
+
+  ++m_number_of_articles;
+}
+
+
+void
+timeline::
+push_backward(article*  a) noexcept
+{
+  article::link(m_bottom,a);
+
+  m_bottom = a;
+
+    if(!m_top)
+    {
+      m_top = a;
+    }
+
+
+  ++m_number_of_articles;
+}
+
+
+
+
+timeline::iterator
+timeline::iterator::
+operator+(int  n) const noexcept
+{
+  auto  p = m_pointer;
+
+       if(n > 0){while(n--){p = p->m_forward ;}}
+  else if(n < 0){while(n++){p = p->m_backward;}}
+
+  return p;
+}
+
+
+timeline::iterator
+timeline::iterator::
+operator-(int  n) const noexcept
+{
+  auto  p = m_pointer;
+
+       if(n > 0){while(n--){p = p->m_backward;}}
+  else if(n < 0){while(n++){p = p->m_forward ;}}
+
+  return p;
+}
+
+
+
+
+timeline::reverse_iterator
+timeline::reverse_iterator::
+operator+(int  n) const noexcept
+{
+  auto  p = m_pointer;
+
+       if(n > 0){while(n--){p = p->m_backward;}}
+  else if(n < 0){while(n++){p = p->m_forward ;}}
+
+  return p;
+}
+
+
+timeline::reverse_iterator
+timeline::reverse_iterator::
+operator-(int  n) const noexcept
+{
+  auto  p = m_pointer;
+
+       if(n > 0){while(n--){p = p->m_forward ;}}
+  else if(n < 0){while(n++){p = p->m_backward;}}
+
+  return p;
 }
 
 

@@ -89,6 +89,8 @@ public:
     snprintf(m_data,sizeof(m_data),"%08x%08x%08x%08x%08x%08x%08x%08x",
       hash[0],hash[1],hash[2],hash[3],
       hash[4],hash[5],hash[6],hash[7]);
+
+    return *this;
   }
 
   std::string_view  get_string() const noexcept{return std::string_view(m_data,8*8);}

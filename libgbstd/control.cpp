@@ -1,6 +1,7 @@
 #include"libgbstd/control.hpp"
 #include<cstdio>
 #include<cstring>
+#include<memory>
 
 
 
@@ -13,61 +14,288 @@ namespace gbstd{
 std::vector<uint8_t>  g_dropped_file;
 
 
-namespace{
-bool  g_redraw_flag=true;
+clock&
+clock::
+operator>>=(uint32_t  t) noexcept
+{
+    if(m_permil)
+    {
+      constexpr int  shift_amount = 16;
 
+      m_time_fraction += (t<<shift_amount)/1000*m_permil;
+
+      m_time_integer += (m_time_fraction>>shift_amount);
+
+      m_time_fraction &= 0xFFFF;
+    }
+
+
+  return *this;
+}
+
+
+timer&
+timer::
+operator()() noexcept
+{
+    if(!m_status.test(flags::lock) && m_interval && m_clock_pointer)
+    {
+      m_status.set(flags::lock);
+
+      auto  tm = m_clock_pointer->get_time();
+
+        while(tm >= m_next_time)
+        {
+          m_callback();
+
+          m_next_time += m_interval;
+        }
+
+
+      m_status.unset(flags::lock);
+    }
+
+
+  return *this;
+}
+
+
+
+
+namespace{
 uint32_t  g_time;
+uint32_t  g_unbarrier_timepoint;
 
 key_state  g_previous_keys;
 key_state  g_modified_keys;
 key_state           g_keys;
 key_state      g_null_keys;
 
-uint32_t  g_unbarrier_timepoint;
+
+
+
+namespace flags{
+constexpr int     change = 1; 
+constexpr int  interrupt = 2; 
+}
+
+
+status_value<int>
+g_execution_status;
+
+
+std::vector<callback_wrapper>
+g_execution_stack;
+
+
+int
+g_control_value;
+
+
+std::vector<std::unique_ptr<clock>>
+g_clock_table;
+
+
+std::vector<std::unique_ptr<timer>>
+g_timer_table;
 
 point  g_a_point;
 point  g_b_point;
 
 
-image   g_screen_image;
-canvas  g_screen_canvas;
-
-
 }
 
 
 
 
 void
-set_redraw_flag() noexcept
+push_execution(callback_wrapper  cb) noexcept
 {
-  g_redraw_flag = true;
+    if(!g_execution_status.test(flags::change))
+    {
+      g_execution_stack.emplace_back(cb);
+
+      g_execution_status.set(flags::change);
+    }
+
+  else
+    {
+      printf("[execution multi push error]\n");
+    }
 }
 
 
 void
-unset_redraw_flag() noexcept
+pop_execution(int  v) noexcept
 {
-  g_redraw_flag = false;
+    if(!g_execution_status.test(flags::change))
+    {
+      g_execution_stack.pop_back();
+
+      g_control_value = v;
+
+      g_execution_status.set(flags::change);
+    }
+
+  else
+    {
+      printf("[execution multi pop error]\n");
+    }
 }
 
 
-bool
-test_redraw_flag() noexcept
+void
+step_execution() noexcept
 {
-  return g_redraw_flag;
+  static bool  lock;
+
+    if(!lock && g_execution_stack.size())
+    {
+      lock = true;
+
+      g_execution_status.unset(flags::interrupt);
+      g_execution_status.unset(flags::change   );
+
+      auto  exec = g_execution_stack.back();
+
+        for(;;)
+        {
+          exec();
+
+            if(g_execution_status.test(flags::interrupt))
+            {
+              break;
+            }
+
+
+            if(g_execution_status.test(flags::change))
+            {
+                if(g_execution_stack.size())
+                {
+                  exec = g_execution_stack.back();
+
+                  g_execution_status.unset(flags::change);
+                }
+
+              else
+                {
+                  break;
+                }
+            }
+        }
+
+      
+      lock = false;
+    }
 }
 
 
+int
+get_control_value() noexcept
+{
+  return g_control_value;
+}
 
 
-uint32_t    get_time(           ) noexcept{return g_time;}
-void     update_time(uint32_t  t) noexcept{g_time = t;}
+void
+interrupt_execution() noexcept
+{
+  g_execution_status.set(flags::interrupt);
+}
+
+
+uint32_t
+get_time() noexcept
+{
+  return g_time;
+}
+
+
+void
+update_time(uint32_t  t) noexcept
+{
+  static bool  lock;
+
+    if(!lock && (t > g_time))
+    {
+      lock = true;
+
+      auto  diff = t-g_time;
+
+      g_time = t;
+
+        for(auto&  clk: g_clock_table)
+        {
+            if(!clk->is_stopped() && !clk->is_paused())
+            {
+              *clk >>= diff;
+            }
+        }
+
+
+        for(auto&  tm: g_timer_table)
+        {
+            if(!tm->is_stopped() && !tm->is_paused())
+            {
+              (*tm)();
+            }
+        }
+
+
+      lock = false;
+    }
+}
+
+
+void
+allocate_clocks(int  n) noexcept
+{
+  g_clock_table.resize(n);
+
+    for(auto&  p: g_clock_table)
+    {
+      p = std::make_unique<clock>();
+    }
+}
+
+
+clock&
+get_clock(int  i) noexcept
+{
+  return *g_clock_table[i];
+}
+
+
+void
+allocate_timers(int  n) noexcept
+{
+  g_timer_table.resize(n);
+
+    for(auto&  p: g_timer_table)
+    {
+      p = std::make_unique<timer>();
+    }
+}
+
+
+timer&
+get_timer(int  i) noexcept
+{
+  return *g_timer_table[i];
+}
+
 
 const key_state&
 get_modified_keys() noexcept
 {
   return g_modified_keys;
+}
+
+
+const key_state&
+get_pressed_keys() noexcept
+{
+  return g_keys;
 }
 
 
@@ -115,31 +343,6 @@ make_liner() noexcept
   g_a_point = g_b_point;
 
   return ln;
-}
-
-
-
-
-const canvas&
-set_screen_size(int  w, int  h) noexcept
-{
-  g_screen_image.resize(w,h);
-
-  return g_screen_canvas.assign(g_screen_image);
-}
-
-
-const canvas&
-get_screen_canvas() noexcept
-{
-  return g_screen_canvas;
-}
-
-
-const image&
-get_screen_image() noexcept
-{
-  return g_screen_image;
 }
 
 

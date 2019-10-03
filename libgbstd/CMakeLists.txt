@@ -11,6 +11,7 @@ set(SOURCES
   sns/sns_account.cpp
   sns/sns_account_observer.cpp
   sns/sns_timeline.cpp
+  sns/sns_timeline_view.cpp
   sns/sns_timeline_node.cpp
   sns/sns_tester.cpp
   sns/sns_index_list.cpp
@@ -67,12 +68,9 @@ set(SOURCES
   sounds/noise_device.cpp
   sounds/short_noise_device.cpp
   sounds/scale_table.cpp
-  processes/timer.cpp
-  processes/clock.cpp
-  processes/task.cpp
-  processes/process.cpp
   utility.cpp
   control.cpp
+  screen.cpp
 )
 
 

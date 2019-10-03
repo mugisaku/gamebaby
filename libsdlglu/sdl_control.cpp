@@ -214,7 +214,7 @@ update_control() noexcept
 {
   static SDL_Event  evt;
 
-  auto  keys = gbstd::get_keys();
+  auto  keys = gbstd::get_pressed_keys();
 
   gbstd::update_time(SDL_GetTicks());
 
