@@ -744,8 +744,7 @@ public:
   int  set_distance(int  n) noexcept;
   int  get_distance(      ) noexcept{return m_distance;}
 
-  void  move_forward( int  n=1) noexcept;
-  void  move_backward(int  n=1) noexcept;
+  void  move(int  n=1) noexcept;
 
   timeline::iterator  begin() const noexcept{return m_tail;}
   timeline::iterator    end() const noexcept{return m_head? m_head->m_forward:nullptr;}

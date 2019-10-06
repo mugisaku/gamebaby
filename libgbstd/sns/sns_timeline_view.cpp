@@ -100,15 +100,42 @@ set_distance(int  n) noexcept
 
 void
 timeline_view::
-move_forward( int  n) noexcept
+move(int  n) noexcept
 {
-}
+    if(n < 0)
+    {
+        while(n++)
+        {
+          auto  next_tail = m_tail->m_backward;
+
+            if(!next_tail)
+            {
+              break;
+            }
 
 
-void
-timeline_view::
-move_backward(int  n) noexcept
-{
+          m_tail =          next_tail;
+          m_head = m_head->m_backward;
+        }
+    }
+
+  else
+    if(n > 0)
+    {
+        while(n--)
+        {
+          auto  next_head = m_head->m_forward;
+
+            if(!next_head)
+            {
+              break;
+            }
+
+
+          m_head =         next_head;
+          m_tail = m_tail->m_forward;
+        }
+    }
 }
 
 

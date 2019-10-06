@@ -195,14 +195,14 @@ public:
 
   void  operator()() const noexcept
   {
-      if(m_userdata){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.membfnptr)();}
-    else            {m_callback.fnptr();}
+         if(m_userdata      ){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.membfnptr)();}
+    else if(m_callback.fnptr){m_callback.fnptr();}
   }
 
   void  operator()(const canvas&  cv) const noexcept
   {
-      if(m_userdata){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.cv_membfnptr)(cv);}
-    else            {m_callback.cv_fnptr(cv);}
+         if(m_userdata         ){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.cv_membfnptr)(cv);}
+    else if(m_callback.cv_fnptr){m_callback.cv_fnptr(cv);}
   }
 
 };

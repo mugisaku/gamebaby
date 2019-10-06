@@ -216,8 +216,6 @@ update_control() noexcept
 
   auto  keys = gbstd::get_pressed_keys();
 
-  gbstd::update_time(SDL_GetTicks());
-
 #ifdef __EMSCRIPTEN__
   try_read_dropped_file();
 #endif
@@ -229,6 +227,8 @@ update_control() noexcept
 
 
   gbstd::update_keys(keys);
+
+  gbstd::update_time(SDL_GetTicks());
 }
 
 

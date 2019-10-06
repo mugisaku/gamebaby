@@ -158,9 +158,23 @@ step_execution() noexcept
 
       auto  exec = g_execution_stack.back();
 
+      int  safe_counter = 80;
+
+//      int  x_counter = 0;
+
         for(;;)
         {
+            if(!safe_counter--)
+            {
+              printf("warning: step execution, safe counter is reached zero.\n");
+
+              break;
+            }
+
+
           exec();
+
+//          ++x_counter;
 
             if(g_execution_status.test(flags::interrupt))
             {
@@ -184,6 +198,8 @@ step_execution() noexcept
             }
         }
 
+
+//      printf("executes %d times.\n",x_counter);
       
       lock = false;
     }
@@ -309,10 +325,10 @@ get_keys() noexcept
 void
 update_keys(const key_state&  keys) noexcept
 {
-  g_modified_keys = g_previous_keys^keys;
-
   g_previous_keys = g_keys       ;
                     g_keys = keys;
+
+  g_modified_keys = g_previous_keys^g_keys;
 
     if(g_modified_keys)
     {

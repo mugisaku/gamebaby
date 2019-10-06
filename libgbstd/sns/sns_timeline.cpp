@@ -217,8 +217,8 @@ read_backward() noexcept
 
       std::stable_sort(p,p+n,cmp);
 
-      auto      it = m_temporary_table.begin();
-      auto  end_it = m_temporary_table.end();
+      auto      it = m_temporary_table.rbegin();
+      auto  end_it = m_temporary_table.rend();
 
         while(it != end_it)
         {
