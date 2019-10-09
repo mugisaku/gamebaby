@@ -199,6 +199,37 @@ public:
 
 
 class
+alarm
+{
+  const clock*  m_clock_pointer=nullptr;
+
+  uint32_t  m_interval=0;
+  uint32_t  m_next_time=0;
+
+  uint32_t  get_time() const noexcept{return m_clock_pointer? m_clock_pointer->get_time():0;}
+
+public:
+  alarm() noexcept{}
+  alarm(const clock&  clk) noexcept{assign(clk);}
+
+  alarm&  operator=(const clock&  clk) noexcept{return assign(clk);}
+
+  operator bool() const noexcept{return test();}
+
+  alarm&  assign(const clock&  clk) noexcept{  m_clock_pointer = &clk;  return *this;}
+
+  alarm&  reset() noexcept{  m_next_time = get_time()+m_interval;  return *this;}
+
+  alarm&  set_interval(uint32_t  v) noexcept{  m_interval = v;  return *this;}
+
+  uint32_t  get_interval() const noexcept{return m_interval;}
+
+  bool  test() const noexcept{return get_time() >= m_next_time;}
+
+};
+
+
+class
 auto_counter: public timer
 {
   int  m_value    =0;
@@ -219,6 +250,7 @@ public:
 
 
 void  push_execution(callback_wrapper  cb) noexcept;
+void  replace_execution(callback_wrapper  cb) noexcept;
 void   pop_execution(int  v=0) noexcept;
 void  step_execution() noexcept;
 

@@ -126,6 +126,23 @@ push_execution(callback_wrapper  cb) noexcept
 
 
 void
+replace_execution(callback_wrapper  cb) noexcept
+{
+    if(!g_execution_status.test(flags::change))
+    {
+      g_execution_stack.back() = cb;
+
+      g_execution_status.set(flags::change);
+    }
+
+  else
+    {
+      printf("[execution replace error]\n");
+    }
+}
+
+
+void
 pop_execution(int  v) noexcept
 {
     if(!g_execution_status.test(flags::change))
