@@ -5,12 +5,14 @@
 #include"libsdlglu/sdl.hpp"
 
 
-
-
 using namespace gbstd;
 
 
 namespace{
+
+
+uniform_rand  g_number_rand;
+uniform_rand  g_color_rand;
 
 
 const gbstd::clock*
@@ -39,9 +41,18 @@ space
 
   point  m_point;
 
-  bool  m_erase=false;
+  struct flags{
+    static constexpr int  right_erase = 1;
+    static constexpr int   down_erase = 2;
+
+  };
+
+
+  status_value<int>  m_status;
 
   int  m_number=0;
+
+  color  m_color;
 
   space*     m_up;
   space*   m_left;
@@ -50,26 +61,33 @@ space
 
   operator bool() const noexcept{return m_number;}
 
-  bool  test_erase_flag() const noexcept{return m_erase;}
+  bool  test_right_erase_flag() const noexcept{return m_status.test(flags::right_erase);}
+  bool   test_down_erase_flag() const noexcept{return m_status.test(flags::down_erase);}
+  bool   test_erase_flags() const noexcept{return m_status;}
 
-  space&    set_erase_flag() noexcept{  m_erase =  true;  return *this;}
-  space&  unset_erase_flag() noexcept{  m_erase = false;  return *this;}
+  space&    set_right_erase_flag() noexcept{  m_status.set(  flags::right_erase);  return *this;}
+  space&  unset_right_erase_flag() noexcept{  m_status.unset(flags::right_erase);  return *this;}
+
+  space&    set_down_erase_flag() noexcept{  m_status.set(  flags::down_erase);  return *this;}
+  space&  unset_down_erase_flag() noexcept{  m_status.unset(flags::down_erase);  return *this;}
+
+  space&  clear_erase_flags() noexcept{  m_status.clear();  return *this;}
 
   int  get_number() const noexcept{return m_number;}
 
-  color  get_color() const noexcept{return (m_number < 0)? colors::blue:colors::red;}
+  color  get_color() const noexcept{return m_color;}
 
-  void  draw(const canvas&  cv, int  state) const noexcept;
+  void  draw(const canvas&  cv, int  y_offset, int  state) const noexcept;
 
 };
 
 
 void
 space::
-draw(const canvas&  cv, int  state) const noexcept
+draw(const canvas&  cv, int  y_offset, int  state) const noexcept
 {
-  int  x = m_size*m_point.x;
-  int  y = m_size*m_point.y;
+  int  x =          (m_size*m_point.x);
+  int  y = y_offset+(m_size*m_point.y);
 
     if(m_number && state)
     {
@@ -106,6 +124,11 @@ stage
 
   status_value<int>  m_status;
 
+  int  m_chink_counter;
+
+  uint32_t  m_temporary_score;
+  uint32_t  m_total_score;
+
   space  m_table[m_height][m_width];
 
   space*  m_current=&m_table[0][0];
@@ -113,6 +136,8 @@ stage
   stage() noexcept;
 
   void  reset() noexcept;
+
+  void  add_temporary_score(int  v) noexcept{m_temporary_score += v*m_chink_counter*m_chink_counter;}
 
   void  draw(const canvas&  cv) noexcept;
 
@@ -136,8 +161,8 @@ stage() noexcept
 }
 
 
-constexpr int  g_screen_w = space::m_size*stage::m_width;
-constexpr int  g_screen_h = space::m_size*stage::m_height;
+constexpr int  g_screen_w =                   space::m_size*stage::m_width;
+constexpr int  g_screen_h = (g_font_height*2)+space::m_size*stage::m_height;
 
 
 void
@@ -149,10 +174,15 @@ reset() noexcept
       auto&  sp = m_table[y][x];
 
       sp.m_number = 0;
+      sp.m_color  = colors::null;
     }}
 
 
   m_status.clear();
+
+  m_chink_counter = 0;
+
+  m_total_score = 0;
 }
 
 
@@ -168,7 +198,7 @@ draw(const canvas&  cv) noexcept
 
         if(m_status.test(flags::chink))
         {
-          state = (!sp.test_erase_flag() || (m_blink_counter&1))? 1:0;
+          state = (!sp.test_erase_flags() || (m_blink_counter&1))? 1:0;
         }
 
       else
@@ -177,7 +207,7 @@ draw(const canvas&  cv) noexcept
         }
 
 
-      sp.draw(cv,state);
+      sp.draw(cv,g_font_height*2,state);
     }}
 
 
@@ -185,7 +215,7 @@ draw(const canvas&  cv) noexcept
 
   char  buf[256];
 
-  snprintf(buf,sizeof(buf),"x: %d, y: %d",pt.x,pt.y);
+  snprintf(buf,sizeof(buf),"SCORE: %5dちんちん",m_total_score);
 
   cv.draw_string(colors::white,buf,0,0);
 
@@ -193,6 +223,17 @@ draw(const canvas&  cv) noexcept
     {
       cv.draw_string(colors::white,"GAME OVER",g_screen_w/2-(8*5),g_screen_h/2);
     }
+
+  else
+    if(m_chink_counter)
+    {
+      snprintf(buf,sizeof(buf),"%dれんさ",m_chink_counter);
+
+      cv.draw_string(colors::white,buf,0,g_font_height);
+    }
+
+
+  cv.draw_rectangle(colors::white,0,g_font_height*2,space::m_size*stage::m_width,space::m_size*stage::m_height);
 }
 
 
@@ -202,33 +243,54 @@ g_stage;
 
 
 
+constexpr int  g_key_number = 6;
+constexpr int  g_score_base = 10;
+
+
 void
 evaluate_to_down(space*  head) noexcept
 {
-    if(*head)
+    if(head->get_number() && !head->test_down_erase_flag())
     {
       int  i = head->get_number();
 
       auto  tail = head->m_down;
 
-        while(tail && *tail)
+        while(tail && tail->get_number() && !tail->test_down_erase_flag() & (tail->get_color() == head->get_color()))
         {
           i += tail->get_number();
 
-          tail = tail->m_down;
-        }
+            if(!i || (i == g_key_number))
+            {
+              int  block_n = 1;
+
+              g_stage.m_status.set(stage::flags::erase);
+
+                while(head != tail)
+                { 
+                  ++block_n;
+
+                  head->set_down_erase_flag();
+                    
+                  head = head->m_down;
+                }
 
 
-        if(!i || (i == 10))
-        {
-          g_stage.m_status.set(stage::flags::erase);
+              g_stage.add_temporary_score(g_score_base*block_n);
 
-            while(head != tail)
-            { 
-              head->set_erase_flag();
-                
-              head = head->m_down;
+              head->set_down_erase_flag();
+
+              break;
             }
+
+          else
+            if(i > g_key_number)
+            {
+              break;
+            }
+
+
+          tail = tail->m_down;
         }
     }
 }
@@ -237,30 +299,47 @@ evaluate_to_down(space*  head) noexcept
 void
 evaluate_to_right(space*  head) noexcept
 {
-    if(*head)
+    if(head->get_number() && !head->test_right_erase_flag())
     {
       int  i = head->get_number();
 
       auto  tail = head->m_right;
 
-        while(tail && *tail)
+        while(tail && tail->get_number() && !tail->test_right_erase_flag() & (tail->get_color() == head->get_color()))
         {
           i += tail->get_number();
 
-          tail = tail->m_right;
-        }
+            if(!i || (i == g_key_number))
+            {
+              int  block_n = 1;
+
+              g_stage.m_status.set(stage::flags::erase);
+
+                while(head != tail)
+                { 
+                  ++block_n;
+
+                  head->set_right_erase_flag();
+                    
+                  head = head->m_right;
+                }
 
 
-        if(!i || (i == 10))
-        {
-          g_stage.m_status.set(stage::flags::erase);
+              g_stage.add_temporary_score(g_score_base*block_n);
 
-            while(head != tail)
-            { 
-              head->set_erase_flag();
-                
-              head = head->m_right;
+              head->set_right_erase_flag();
+
+              break;
             }
+
+          else
+            if(i > g_key_number)
+            {
+              break;
+            }
+
+
+          tail = tail->m_right;
         }
     }
 }
@@ -278,6 +357,9 @@ fall(space&  sp) noexcept
           p->m_down->m_number = p->m_number    ;
                                 p->m_number = 0;
 
+          p->m_down->m_color = p->m_color               ;
+                               p->m_color = colors::null;
+
           p = p->m_down;
         }
     }
@@ -294,9 +376,9 @@ chink() noexcept
     for(int  x = 0;  x < stage::m_width ;  ++x){
       auto&  sp = g_stage.m_table[y][x];
 
-        if(sp.test_erase_flag())
+        if(sp.test_erase_flags())
         {
-          sp.unset_erase_flag();
+          sp.clear_erase_flags();
 
           sp.m_number = 0;
         }
@@ -322,7 +404,7 @@ blink() noexcept
     {
       ++g_stage.m_blink_counter;
 
-        if(g_stage.m_blink_counter >= 8)
+        if(g_stage.m_blink_counter >= 10)
         {
           replace_execution(chink);
 
@@ -343,6 +425,8 @@ blink() noexcept
 void
 evaluate() noexcept
 {
+  ++g_stage.m_chink_counter;
+
   g_stage.m_status.unset(stage::flags::erase);
 
     for(int  y = 0;  y < stage::m_height;  ++y){
@@ -367,6 +451,11 @@ evaluate() noexcept
 
   else
     {
+      g_stage.m_chink_counter = 0;
+
+      g_stage.m_total_score += g_stage.m_temporary_score    ;
+                               g_stage.m_temporary_score = 0;
+
       pop_execution();
     }
 }
@@ -379,6 +468,8 @@ control_by_cursor(space*  next) noexcept
 
     if(!next || next->m_number)
     {
+      g_stage.m_temporary_score = 0;
+
       replace_execution(evaluate);
     }
 
@@ -387,6 +478,9 @@ control_by_cursor(space*  next) noexcept
     {
       next->m_number = here.m_number    ;
                        here.m_number = 0;
+
+      next->m_color = here.m_color               ;
+                      here.m_color = colors::null;
 
       g_stage.m_current = next;
     }
@@ -406,7 +500,7 @@ control_drop() noexcept
     }
 
 
-    if(get_keys().test_diu())
+    if(here.m_point.y && get_keys().test_diu())
     {
       barrier_keys(delay);
 
@@ -487,17 +581,23 @@ start() noexcept
 
   else
     {
-      static uniform_rand  n_rand(1,4);
-
       g_stage.m_current = start_sp;
 
         for(;;)
         {
-          auto  n = n_rand();
+          auto  n = g_number_rand();
 
             if(n)
             {
               g_stage.m_current->m_number = n;
+
+              auto  cn = g_color_rand();
+
+              g_stage.m_current->m_color = (cn == 0)? colors::yellow
+                                          :(cn == 1)? colors::cyan
+                                          :(cn == 2)? colors::magenta
+                                          :(cn == 3)? colors::black
+                                          :           colors::null;
 
               break;
             }
@@ -514,8 +614,6 @@ void
 main_loop() noexcept
 {
   static uint32_t  next;
-
-  sdl::update_control();
 
   step_execution();
 
@@ -543,6 +641,9 @@ main(int  argc, char**  argv)
   allocate_sprites(2);
 
 
+  g_number_rand.reset(1,3);
+  g_color_rand.reset(0,3);
+
   g_clock = &get_clock(0);
 
   g_alarm.assign(*g_clock).set_interval(100).reset();
@@ -555,17 +656,11 @@ main(int  argc, char**  argv)
 
   sdl::init(g_screen_w,g_screen_h);
 
+  
+
   sdl::update_screen();
 
-    for(;;)
-    {
-      main_loop();
-
-      sdl::delay(20);
-    }
-
-
-  sdl::quit();
+  sdl::start_loop(main_loop);
 
   return 0;
 }

@@ -1,4 +1,6 @@
 #include"libgbstd/screen.hpp"
+#include"libgbstd/ilc.hpp"
+#include"libgbstd/random.hpp"
 #include<cstdio>
 #include<cstring>
 #include<memory>
@@ -146,6 +148,12 @@ redraw_screen() noexcept
 const canvas&
 set_screen_size(int  w, int  h) noexcept
 {
+  initialize_random();
+
+#ifdef __EMSCRIPTEN__
+  initialize_javascript();
+#endif
+
   g_screen_image.resize(w,h);
 
   return g_screen_canvas.assign(g_screen_image);

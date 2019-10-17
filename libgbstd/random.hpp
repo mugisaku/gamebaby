@@ -12,8 +12,7 @@ namespace gbstd{
 
 
 
-extern std::random_device
-g_random_device;
+void  initialize_random() noexcept;
 
 
 extern std::default_random_engine

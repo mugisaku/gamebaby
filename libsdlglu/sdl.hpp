@@ -13,9 +13,7 @@ namespace sdl{
 
 void  update_screen() noexcept;
 
-void  delay(uint32_t  ms) noexcept;
-
-void  quit() noexcept;
+void  start_loop(void  (*main_fn)()) noexcept;
 
 void  init(                int  w, int  h, double  scale=1) noexcept;
 void  init(int  x, int  y, int  w, int  h, double  scale=1) noexcept;
@@ -50,8 +48,6 @@ void  screenshot() noexcept;
 void  start_screen_recording() noexcept;
 void    end_screen_recording() noexcept;
 bool   test_screen_recording() noexcept;
-
-void  update_control() noexcept;
 
 
 }

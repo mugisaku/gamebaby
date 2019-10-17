@@ -28,10 +28,7 @@ endif()
 set(CMAKE_C_FLAGS   "-std=c1z -Werror")
 set(CMAKE_C_LINK_FLAGS   "")
 set(CMAKE_CXX_FLAGS "-std=c++17 -Werror")
-set(CMAKE_CXX_LINK_FLAGS "-lSDL2")
 
-
-set(BASIC_LIBS "z" "SDL2" "SDL2main" "stdc++")
 
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS}   -O2 -march=core2 -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -march=core2 -fomit-frame-pointer")
@@ -43,12 +40,15 @@ if(EMSC)
 #  set(PRELOADS "--preload-file ")
 
 
-  set(EXECUTABLE_EXTENSION ".html")
-  set(CMAKE_CXX_COMPILER  em++)
+  set(CMAKE_CXX_COMPILER  /usr/local/emsdk/fastcomp/emscripten/em++)
   set(CMAKE_CXX_FLAGS "-Werror -std=c++1z -Wno-switch -Wno-unused-command-line-argument -Os")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS}")
-  set(EMSC_PORTS "-s -s DISABLE_EXCEPTION_CATCHING=0 -s USE_SDL=2 -s USE_ZLIB=1")
-  set(CMAKE_CXX_LINK_FLAGS  "${CMAKE_CXX_LINK_FLAGS} --shell-file ../shell.html ${PRELOADS} ${EMSC_PORTS}") 
+  set(EMSC_PORTS "-s USE_SDL=2 -s USE_ZLIB=1")
+  set(CMAKE_CXX_LINK_FLAGS  "${EMSC_PORTS}") 
+
+  set(BASIC_LIBS "")
+else()
+  set(BASIC_LIBS "z" "SDL2" "SDL2main" "stdc++")
 endif()
 
 
@@ -57,11 +57,11 @@ endif()
 add_subdirectory(libsdlglu)
 add_subdirectory(libgbstd)
 #add_subdirectory(libonch)
-add_subdirectory(libge)
+#add_subdirectory(libge)
 add_subdirectory(libgbpng)
 #add_subdirectory(libsubiso)
 #add_subdirectory(libww)
-add_subdirectory(libmkfont)
+#add_subdirectory(libmkfont)
 
 
 

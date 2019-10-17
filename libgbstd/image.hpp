@@ -54,6 +54,8 @@ constexpr color         red = color(7,0,0);
 constexpr color       green = color(0,7,0);
 constexpr color        blue = color(0,0,7);
 constexpr color      yellow = color(7,7,0);
+constexpr color        cyan = color(0,7,7);
+constexpr color     magenta = color(7,7,0);
 }
 
 

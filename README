@@ -32,12 +32,6 @@ add_executable
 target_link_libraries
 の行を適宜、コメントアウト解除してください
 
-以下を入力して、ビルドします(-DEMSC=onを付けた場合、emscriptenを使い、javascript版ができる)
-mkdir -p  builddir
-cd builddir
-cmake .. [-DEMSC=on]
-make
-
 
 
 

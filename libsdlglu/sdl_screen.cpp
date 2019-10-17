@@ -1,6 +1,7 @@
 #include"sdl.hpp"
 #include<SDL.h>
 #include"libgbstd/file_op.hpp"
+#include"libgbstd/ilc.hpp"
 #include"libgbpng/png.hpp"
 
 

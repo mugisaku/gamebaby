@@ -2,9 +2,22 @@
 #include<SDL.h>
 #include"libgbstd/utility.hpp"
 #include"libgbstd/control.hpp"
+#include"libgbstd/ilc.hpp"
+
+
+
+
+#ifdef __EMSCRIPTEN__
+#include<emscripten.h>
+#endif
+
+
 
 
 namespace sdl{
+
+
+void  quit() noexcept;
 
 
 namespace{
@@ -199,13 +212,14 @@ process_event(const SDL_Event&  evt, gbstd::key_state&  keys) noexcept
        break;
     }
 }
-}
+
+
 
 
 void
-delay(uint32_t  ms) noexcept
-{
-  SDL_Delay(ms);
+(*g_main_loop)();
+
+
 }
 
 
@@ -229,7 +243,36 @@ update_control() noexcept
   gbstd::update_keys(keys);
 
   gbstd::update_time(SDL_GetTicks());
+
+  g_main_loop();
 }
+
+
+void
+start_loop(void  (*main_fn)()) noexcept
+{
+  static bool  started;
+
+  g_main_loop = main_fn;
+
+    if(!started)
+    {
+      started = true;
+
+#ifdef __EMSCRIPTEN__
+      emscripten_set_main_loop(update_control,0,false);
+#else
+        for(;;)
+        {
+          update_control();
+
+          SDL_Delay(20);
+        }
+#endif
+    }
+}
+
+
 
 
 }

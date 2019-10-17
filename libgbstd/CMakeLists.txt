@@ -68,6 +68,7 @@ set(SOURCES
   sounds/noise_device.cpp
   sounds/short_noise_device.cpp
   sounds/scale_table.cpp
+  ilc_javascript.cpp
   utility.cpp
   control.cpp
   screen.cpp
@@ -76,7 +77,7 @@ set(SOURCES
 
 include_directories(./)
 include_directories(../)
-add_library("gbstd" ${SOURCES})
+add_library("gbstd" STATIC ${SOURCES})
 
 
 

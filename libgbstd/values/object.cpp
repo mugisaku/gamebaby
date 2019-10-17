@@ -108,8 +108,11 @@ assign(const object&  rhs) noexcept
 
         switch(m_kind)
         {
+      case(kind::null): break;
+      case(kind::undefined): break;
       case(kind::boolean): m_data.b = rhs.m_data.b;break;
       case(kind::integer): m_data.i = rhs.m_data.i;break;
+      case(kind::real_number): m_data.r = rhs.m_data.r;break;
       case(kind::string ): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::u16string ): new(&m_data) std::u16string(rhs.m_data.u16s);break;
       case(kind::array): m_data.arr = new array(*rhs.m_data.arr);break;
@@ -137,8 +140,11 @@ assign(object&&  rhs) noexcept
 
         switch(m_kind)
         {
+      case(kind::null): break;
+      case(kind::undefined): break;
       case(kind::boolean  ): m_data.b = rhs.m_data.b;break;
       case(kind::integer  ): m_data.i = rhs.m_data.i;break;
+      case(kind::real_number): m_data.r = rhs.m_data.r;break;
       case(kind::string   ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::u16string): new(&m_data) std::u16string(std::move(rhs.m_data.u16s));break;
       case(kind::array    ): m_data.arr = rhs.m_data.arr;break;
@@ -159,9 +165,11 @@ clear() noexcept
 {
     switch(m_kind)
     {
+  case(kind::null): break;
   case(kind::undefined): break;
   case(kind::boolean): break;
   case(kind::integer): break;
+  case(kind::real_number): break;
   case(kind::string ): gbstd::destruct(m_data.s);break;
   case(kind::u16string): gbstd::destruct(m_data.u16s);break;
   case(kind::array): delete m_data.arr;break;
