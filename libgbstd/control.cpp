@@ -1,4 +1,5 @@
 #include"libgbstd/control.hpp"
+#include"libgbstd/screen.hpp"
 #include<cstdio>
 #include<cstring>
 #include<memory>
@@ -109,6 +110,25 @@ point  g_b_point;
 
 
 void
+reset_execution(callback_wrapper  cb) noexcept
+{
+    if(!g_execution_status.test(flags::change))
+    {
+      g_execution_stack.clear();
+
+      g_execution_stack.emplace_back(cb);
+
+      g_execution_status.set(flags::change);
+    }
+
+  else
+    {
+      printf("[execution reset error]\n");
+    }
+}
+
+
+void
 push_execution(callback_wrapper  cb) noexcept
 {
     if(!g_execution_status.test(flags::change))
@@ -161,6 +181,9 @@ pop_execution(int  v) noexcept
 }
 
 
+
+
+namespace{
 void
 step_execution() noexcept
 {
@@ -221,6 +244,9 @@ step_execution() noexcept
       lock = false;
     }
 }
+}
+
+
 
 
 int
@@ -274,6 +300,10 @@ update_time(uint32_t  t) noexcept
             }
         }
 
+
+      step_execution();
+
+      redraw_video();
 
       lock = false;
     }

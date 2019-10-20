@@ -21,8 +21,8 @@ g_sprite_table;
 
 color  g_background_color;
 
-image   g_screen_image;
-canvas  g_screen_canvas;
+image   g_image;
+canvas  g_canvas;
 }
 
 
@@ -124,7 +124,7 @@ void          set_background_color(color  bg_color) noexcept{g_background_color 
 
 
 void
-redraw_screen() noexcept
+redraw_video() noexcept
 {
   static bool  lock;
 
@@ -132,11 +132,11 @@ redraw_screen() noexcept
     {
       lock = true;
 
-      g_screen_canvas.fill(g_background_color);
+      g_canvas.fill(g_background_color);
 
         for(auto&  ptr: g_sprite_table)
         {
-          (*ptr)(g_screen_canvas);
+          (*ptr)(g_canvas);
         }
 
 
@@ -146,31 +146,29 @@ redraw_screen() noexcept
 
 
 const canvas&
-set_screen_size(int  w, int  h) noexcept
+set_video_size(int  w, int  h) noexcept
 {
   initialize_random();
 
-#ifdef __EMSCRIPTEN__
   initialize_javascript();
-#endif
 
-  g_screen_image.resize(w,h);
+  g_image.resize(w,h);
 
-  return g_screen_canvas.assign(g_screen_image);
+  return g_canvas.assign(g_image);
 }
 
 
 const canvas&
-get_screen_canvas() noexcept
+get_video_canvas() noexcept
 {
-  return g_screen_canvas;
+  return g_canvas;
 }
 
 
 const image&
-get_screen_image() noexcept
+get_video_image() noexcept
 {
-  return g_screen_image;
+  return g_image;
 }
 
 

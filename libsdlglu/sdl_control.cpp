@@ -217,13 +217,6 @@ process_event(const SDL_Event&  evt, gbstd::key_state&  keys) noexcept
 
 
 void
-(*g_main_loop)();
-
-
-}
-
-
-void
 update_control() noexcept
 {
   static SDL_Event  evt;
@@ -243,17 +236,16 @@ update_control() noexcept
   gbstd::update_keys(keys);
 
   gbstd::update_time(SDL_GetTicks());
+}
 
-  g_main_loop();
+
 }
 
 
 void
-start_loop(void  (*main_fn)()) noexcept
+start_loop() noexcept
 {
   static bool  started;
-
-  g_main_loop = main_fn;
 
     if(!started)
     {

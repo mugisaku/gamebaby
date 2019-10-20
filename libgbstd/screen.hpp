@@ -62,11 +62,11 @@ void          set_background_color(color  bg_color) noexcept;
 void  allocate_sprites(int  n) noexcept;
 sprite&  get_sprite(int  i) noexcept;
 
-void  redraw_screen() noexcept;
+void  redraw_video() noexcept;
 
-const canvas&  set_screen_size(int  w, int  h) noexcept;
-const canvas&  get_screen_canvas() noexcept;
-const image&    get_screen_image() noexcept;
+const canvas&  set_video_size(int  w, int  h) noexcept;
+const canvas&  get_video_canvas() noexcept;
+const image&    get_video_image() noexcept;
 
 
 

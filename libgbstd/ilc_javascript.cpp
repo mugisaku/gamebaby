@@ -10,6 +10,7 @@ namespace gbstd{
 
 #ifdef __EMSCRIPTEN__
 #include<emscripten.h>
+#endif
 
 
 
@@ -17,6 +18,7 @@ namespace gbstd{
 void
 initialize_javascript() noexcept
 {
+#ifdef __EMSCRIPTEN__
   static bool  initialized;
 
     if(initialized)
@@ -26,6 +28,8 @@ initialize_javascript() noexcept
 
   
   EM_ASM(
+    var  els = document.getElementsByClassName("emscripten_border");
+
     var  cv = document.getElementById("canvas");
 
     var  parent = cv.parentNode;
@@ -57,7 +61,7 @@ initialize_javascript() noexcept
     ret_a.innerHTML = "return to home";
     ret_a.href = "../index.htm";
 
-    document.body.appendChild(table);
+    els[0].appendChild(table);
     document.body.appendChild(document.createElement("hr"));
     document.body.appendChild(ret_a);
 
@@ -113,11 +117,13 @@ initialize_javascript() noexcept
 
 
   initialized = true;
+#endif
 }
 
 
 
 
+#ifdef __EMSCRIPTEN__
 EM_JS(void,js_set_caption,(const char*  s),{
   g_caption.innerHTML = UTF8ToString(s);
 });
@@ -133,14 +139,14 @@ EM_JS(int,js_get_from_front_dropped_file,(int  i),{
 });
 
 
-EM_JS(void,js_update_common_blob,(const uint8_t*  ptr, size_t  size),{
+EM_JS(void,js_update_blob,(const uint8_t*  ptr, size_t  size),{
   var  base = new Blob([HEAP8],{type:"application/octet-stream"});
 
   g_blob = base.slice(ptr,ptr+size);
 });
 
 
-EM_JS(void,js_download_common_blob,(const char*  filename),{
+EM_JS(void,js_download_blob,(const char*  filename),{
     if(!window.FileReader || !g_blob)
     {
       console.log("error");
@@ -160,68 +166,90 @@ EM_JS(void,js_download_common_blob,(const char*  filename),{
 
   fr.readAsDataURL(g_blob);
 });
+#endif
 
 
 void
 show_github_link() noexcept
 {
+#ifdef __EMSCRIPTEN__
   EM_ASM(
     g_github_link.style.display = "block";
   );
+#endif
 }
 
 
 void
 show_twitter_link() noexcept
 {
+#ifdef __EMSCRIPTEN__
   EM_ASM(
     g_twitter_link.style.display = "block";
   );
+#endif
 }
 
 
 void
 set_caption(const char*  s) noexcept
 {
+#ifdef __EMSCRIPTEN__
   js_set_caption(s);
+#endif
 }
 
 
 void
 set_description(const char*  s) noexcept
 {
+#ifdef __EMSCRIPTEN__
   js_set_description(s);
+#endif
 }
 
 
 void
-update_common_blob(const uint8_t*  ptr, size_t  size) noexcept
+update_blob(const uint8_t*  ptr, size_t  size) noexcept
 {
-  js_update_common_blob(ptr,size);
+#ifdef __EMSCRIPTEN__
+  js_update_blob(ptr,size);
+#endif
 }
 
 
 void
-download_common_blob(const char*  filename) noexcept
+download_blob(const char*  filename) noexcept
 {
-  js_download_common_blob(filename);
+#ifdef __EMSCRIPTEN__
+  js_download_blob(filename);
+#endif
 }
 
 
 int
 get_number_of_dropped_files() noexcept
 {
+#ifdef __EMSCRIPTEN__
   return EM_ASM_INT(return g_dropped_file_list.length);
+#else
+  return 0;
+#endif
 }
 
 
 std::vector<uint8_t>
 pop_front_dropped_file() noexcept
 {
+#ifdef __EMSCRIPTEN__
   int  n = EM_ASM_INT(return g_dropped_file_list[0].length);
+#else
+  int  n = 0;
+#endif
 
   std::vector<uint8_t>  buf(n);
 
+#ifdef __EMSCRIPTEN__
     for(int  i = 0;  i < n;  ++i)
     {
       buf[i] = js_get_from_front_dropped_file(i);
@@ -231,10 +259,10 @@ pop_front_dropped_file() noexcept
   EM_ASM(
     g_dropped_file_list.shift();
   );
+#endif
 
   return std::move(buf);
 }
-#endif
 
 
 

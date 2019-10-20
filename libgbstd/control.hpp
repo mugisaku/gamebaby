@@ -249,10 +249,10 @@ public:
 
 
 
+void  reset_execution(callback_wrapper  cb) noexcept;
 void  push_execution(callback_wrapper  cb) noexcept;
 void  replace_execution(callback_wrapper  cb) noexcept;
 void   pop_execution(int  v=0) noexcept;
-void  step_execution() noexcept;
 
 int  get_control_value() noexcept;
 

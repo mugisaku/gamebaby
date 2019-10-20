@@ -64,12 +64,19 @@ add_subdirectory(libgbpng)
 #add_subdirectory(libmkfont)
 
 
+set(CHILDREN
+#  children/children.cpp
+# children/FallBlockPazzle/FallBlockPazzle_context.cpp
+#  children/FallBlockPazzle/FallBlockPazzle_space.cpp
+# children/FallBlockPazzle/FallBlockPazzle_stage.cpp
+)
+
 
 include_directories(./ /usr/local/include)
 link_directories(/usr/local/lib)
 
 #add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp)
-add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp)
+add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp "${CHILDREN}")
 #add_executable("ww_sdl${EXECUTABLE_EXTENSION}" ww_sdl.cpp)
 #add_executable("mkfont_sdl${EXECUTABLE_EXTENSION}" mkfont_sdl.cpp)
 #add_executable("mksnd_sdl${EXECUTABLE_EXTENSION}" mksnd_sdl.cpp)

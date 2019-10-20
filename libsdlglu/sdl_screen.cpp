@@ -29,7 +29,7 @@ template<typename  T>
 void
 transfer() noexcept
 {
-  const gbstd::canvas&  cv = gbstd::get_screen_canvas();
+  const gbstd::canvas&  cv = gbstd::get_video_canvas();
 
   auto  p_base = static_cast<uint8_t*>(g_surface->pixels);
 
@@ -90,7 +90,7 @@ update_screen() noexcept
       gbpng::direct_color_image  img(w,h);
 
       auto  dst = img.get_row_pointer(0);
-      auto  src = gbstd::get_screen_canvas().get_pixel_pointer(0,0);
+      auto  src = gbstd::get_video_canvas().get_pixel_pointer(0,0);
 
         for(int  y = 0;  y < h;  ++y)
         {
@@ -171,7 +171,7 @@ init(int  w, int  h, double  scale) noexcept
     }}}
 
 
-  gbstd::set_screen_size(w,h);
+  gbstd::set_video_size(w,h);
 }
 
 
@@ -203,7 +203,7 @@ void
 screenshot() noexcept
 {
 #ifndef __EMSCRIPTEN__
-  auto  png = gbstd::get_screen_image().make_png_stream();
+  auto  png = gbstd::get_video_image().make_png_stream();
 
   gbstd::write_to_file(png.data(),png.size(),"__screenshot.png");
 #endif

@@ -2,6 +2,7 @@
 #include"libgbstd/image.hpp"
 #include"libgbstd/utility.hpp"
 #include"libgbstd/random.hpp"
+#include"libgbstd/ilc.hpp"
 #include"libsdlglu/sdl.hpp"
 
 
@@ -609,25 +610,6 @@ start() noexcept
 }
 
 
-
-void
-main_loop() noexcept
-{
-  static uint32_t  next;
-
-  step_execution();
-
-    if((get_time() >= next))
-    {
-      redraw_screen();
-
-      sdl::update_screen();
-
-      next = get_time()+80;
-    }
-}
-
-
 }
 
 
@@ -656,11 +638,20 @@ main(int  argc, char**  argv)
 
   sdl::init(g_screen_w,g_screen_h);
 
-  
+  gbstd::set_caption("計算ゲーム");
+
+  gbstd::set_description(
+R"(ルール:<br>
+置かれた同じ色のブロックが<br>
+左から右、上から下に加算評価され、合計が6であるとき、消える)"
+);
+
+  gbstd::show_github_link();
+  gbstd::show_twitter_link();
 
   sdl::update_screen();
 
-  sdl::start_loop(main_loop);
+  sdl::start_loop();
 
   return 0;
 }

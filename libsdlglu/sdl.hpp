@@ -13,7 +13,7 @@ namespace sdl{
 
 void  update_screen() noexcept;
 
-void  start_loop(void  (*main_fn)()) noexcept;
+void  start_loop() noexcept;
 
 void  init(                int  w, int  h, double  scale=1) noexcept;
 void  init(int  x, int  y, int  w, int  h, double  scale=1) noexcept;
