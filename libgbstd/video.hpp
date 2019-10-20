@@ -1,5 +1,5 @@
-#ifndef GBSTD_SCREEN_hpp_was_included
-#define GBSTD_SCREEN_hpp_was_included
+#ifndef GBSTD_VIDEO_hpp_was_included
+#define GBSTD_VIDEO_hpp_was_included
 
 
 #include<cstdint>

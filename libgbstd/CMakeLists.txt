@@ -71,7 +71,7 @@ set(SOURCES
   ilc_javascript.cpp
   utility.cpp
   control.cpp
-  screen.cpp
+  video.cpp
 )
 
 

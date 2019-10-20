@@ -1,4 +1,4 @@
-#include"libgbstd/screen.hpp"
+#include"libgbstd/video.hpp"
 #include"libgbstd/ilc.hpp"
 #include"libgbstd/random.hpp"
 #include<cstdio>

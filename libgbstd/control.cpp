@@ -1,5 +1,5 @@
 #include"libgbstd/control.hpp"
-#include"libgbstd/screen.hpp"
+#include"libgbstd/video.hpp"
 #include<cstdio>
 #include<cstring>
 #include<memory>
