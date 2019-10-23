@@ -52,6 +52,8 @@ public:
 };
 
 
+
+
 void    set_redraw_flag() noexcept;
 void  unset_redraw_flag() noexcept;
 bool   test_redraw_flag() noexcept;

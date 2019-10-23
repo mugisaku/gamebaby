@@ -93,12 +93,11 @@ int
 g_control_value;
 
 
-std::vector<std::unique_ptr<clock>>
-g_clock_table;
+gpfs::directory  g_root_dir;
 
+gpfs::directory*  g_clock_dir;
+gpfs::directory*  g_timer_dir;
 
-std::vector<std::unique_ptr<timer>>
-g_timer_table;
 
 point  g_a_point;
 point  g_b_point;
@@ -310,44 +309,6 @@ update_time(uint32_t  t) noexcept
 }
 
 
-void
-allocate_clocks(int  n) noexcept
-{
-  g_clock_table.resize(n);
-
-    for(auto&  p: g_clock_table)
-    {
-      p = std::make_unique<clock>();
-    }
-}
-
-
-clock&
-get_clock(int  i) noexcept
-{
-  return *g_clock_table[i];
-}
-
-
-void
-allocate_timers(int  n) noexcept
-{
-  g_timer_table.resize(n);
-
-    for(auto&  p: g_timer_table)
-    {
-      p = std::make_unique<timer>();
-    }
-}
-
-
-timer&
-get_timer(int  i) noexcept
-{
-  return *g_timer_table[i];
-}
-
-
 const key_state&
 get_modified_keys() noexcept
 {
@@ -406,6 +367,28 @@ make_liner() noexcept
   g_a_point = g_b_point;
 
   return ln;
+}
+
+
+gpfs::
+directory&
+get_root_directory() noexcept
+{
+  static bool  initialized;
+
+    if(!initialized)
+    {
+      g_root_dir.create_directory("clocks");
+      g_root_dir.create_directory("timers");
+
+      g_root_dir.create_directory("video")
+        .create_directory("sprites");
+
+      initialized = true;
+    }
+
+
+  return g_root_dir;
 }
 
 

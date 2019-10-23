@@ -68,6 +68,8 @@ set(SOURCES
   sounds/noise_device.cpp
   sounds/short_noise_device.cpp
   sounds/scale_table.cpp
+  gpfs_directory.cpp
+  gpfs_node.cpp
   ilc_javascript.cpp
   utility.cpp
   control.cpp

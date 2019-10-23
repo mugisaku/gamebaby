@@ -75,7 +75,7 @@ set(CHILDREN
 include_directories(./ /usr/local/include)
 link_directories(/usr/local/lib)
 
-#add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp)
+add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp)
 add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp "${CHILDREN}")
 #add_executable("ww_sdl${EXECUTABLE_EXTENSION}" ww_sdl.cpp)
 #add_executable("mkfont_sdl${EXECUTABLE_EXTENSION}" mkfont_sdl.cpp)
@@ -91,7 +91,7 @@ add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp "${CHILDREN}")
 #add_executable("mkeyesquat${EXECUTABLE_EXTENSION}" mkeyesquat.cpp)
 #add_executable("mkeyesquat2${EXECUTABLE_EXTENSION}" mkeyesquat2.cpp)
 
-#target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
 target_link_libraries("ks_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("ww_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ww" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("mkfont_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "mkfont" "gbstd" "gbpng" ${BASIC_LIBS})

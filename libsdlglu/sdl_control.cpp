@@ -17,6 +17,7 @@
 namespace sdl{
 
 
+void  update_screen() noexcept;
 void  quit() noexcept;
 
 
@@ -236,6 +237,8 @@ update_control() noexcept
   gbstd::update_keys(keys);
 
   gbstd::update_time(SDL_GetTicks());
+
+  update_screen();
 }
 
 

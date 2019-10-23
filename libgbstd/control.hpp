@@ -7,6 +7,7 @@
 #include<vector>
 #include"libgbstd/image.hpp"
 #include"libgbstd/misc.hpp"
+#include"libgbstd/gpfs.hpp"
 
 
 namespace gbstd{
@@ -263,14 +264,6 @@ uint32_t     get_time(           ) noexcept;
 void      update_time(uint32_t  t) noexcept;
 
 
-void  allocate_clocks(int  n) noexcept;
-clock&  get_clock(int  i) noexcept;
-
-
-void  allocate_timers(int  n) noexcept;
-timer&  get_timer(int  i) noexcept;
-
-
 const key_state&  get_modified_keys(                      ) noexcept;
 const key_state&   get_pressed_keys(                      ) noexcept;
 const key_state&           get_keys(                      ) noexcept;
@@ -280,6 +273,8 @@ void  barrier_keys(uint32_t  interval=240) noexcept;
 
 void   update_point(point  pt) noexcept;
 liner  make_liner() noexcept;
+
+directory&  get_root_directory() noexcept;
 
 extern std::vector<uint8_t>  g_dropped_file;
 
