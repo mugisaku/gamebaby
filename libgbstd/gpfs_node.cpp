@@ -11,8 +11,18 @@ namespace gpfs{
 
 
 node::
-node(node*  parent, std::string_view  name) noexcept:
-m_parent(parent),
+node() noexcept:
+m_parent(nullptr),
+m_name("**ROOT DIRECTORY**"),
+m_kind(kind::null)
+{
+  be_directory();
+}
+
+
+node::
+node(node&  parent, std::string_view  name) noexcept:
+m_parent(&parent),
 m_name(name),
 m_kind(kind::null)
 {
@@ -37,15 +47,57 @@ be_pointer(void*  ptr) noexcept
 
 node&
 node::
+be_integer(int  i) noexcept
+{
+  clear();
+
+  m_kind = kind::integer;
+
+  m_data.i = i;
+
+  return *this;
+}
+
+
+node&
+node::
+be_real_number(double  d) noexcept
+{
+  clear();
+
+  m_kind = kind::real_number;
+
+  m_data.d = d;
+
+  return *this;
+}
+
+
+node&
+node::
+be_callback(callback_wrapper  cb) noexcept
+{
+  clear();
+
+  m_kind = kind::callback;
+
+  new(&m_data.cb) callback_wrapper(cb);
+
+  return *this;
+}
+
+
+node&
+node::
 be_directory() noexcept
 {
   clear();
 
   m_kind = kind::directory;
 
-  new(&m_data) directory(m_parent);
+  new(&m_data) directory();
 
-  m_data.dir.set_self_node(*this);
+  m_data.dir.m_self_node = this;
 
   return *this;
 }
@@ -62,6 +114,12 @@ clear() noexcept
       m_data.dir.~directory();
     }
 
+  else
+    if(is_callback())
+    {
+      m_data.cb.~callback_wrapper();
+    }
+
 
   m_kind = kind::null;
 }
@@ -71,7 +129,14 @@ void
 node::
 print() const noexcept
 {
-  printf("name: \"%s\", type: %s,",m_name.data(),is_directory()? "directory":"pointer");
+  const char*  type_s = is_directory()?   "directory"
+                       :is_pointer()?     "pointer"
+                       :is_integer()?     "integer"
+                       :is_real_number()? "real_number"
+                       :is_callback()?    "callback"
+                       :                  "null";
+
+  printf("name: \"%s\", type: %s,",m_name.data(),type_s);
 
     if(is_directory())
     {

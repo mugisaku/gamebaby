@@ -9,20 +9,19 @@ namespace gpfs{
 
 
 
+bool
 directory::
-directory(node*  parent_node) noexcept:
-m_parent_node(parent_node)
+is_root() const noexcept
 {
+  return !m_self_node->m_parent;
 }
 
 
-
-
-void
+node*
 directory::
-set_self_node(node&  node) noexcept
+get_parent_node() const noexcept
 {
-  m_self_node = &node;
+  return m_self_node->m_parent;
 }
 
 
@@ -49,7 +48,7 @@ node&
 directory::
 create_node(std::string_view  name) noexcept
 {
-  auto  nd = new node(m_self_node,name);
+  auto  nd = new node(*m_self_node,name);
 
   node::hook(m_last_node,nd);
 
@@ -91,7 +90,7 @@ create_pointer(void*  ptr, std::string_view  name) noexcept
 
 node*
 directory::
-find(std::string_view  name) const noexcept
+find_by_name(std::string_view  name) const noexcept
 {
     for(auto&  nd: *this)
     {
@@ -106,11 +105,97 @@ find(std::string_view  name) const noexcept
 }
 
 
+node*
+directory::
+find_by_path(const gpfs::path&  path) const noexcept
+{
+  auto  dir = path.is_absolute()? &get_root_directory():this;
+
+  node*  nd = path.is_absolute()? dir->m_self_node:nullptr;
+
+    for(auto&  copath: path)
+    {
+        if(copath.front() == '.')
+        {
+            if(copath.size() > 1)
+            {
+              dir = &dir->get_parent_directory();
+            }
+
+
+          nd = dir->m_self_node;
+        }
+
+      else
+        {
+          nd = dir->find_by_name(copath);
+
+            if(!nd)
+            {
+              break;
+            }
+
+
+            if(nd->is_directory())
+            {
+              dir = &nd->get_directory();
+            }
+        }
+    }
+
+
+  return nd;
+}
+
+
+directory*
+directory::
+find_directory_by_name(std::string_view  name) const noexcept
+{
+    for(auto&  nd: *this)
+    {
+        if(nd.is_directory() && (nd.get_name() == name))
+        {
+          return &nd.get_directory();
+        }
+    }
+
+
+  return nullptr;
+}
+
+
+directory&
+directory::
+get_root_directory() const noexcept
+{
+  auto  nd = m_self_node;
+
+    while(nd->m_parent)
+    {
+      nd = nd->m_parent;
+    }
+
+
+  return nd->get_directory();
+}
+
+
+directory&
+directory::
+get_parent_directory() const noexcept
+{
+  auto  parent = m_self_node->m_parent;
+
+  return (parent? parent:m_self_node)->get_directory();
+}
+
+
 void
 directory::
 remove(std::string_view  name) noexcept
 {
-  auto  nd = find(name);
+  auto  nd = find_by_name(name);
 
     if(nd)
     {

@@ -70,6 +70,7 @@ set(SOURCES
   sounds/scale_table.cpp
   gpfs_directory.cpp
   gpfs_node.cpp
+  gpfs_path.cpp
   ilc_javascript.cpp
   utility.cpp
   control.cpp

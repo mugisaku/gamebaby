@@ -274,7 +274,7 @@ void  barrier_keys(uint32_t  interval=240) noexcept;
 void   update_point(point  pt) noexcept;
 liner  make_liner() noexcept;
 
-directory&  get_root_directory() noexcept;
+gpfs::directory&  get_root_directory() noexcept;
 
 extern std::vector<uint8_t>  g_dropped_file;
 

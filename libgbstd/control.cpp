@@ -93,10 +93,10 @@ int
 g_control_value;
 
 
-gpfs::directory  g_root_dir;
+gpfs::node*  g_root_node;
 
-gpfs::directory*  g_clock_dir;
-gpfs::directory*  g_timer_dir;
+gpfs::directory*  g_clocks_dir;
+gpfs::directory*  g_timers_dir;
 
 
 point  g_a_point;
@@ -282,20 +282,30 @@ update_time(uint32_t  t) noexcept
 
       g_time = t;
 
-        for(auto&  clk: g_clock_table)
+        for(auto&  nd: *g_clocks_dir)
         {
-            if(!clk->is_stopped() && !clk->is_paused())
+            if(nd.is_pointer())
             {
-              *clk >>= diff;
+              auto  clk = nd.get_pointer<clock>();
+
+                if(!clk->is_stopped() && !clk->is_paused())
+                {
+                  *clk >>= diff;
+                }
             }
         }
 
 
-        for(auto&  tm: g_timer_table)
+        for(auto&  nd: *g_timers_dir)
         {
-            if(!tm->is_stopped() && !tm->is_paused())
+            if(nd.is_pointer())
             {
-              (*tm)();
+              auto  tm = nd.get_pointer<timer>();
+
+                if(!tm->is_stopped() && !tm->is_paused())
+                {
+                  (*tm)();
+                }
             }
         }
 
@@ -378,17 +388,18 @@ get_root_directory() noexcept
 
     if(!initialized)
     {
-      g_root_dir.create_directory("clocks");
-      g_root_dir.create_directory("timers");
+      g_root_node = new gpfs::node();
 
-      g_root_dir.create_directory("video")
-        .create_directory("sprites");
+      auto&  root_dir = g_root_node->get_directory();
+
+      g_clocks_dir = &root_dir.create_directory("clocks");
+      g_timers_dir = &root_dir.create_directory("timers");
 
       initialized = true;
     }
 
 
-  return g_root_dir;
+  return g_root_node->get_directory();
 }
 
 

@@ -1,4 +1,5 @@
 #include"libgbstd/video.hpp"
+#include"libgbstd/control.hpp"
 #include"libgbstd/ilc.hpp"
 #include"libgbstd/random.hpp"
 #include<cstdio>
@@ -16,8 +17,8 @@ namespace gbstd{
 namespace{
 bool  g_redraw_flag=true;
 
-std::vector<std::unique_ptr<sprite>>
-g_sprite_table;
+gpfs::directory*
+g_sprites_dir;
 
 color  g_background_color;
 
@@ -98,27 +99,6 @@ test_redraw_flag() noexcept
 
 
 
-void
-allocate_sprites(int  n) noexcept
-{
-  g_sprite_table.resize(n);
-
-    for(auto&  p: g_sprite_table)
-    {
-      p = std::make_unique<sprite>();
-    }
-}
-
-
-sprite&
-get_sprite(int  i) noexcept
-{
-  return *g_sprite_table[i];
-}
-
-
-
-
 const color&  get_background_color(               ) noexcept{return g_background_color;}
 void          set_background_color(color  bg_color) noexcept{g_background_color = bg_color;}
 
@@ -134,9 +114,12 @@ redraw_video() noexcept
 
       g_canvas.fill(g_background_color);
 
-        for(auto&  ptr: g_sprite_table)
+        for(auto&  nd: *g_sprites_dir)
         {
-          (*ptr)(g_canvas);
+            if(nd.is_callback())
+            {
+              nd.get_callback()(g_canvas);
+            }
         }
 
 
@@ -148,9 +131,20 @@ redraw_video() noexcept
 const canvas&
 set_video_size(int  w, int  h) noexcept
 {
-  initialize_random();
+  static bool  initialized;
 
-  initialize_javascript();
+    if(!initialized)
+    {
+      initialize_random();
+
+      initialize_javascript();
+
+      g_sprites_dir = &get_root_directory().create_directory("video")
+        .create_directory("sprites");
+
+      initialized = true;
+    }
+
 
   g_image.resize(w,h);
 

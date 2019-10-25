@@ -16,20 +16,20 @@ uniform_rand  g_number_rand;
 uniform_rand  g_color_rand;
 
 
-const gbstd::clock*
+gbstd::clock
 g_clock;
+
+
+gbstd::timer
+g_timer;
 
 
 gbstd::alarm
 g_alarm;
 
 
-timer
-g_timer;
-
-
 sprite
-g_screen_sprite;
+g_sprite;
 
 
 
@@ -618,25 +618,24 @@ start() noexcept
 int
 main(int  argc, char**  argv)
 {
-  allocate_clocks(1);
-  allocate_timers(2);
-  allocate_sprites(2);
+  sdl::init(g_screen_w,g_screen_h);
 
+  auto&  root_dir = get_root_directory();
+
+  auto&  clocks_dir = *root_dir.find_directory_by_name("clocks");
+  auto&  timers_dir = *root_dir.find_directory_by_name("timers");
+
+  clocks_dir.create_pointer(&g_clock,"system");
+  timers_dir.create_pointer(&g_timer,"system");
 
   g_number_rand.reset(1,3);
   g_color_rand.reset(0,3);
 
-  g_clock = &get_clock(0);
+  g_alarm.assign(g_clock).set_interval(100).reset();
 
-  g_alarm.assign(*g_clock).set_interval(100).reset();
-
-//  get_timer(0).set_clock_pointer(clock).set_interval(1000).set_callback({g_taro,&user::drive});
-
-  get_sprite(0).set_callback({g_stage,&stage::draw});
+  g_sprite.set_callback({g_stage,&stage::draw});
 
   push_execution(start);
-
-  sdl::init(g_screen_w,g_screen_h);
 
   gbstd::set_caption("計算ゲーム");
 
