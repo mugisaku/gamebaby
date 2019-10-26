@@ -1,8 +1,4 @@
-#include"libgbstd/control.hpp"
-#include"libgbstd/video.hpp"
-#include<cstdio>
-#include<cstring>
-#include<memory>
+#include"libgbstd/gbstd.hpp"
 
 
 
@@ -13,52 +9,6 @@ namespace gbstd{
 
 
 std::vector<uint8_t>  g_dropped_file;
-
-
-clock&
-clock::
-operator>>=(uint32_t  t) noexcept
-{
-    if(m_permil)
-    {
-      constexpr int  shift_amount = 16;
-
-      m_time_fraction += (t<<shift_amount)/1000*m_permil;
-
-      m_time_integer += (m_time_fraction>>shift_amount);
-
-      m_time_fraction &= 0xFFFF;
-    }
-
-
-  return *this;
-}
-
-
-timer&
-timer::
-operator()() noexcept
-{
-    if(!m_status.test(flags::lock) && m_interval && m_clock_pointer)
-    {
-      m_status.set(flags::lock);
-
-      auto  tm = m_clock_pointer->get_time();
-
-        while(tm >= m_next_time)
-        {
-          m_callback();
-
-          m_next_time += m_interval;
-        }
-
-
-      m_status.unset(flags::lock);
-    }
-
-
-  return *this;
-}
 
 
 
@@ -284,13 +234,13 @@ update_time(uint32_t  t) noexcept
 
         for(auto&  nd: *g_clocks_dir)
         {
-            if(nd.is_pointer())
+            if(nd.is_clock())
             {
-              auto  clk = nd.get_pointer<clock>();
+              auto&  clk = nd.get_clock();
 
-                if(!clk->is_stopped() && !clk->is_paused())
+                if(!clk.is_stopped() && !clk.is_paused())
                 {
-                  *clk >>= diff;
+                  clk >>= diff;
                 }
             }
         }
@@ -298,13 +248,13 @@ update_time(uint32_t  t) noexcept
 
         for(auto&  nd: *g_timers_dir)
         {
-            if(nd.is_pointer())
+            if(nd.is_timer())
             {
-              auto  tm = nd.get_pointer<timer>();
+              auto&  tm = nd.get_timer();
 
-                if(!tm->is_stopped() && !tm->is_paused())
+                if(!tm.is_stopped() && !tm.is_paused())
                 {
-                  (*tm)();
+                  tm();
                 }
             }
         }
@@ -388,7 +338,7 @@ get_root_directory() noexcept
 
     if(!initialized)
     {
-      g_root_node = new gpfs::node();
+      g_root_node = gpfs::node::create_root();
 
       auto&  root_dir = g_root_node->get_directory();
 

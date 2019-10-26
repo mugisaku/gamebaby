@@ -7,7 +7,6 @@
 #include<vector>
 #include"libgbstd/image.hpp"
 #include"libgbstd/misc.hpp"
-#include"libgbstd/gpfs.hpp"
 
 
 namespace gbstd{
@@ -148,7 +147,22 @@ public:
 
   const uint32_t&  get_time() const noexcept{return m_time_integer;}
 
-  clock&  operator>>=(uint32_t  t) noexcept;
+  clock&  operator>>=(uint32_t  t) noexcept
+  {
+      if(m_permil)
+      {
+        constexpr int  shift_amount = 16;
+
+        m_time_fraction += (t<<shift_amount)/1000*m_permil;
+
+        m_time_integer += (m_time_fraction>>shift_amount);
+
+        m_time_fraction &= 0xFFFF;
+      }
+
+
+    return *this;
+  }
 
 };
 
@@ -194,7 +208,28 @@ public:
 
   timer&  set_callback(callback_wrapper  cb) noexcept{  m_callback = cb;  return *this;}
 
-  timer&  operator()() noexcept;
+  timer&  operator()() noexcept
+  {
+      if(!m_status.test(flags::lock) && m_interval && m_clock_pointer)
+      {
+        m_status.set(flags::lock);
+
+        auto  tm = m_clock_pointer->get_time();
+
+          while(tm >= m_next_time)
+          {
+            m_callback();
+
+            m_next_time += m_interval;
+          }
+
+
+        m_status.unset(flags::lock);
+      }
+
+
+    return *this;
+  }
 
 };
 
@@ -206,8 +241,6 @@ alarm
 
   uint32_t  m_interval=0;
   uint32_t  m_next_time=0;
-
-  uint32_t  get_time() const noexcept{return m_clock_pointer? m_clock_pointer->get_time():0;}
 
 public:
   alarm() noexcept{}
@@ -222,6 +255,9 @@ public:
   alarm&  reset() noexcept{  m_next_time = get_time()+m_interval;  return *this;}
 
   alarm&  set_interval(uint32_t  v) noexcept{  m_interval = v;  return *this;}
+
+  uint32_t  get_time() const noexcept{return m_clock_pointer? m_clock_pointer->get_time():0;}
+  uint32_t  get_next_time() const noexcept{return m_next_time;}
 
   uint32_t  get_interval() const noexcept{return m_interval;}
 
@@ -247,36 +283,6 @@ public:
 
 };
 
-
-
-
-void  reset_execution(callback_wrapper  cb) noexcept;
-void  push_execution(callback_wrapper  cb) noexcept;
-void  replace_execution(callback_wrapper  cb) noexcept;
-void   pop_execution(int  v=0) noexcept;
-
-int  get_control_value() noexcept;
-
-void  interrupt_execution() noexcept;
-
-
-uint32_t     get_time(           ) noexcept;
-void      update_time(uint32_t  t) noexcept;
-
-
-const key_state&  get_modified_keys(                      ) noexcept;
-const key_state&   get_pressed_keys(                      ) noexcept;
-const key_state&           get_keys(                      ) noexcept;
-void                    update_keys(const key_state&  keys) noexcept;
-
-void  barrier_keys(uint32_t  interval=240) noexcept;
-
-void   update_point(point  pt) noexcept;
-liner  make_liner() noexcept;
-
-gpfs::directory&  get_root_directory() noexcept;
-
-extern std::vector<uint8_t>  g_dropped_file;
 
 
 

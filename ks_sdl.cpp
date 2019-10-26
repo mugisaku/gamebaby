@@ -16,20 +16,12 @@ uniform_rand  g_number_rand;
 uniform_rand  g_color_rand;
 
 
-gbstd::clock
+gbstd::clock*
 g_clock;
-
-
-gbstd::timer
-g_timer;
 
 
 gbstd::alarm
 g_alarm;
-
-
-sprite
-g_sprite;
 
 
 
@@ -623,17 +615,20 @@ main(int  argc, char**  argv)
   auto&  root_dir = get_root_directory();
 
   auto&  clocks_dir = *root_dir.find_directory_by_name("clocks");
-  auto&  timers_dir = *root_dir.find_directory_by_name("timers");
 
-  clocks_dir.create_pointer(&g_clock,"system");
-  timers_dir.create_pointer(&g_timer,"system");
+  g_clock = &clocks_dir.create_node("system").be_clock();
 
   g_number_rand.reset(1,3);
   g_color_rand.reset(0,3);
 
-  g_alarm.assign(g_clock).set_interval(100).reset();
+  g_alarm.assign(*g_clock)
+    .set_interval(100)
+    .reset();
 
-  g_sprite.set_callback({g_stage,&stage::draw});
+  root_dir.find_by_path({"/video/sprites"})->get_directory()
+    .create_node("spr00")
+    .be_sprite()
+    .set_callback({g_stage,&stage::draw});
 
   push_execution(start);
 

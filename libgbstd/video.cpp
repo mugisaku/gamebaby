@@ -1,5 +1,5 @@
 #include"libgbstd/video.hpp"
-#include"libgbstd/control.hpp"
+#include"libgbstd/gbstd.hpp"
 #include"libgbstd/ilc.hpp"
 #include"libgbstd/random.hpp"
 #include<cstdio>
@@ -116,9 +116,9 @@ redraw_video() noexcept
 
         for(auto&  nd: *g_sprites_dir)
         {
-            if(nd.is_callback())
+            if(nd.is_sprite())
             {
-              nd.get_callback()(g_canvas);
+              nd.get_sprite()(g_canvas);
             }
         }
 

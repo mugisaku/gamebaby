@@ -72,19 +72,7 @@ create_directory(std::string_view  name) noexcept
 {
   auto&  nd = create_node(name);
 
-  nd.be_directory();
-
-  return nd.get_directory();
-}
-
-
-void
-directory::
-create_pointer(void*  ptr, std::string_view  name) noexcept
-{
-  auto&  nd = create_node(name);
-
-  nd.be_pointer(ptr);
+  return nd.be_directory();
 }
 
 

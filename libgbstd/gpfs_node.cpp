@@ -31,63 +31,105 @@ m_kind(kind::null)
 
 
 
-node&
+void*&
 node::
-be_pointer(void*  ptr) noexcept
+be_pointer() noexcept
 {
   clear();
 
   m_kind = kind::pointer;
 
-  m_data.ptr = ptr;
+  m_data.ptr = nullptr;
 
-  return *this;
+  return m_data.ptr;
 }
 
 
-node&
+int&
 node::
-be_integer(int  i) noexcept
+be_integer() noexcept
 {
   clear();
 
   m_kind = kind::integer;
 
-  m_data.i = i;
+  m_data.i = 0;
 
-  return *this;
+  return m_data.i;
 }
 
 
-node&
+double&
 node::
-be_real_number(double  d) noexcept
+be_real_number() noexcept
 {
   clear();
 
   m_kind = kind::real_number;
 
-  m_data.d = d;
+  m_data.d = 0;
 
-  return *this;
+  return m_data.d;
 }
 
 
-node&
+callback_wrapper&
 node::
-be_callback(callback_wrapper  cb) noexcept
+be_callback() noexcept
 {
   clear();
 
   m_kind = kind::callback;
 
-  new(&m_data.cb) callback_wrapper(cb);
+  new(&m_data.cb) callback_wrapper();
 
-  return *this;
+  return m_data.cb;
 }
 
 
-node&
+sprite&
+node::
+be_sprite() noexcept
+{
+  clear();
+
+  m_kind = kind::sprite;
+
+  new(&m_data) sprite();
+
+  return m_data.spr;
+}
+
+
+timer&
+node::
+be_timer() noexcept
+{
+  clear();
+
+  m_kind = kind::timer;
+
+  new(&m_data) timer();
+
+  return m_data.tmr;
+}
+
+
+clock&
+node::
+be_clock() noexcept
+{
+  clear();
+
+  m_kind = kind::clock;
+
+  new(&m_data) clock();
+
+  return m_data.clk;
+}
+
+
+directory&
 node::
 be_directory() noexcept
 {
@@ -99,7 +141,7 @@ be_directory() noexcept
 
   m_data.dir.m_self_node = this;
 
-  return *this;
+  return m_data.dir;
 }
 
 
@@ -109,15 +151,15 @@ void
 node::
 clear() noexcept
 {
-    if(is_directory())
+    switch(m_kind)
     {
-      m_data.dir.~directory();
-    }
+  case(kind::directory): m_data.dir.~directory();break;
+  case(kind::callback ): m_data.cb.~callback_wrapper();break;
+  case(kind::sprite   ): m_data.spr.~sprite();break;
+  case(kind::timer    ): m_data.tmr.~timer();break;
+  case(kind::clock    ): m_data.clk.~clock();break;
 
-  else
-    if(is_callback())
-    {
-      m_data.cb.~callback_wrapper();
+  default:;
     }
 
 
@@ -134,6 +176,9 @@ print() const noexcept
                        :is_integer()?     "integer"
                        :is_real_number()? "real_number"
                        :is_callback()?    "callback"
+                       :is_sprite()?      "sprite"
+                       :is_timer()?       "timer"
+                       :is_clock()?       "clock"
                        :                  "null";
 
   printf("name: \"%s\", type: %s,",m_name.data(),type_s);

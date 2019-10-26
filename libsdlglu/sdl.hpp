@@ -2,9 +2,7 @@
 #define sdl_hpp_was_inclueded
 
 
-#include"libgbstd/image.hpp"
-#include"libgbstd/control.hpp"
-#include"libgbstd/video.hpp"
+#include"libgbstd/gbstd.hpp"
 #include"libgbstd/sound.hpp"
 
 

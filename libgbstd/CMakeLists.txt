@@ -73,8 +73,8 @@ set(SOURCES
   gpfs_path.cpp
   ilc_javascript.cpp
   utility.cpp
-  control.cpp
   video.cpp
+  gbstd.cpp
 )
 
 

@@ -6,6 +6,8 @@
 #include<cstdio>
 #include"libgbstd/utility.hpp"
 #include"libgbstd/misc.hpp"
+#include"libgbstd/video.hpp"
+#include"libgbstd/control.hpp"
 
 
 namespace gbstd{
@@ -77,7 +79,6 @@ public:
   node&  create_node(std::string_view  name) noexcept;
 
   directory&  create_directory(std::string_view  name) noexcept;
-  void          create_pointer(void*  ptr, std::string_view  name) noexcept;
 
   node*  find_by_name(std::string_view  name) const noexcept;
   node*  find_by_path(const gpfs::path&  path) const noexcept;
@@ -141,6 +142,9 @@ node
   real_number,
       pointer,
      callback,
+       sprite,
+        timer,
+        clock,
 
   } m_kind=kind::null;
 
@@ -151,15 +155,21 @@ node
     double  d;
     void*            ptr;
     callback_wrapper  cb;
+    sprite  spr;
+    timer   tmr;
+    clock   clk;
 
     data() noexcept{}
    ~data(){}
 
   } m_data;
 
-public:
   node() noexcept;
   node(node&  parent, std::string_view  name) noexcept;
+
+public:
+  static node*  create_root() noexcept{return new node;}
+
  ~node(){clear();}
 
   node(const node& ) noexcept=delete;
@@ -172,11 +182,14 @@ public:
 
   operator bool() const noexcept{return !is_null();}
 
-  node&  be_pointer(void*  ptr) noexcept;
-  node&  be_integer(int  i) noexcept;
-  node&  be_real_number(double  d) noexcept;
-  node&  be_callback(callback_wrapper  cb) noexcept;
-  node&  be_directory() noexcept;
+  void*&             be_pointer() noexcept;
+  int&               be_integer() noexcept;
+  double&            be_real_number() noexcept;
+  callback_wrapper&  be_callback() noexcept;
+  directory&         be_directory() noexcept;
+  sprite&            be_sprite() noexcept;
+  timer&             be_timer() noexcept;
+  clock&             be_clock() noexcept;
 
   const std::string&  get_name() const noexcept{return m_name;}
   void                set_name(std::string_view  sv) noexcept{m_name = sv;}
@@ -186,14 +199,20 @@ public:
   bool  is_integer()     const noexcept{return m_kind == kind::integer;}
   bool  is_real_number() const noexcept{return m_kind == kind::real_number;}
   bool  is_callback()    const noexcept{return m_kind == kind::callback;}
+  bool  is_sprite()      const noexcept{return m_kind == kind::sprite;}
+  bool  is_timer()       const noexcept{return m_kind == kind::timer;}
+  bool  is_clock()       const noexcept{return m_kind == kind::clock;}
   bool  is_directory()   const noexcept{return m_kind == kind::directory;}
 
   int&     get_integer() noexcept{return m_data.i;}
   double&  get_real_number() noexcept{return m_data.d;}
 
   callback_wrapper&  get_callback() noexcept{return m_data.cb;}
+  sprite&            get_sprite() noexcept{return m_data.spr;}
+  timer&             get_timer() noexcept{return m_data.tmr;}
+  clock&             get_clock() noexcept{return m_data.clk;}
 
-  void*  get_pointer() const noexcept{return m_data.ptr;}
+  void*&  get_pointer() noexcept{return m_data.ptr;}
 
   template<typename  T>
   T*  get_pointer() const noexcept{return static_cast<T*>(m_data.ptr);}
