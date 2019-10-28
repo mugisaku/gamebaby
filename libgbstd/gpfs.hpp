@@ -34,15 +34,24 @@ public:
   path&  operator =(std::string_view  sv) noexcept{return assign(sv);}
   path&  operator+=(std::string_view  sv) noexcept{return append(sv);}
 
+  operator bool() const noexcept{return m_data.size();}
+
   path&  assign(std::string_view  sv) noexcept;
   path&  append(std::string_view  sv) noexcept;
 
+  int  get_number_of_elements() const noexcept{return m_data.size();}
+
   bool  is_absolute() const noexcept{return m_absolute;}
+
+  const std::string&  get_first_name() const noexcept{return m_data.front();}
+  const std::string&  get_last_name() const noexcept{return m_data.back();}
 
   const std::string*  begin() const noexcept{return m_data.data();}
   const std::string*    end() const noexcept{return m_data.data()+m_data.size();}
 
   void  print() const noexcept;
+
+  static bool  test(std::string_view  sv) noexcept;
 
 };
 
@@ -62,6 +71,9 @@ directory
   directory() noexcept{}
  ~directory(){clear();}
 
+  bool  remove_node(node*  nd) noexcept;
+  void  append_node(node*  nd) noexcept;
+
   void  clear() noexcept;
 
 public:
@@ -76,19 +88,22 @@ public:
   node*    get_self_node() const noexcept{return m_self_node;}
   node*  get_parent_node() const noexcept;
 
-  node&  create_node(std::string_view  name) noexcept;
+  node*  create_node_by_name(std::string_view      name) noexcept;
+  node*  create_node_by_path(std::string_view  nodepath) noexcept;
 
-  directory&  create_directory(std::string_view  name) noexcept;
+  directory*  create_directory(std::string_view  dirpath) noexcept;
 
-  node*  find_by_name(std::string_view  name) const noexcept;
-  node*  find_by_path(const gpfs::path&  path) const noexcept;
+  node*  find_node_by_name(std::string_view      name) const noexcept;
+  node*  find_node_by_path(std::string_view  nodepath) const noexcept;
 
-  directory*  find_directory_by_name(std::string_view  name) const noexcept;
+  directory*  find_directory(std::string_view  dirpath) const noexcept;
+
   directory&  get_root_directory() const noexcept;
   directory&  get_parent_directory() const noexcept;
 
-  void  remove(std::string_view  name) noexcept;
-  void  remove(node*  ln) noexcept;
+  bool  move(std::string_view  src_nodepath, std::string_view  dst_dirpath) noexcept;
+
+  bool  remove(std::string_view  nodepath) noexcept;
 
   void  print() const noexcept;
 
@@ -123,7 +138,7 @@ node
   node*  m_previous=nullptr;
   node*  m_next=nullptr;
 
-  node*  m_parent;
+  node*  m_parent=nullptr;
 
   std::string  m_name;
 
@@ -165,7 +180,7 @@ node
   } m_data;
 
   node() noexcept;
-  node(node&  parent, std::string_view  name) noexcept;
+  node(std::string_view  name) noexcept;
 
 public:
   static node*  create_root() noexcept{return new node;}

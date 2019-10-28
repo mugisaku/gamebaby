@@ -44,47 +44,105 @@ clear() noexcept
 }
 
 
-node&
+node*
 directory::
-create_node(std::string_view  name) noexcept
+create_node_by_name(std::string_view  name) noexcept
 {
-  auto  nd = new node(*m_self_node,name);
+  auto  nd = find_node_by_name(name);
 
-  node::hook(m_last_node,nd);
-
-  m_last_node = nd;
-
-    if(!m_first_node)
+    if(nd)
     {
-      m_first_node = nd;
+      return nd;
     }
 
 
-  ++m_number_of_nodes;
+  nd = new node(name);
 
-  return *nd;
-}
+  append_node(nd);
 
-
-directory&
-directory::
-create_directory(std::string_view  name) noexcept
-{
-  auto&  nd = create_node(name);
-
-  return nd.be_directory();
+  return nd;
 }
 
 
 node*
 directory::
-find_by_name(std::string_view  name) const noexcept
+create_node_by_path(std::string_view  nodepath) noexcept
 {
-    for(auto&  nd: *this)
+  gpfs::path  path(nodepath);
+
+  auto  dir = path.is_absolute()? &get_root_directory():this;
+
+  auto  head = &path.get_first_name();
+  auto  tail = &path.get_last_name();
+
+    while(head != tail)
     {
-        if(nd.get_name() == name)
+      auto&  name = *head++;
+
+      auto  res = dir->find_node_by_name(name);
+
+        if(!res)
         {
-          return &nd;
+          dir = dir->create_directory(name);
+        }
+
+      else
+        if(res->is_directory())
+        {
+          dir = &res->get_directory();
+        }
+
+      else
+        {
+          printf("[error: create node by path] can not make directory");
+
+          return nullptr;
+        }
+    }
+
+
+  return dir->create_node_by_name(*tail);
+}
+
+
+directory*
+directory::
+create_directory(std::string_view  nodepath) noexcept
+{
+  auto  nd = create_node_by_path(nodepath);
+
+    if(nd)
+    {
+      return  nd->is_null()?      &nd->be_directory()
+             :nd->is_directory()? &nd->get_directory()
+             :nullptr;
+    }
+
+
+  return nullptr;
+}
+
+
+node*
+directory::
+find_node_by_name(std::string_view  name) const noexcept
+{
+    if(name.size())
+    {
+        if(name[0] == '.')
+        {
+          auto  parent = m_self_node->m_parent;
+
+          return ((name.size() > 1) && parent)? parent:m_self_node;
+        }
+
+
+        for(auto&  nd: *this)
+        {
+            if(nd.get_name() == name)
+            {
+              return &nd;
+            }
         }
     }
 
@@ -95,40 +153,25 @@ find_by_name(std::string_view  name) const noexcept
 
 node*
 directory::
-find_by_path(const gpfs::path&  path) const noexcept
+find_node_by_path(std::string_view  nodepath) const noexcept
 {
+  gpfs::path  path(nodepath);
+
   auto  dir = path.is_absolute()? &get_root_directory():this;
 
   node*  nd = path.is_absolute()? dir->m_self_node:nullptr;
 
     for(auto&  copath: path)
     {
-        if(copath.front() == '.')
+      nd = dir->find_node_by_name(copath);
+
+        if(!nd || !nd->is_directory())
         {
-            if(copath.size() > 1)
-            {
-              dir = &dir->get_parent_directory();
-            }
-
-
-          nd = dir->m_self_node;
+          break;
         }
 
-      else
-        {
-          nd = dir->find_by_name(copath);
 
-            if(!nd)
-            {
-              break;
-            }
-
-
-            if(nd->is_directory())
-            {
-              dir = &nd->get_directory();
-            }
-        }
+      dir = &nd->get_directory();
     }
 
 
@@ -138,18 +181,11 @@ find_by_path(const gpfs::path&  path) const noexcept
 
 directory*
 directory::
-find_directory_by_name(std::string_view  name) const noexcept
+find_directory(std::string_view  dirpath) const noexcept
 {
-    for(auto&  nd: *this)
-    {
-        if(nd.is_directory() && (nd.get_name() == name))
-        {
-          return &nd.get_directory();
-        }
-    }
+  auto  nd = find_node_by_path(dirpath);
 
-
-  return nullptr;
+  return (nd && nd->is_directory())? &nd->get_directory():nullptr;
 }
 
 
@@ -179,24 +215,85 @@ get_parent_directory() const noexcept
 }
 
 
-void
+bool
 directory::
-remove(std::string_view  name) noexcept
+move(std::string_view  src_nodepath, std::string_view  dst_dirpath) noexcept
 {
-  auto  nd = find_by_name(name);
+  auto  src_nd = find_node_by_path(src_nodepath);
 
-    if(nd)
+    if(src_nd)
     {
-      remove(nd);
+      auto  src_parent = src_nd->m_parent;
+
+        if(src_parent)
+        {
+          auto  dst_dir = create_directory(dst_dirpath);
+
+            if(dst_dir)
+            {
+                if(src_parent->get_directory().remove_node(src_nd))
+                {
+                  dst_dir->append_node(src_nd);
+
+                  return true;
+                }
+            }
+        }
     }
+
+
+  return false;
 }
 
 
 void
 directory::
-remove(node*  nd) noexcept
+append_node(node*  nd) noexcept
 {
-    if(nd->m_parent == m_self_node)
+  nd->m_parent = m_self_node;
+
+  node::hook(m_last_node,nd);
+
+  m_last_node = nd;
+
+    if(!m_first_node)
+    {
+      m_first_node = nd;
+    }
+
+
+  ++m_number_of_nodes;
+}
+
+
+bool
+directory::
+remove(std::string_view  nodepath) noexcept
+{
+  auto  nd = find_node_by_path(nodepath);
+
+    if(nd)
+    {
+      auto  parent = nd->m_parent;
+
+        if(parent && parent->get_directory().remove_node(nd))
+        {
+          delete nd;
+
+          return true;
+        }
+    }
+
+
+  return false;
+}
+
+
+bool
+directory::
+remove_node(node*  nd) noexcept
+{
+    if(nd->m_parent && (nd->m_parent == m_self_node))
     {
         if(m_last_node == nd)
         {
@@ -212,10 +309,16 @@ remove(node*  nd) noexcept
 
       nd->unhook();
 
-      delete nd;
+      nd->m_previous = nullptr;
+      nd->m_next     = nullptr;
 
       --m_number_of_nodes;
+
+      return true;
     }
+
+
+  return false;
 }
 
 
@@ -224,20 +327,22 @@ directory::
 print() const noexcept
 {
   int  d = 0;
-  int  p = 0;
 
     for(auto&  nd: *this)
     {
-        if(nd.is_directory()){++d;}
-      else                   {++p;}
+        if(nd.is_directory())
+        {
+          ++d;
+        }
 
+ 
       nd.print();
 
       printf("\n");
     }
 
 
-  printf("%d個のノード(%d個のディレクトリと、%d個のポインタ)\n",m_number_of_nodes,d,p);
+  printf("%d個のノード(%d個のディレクトリ)\n",m_number_of_nodes,d);
 }
 
 

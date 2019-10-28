@@ -12,7 +12,6 @@ namespace gpfs{
 
 node::
 node() noexcept:
-m_parent(nullptr),
 m_name("**ROOT DIRECTORY**"),
 m_kind(kind::null)
 {
@@ -21,8 +20,7 @@ m_kind(kind::null)
 
 
 node::
-node(node&  parent, std::string_view  name) noexcept:
-m_parent(&parent),
+node(std::string_view  name) noexcept:
 m_name(name),
 m_kind(kind::null)
 {
@@ -181,15 +179,22 @@ print() const noexcept
                        :is_clock()?       "clock"
                        :                  "null";
 
-  printf("name: \"%s\", type: %s,",m_name.data(),type_s);
+  printf("name: \"%s\", type: %s, data: ",m_name.data(),type_s);
 
-    if(is_directory())
+    switch(m_kind)
     {
+  case(kind::null): printf("null");break;
+  case(kind::directory):
       printf("{\n");
 
       get_directory().print();
 
       printf("\n}\n");
+    break;
+  case(kind::integer): printf("%d",m_data.i);break;
+  case(kind::real_number): printf("%f",m_data.d);break;
+
+  default:;
     }
 }
 

@@ -204,6 +204,40 @@ print() const noexcept
 }
 
 
+bool
+path::
+test(std::string_view  sv) noexcept
+{
+  auto      it = sv.begin();
+  auto  end_it = sv.end();
+
+    if(it != end_it)
+    {
+      auto  c = *it++;
+
+        if((c != '.') &&
+           (c != '/'))
+        {
+            while(it != end_it)
+            {
+              c = *it++;
+
+                if(c == '/')
+                {
+                  return false;
+                }
+            }
+
+
+          return(*--it != '.');
+        }
+    }
+
+
+  return false;
+}
+
+
 
 
 }}

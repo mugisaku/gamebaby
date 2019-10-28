@@ -342,8 +342,8 @@ get_root_directory() noexcept
 
       auto&  root_dir = g_root_node->get_directory();
 
-      g_clocks_dir = &root_dir.create_directory("clocks");
-      g_timers_dir = &root_dir.create_directory("timers");
+      g_clocks_dir = root_dir.create_directory("/clocks");
+      g_timers_dir = root_dir.create_directory("/timers");
 
       initialized = true;
     }

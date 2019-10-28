@@ -139,8 +139,7 @@ set_video_size(int  w, int  h) noexcept
 
       initialize_javascript();
 
-      g_sprites_dir = &get_root_directory().create_directory("video")
-        .create_directory("sprites");
+      g_sprites_dir = get_root_directory().create_directory("/video/sprites");
 
       initialized = true;
     }

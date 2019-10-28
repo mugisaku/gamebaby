@@ -614,9 +614,9 @@ main(int  argc, char**  argv)
 
   auto&  root_dir = get_root_directory();
 
-  auto&  clocks_dir = *root_dir.find_directory_by_name("clocks");
+  auto&  clocks_dir = *root_dir.find_directory("clocks");
 
-  g_clock = &clocks_dir.create_node("system").be_clock();
+  g_clock = &clocks_dir.create_node_by_name("system")->be_clock();
 
   g_number_rand.reset(1,3);
   g_color_rand.reset(0,3);
@@ -625,9 +625,8 @@ main(int  argc, char**  argv)
     .set_interval(100)
     .reset();
 
-  root_dir.find_by_path({"/video/sprites"})->get_directory()
-    .create_node("spr00")
-    .be_sprite()
+  root_dir.create_node_by_path("/video/sprites/spr00")
+   ->be_sprite()
     .set_callback({g_stage,&stage::draw});
 
   push_execution(start);
