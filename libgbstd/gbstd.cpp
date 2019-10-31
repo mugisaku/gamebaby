@@ -1,4 +1,5 @@
 #include"libgbstd/gbstd.hpp"
+#include<memory>
 
 
 
@@ -23,25 +24,8 @@ key_state           g_keys;
 key_state      g_null_keys;
 
 
-
-
-namespace flags{
-constexpr int     change = 1; 
-constexpr int  interrupt = 2; 
-}
-
-
-status_value<int>
-g_execution_status;
-
-
-std::vector<callback_wrapper>
+std::vector<std::unique_ptr<execution>>
 g_execution_stack;
-
-
-int
-g_control_value;
-
 
 gpfs::node*  g_root_node;
 
@@ -59,157 +43,19 @@ point  g_b_point;
 
 
 void
-reset_execution(callback_wrapper  cb) noexcept
-{
-    if(!g_execution_status.test(flags::change))
-    {
-      g_execution_stack.clear();
-
-      g_execution_stack.emplace_back(cb);
-
-      g_execution_status.set(flags::change);
-    }
-
-  else
-    {
-      printf("[execution reset error]\n");
-    }
-}
-
-
-void
 push_execution(callback_wrapper  cb) noexcept
 {
-    if(!g_execution_status.test(flags::change))
-    {
-      g_execution_stack.emplace_back(cb);
-
-      g_execution_status.set(flags::change);
-    }
-
-  else
-    {
-      printf("[execution multi push error]\n");
-    }
+  g_execution_stack.emplace_back(std::make_unique<execution>(cb));
 }
 
 
 void
-replace_execution(callback_wrapper  cb) noexcept
+pop_execution() noexcept
 {
-    if(!g_execution_status.test(flags::change))
-    {
-      g_execution_stack.back() = cb;
-
-      g_execution_status.set(flags::change);
-    }
-
-  else
-    {
-      printf("[execution replace error]\n");
-    }
+  g_execution_stack.pop_back();
 }
 
 
-void
-pop_execution(int  v) noexcept
-{
-    if(!g_execution_status.test(flags::change))
-    {
-      g_execution_stack.pop_back();
-
-      g_control_value = v;
-
-      g_execution_status.set(flags::change);
-    }
-
-  else
-    {
-      printf("[execution multi pop error]\n");
-    }
-}
-
-
-
-
-namespace{
-void
-step_execution() noexcept
-{
-  static bool  lock;
-
-    if(!lock && g_execution_stack.size())
-    {
-      lock = true;
-
-      g_execution_status.unset(flags::interrupt);
-      g_execution_status.unset(flags::change   );
-
-      auto  exec = g_execution_stack.back();
-
-      int  safe_counter = 80;
-
-//      int  x_counter = 0;
-
-        for(;;)
-        {
-            if(!safe_counter--)
-            {
-              printf("warning: step execution, safe counter is reached zero.\n");
-
-              break;
-            }
-
-
-          exec();
-
-//          ++x_counter;
-
-            if(g_execution_status.test(flags::interrupt))
-            {
-              break;
-            }
-
-
-            if(g_execution_status.test(flags::change))
-            {
-                if(g_execution_stack.size())
-                {
-                  exec = g_execution_stack.back();
-
-                  g_execution_status.unset(flags::change);
-                }
-
-              else
-                {
-                  break;
-                }
-            }
-        }
-
-
-//      printf("executes %d times.\n",x_counter);
-      
-      lock = false;
-    }
-}
-}
-
-
-
-
-int
-get_control_value() noexcept
-{
-  return g_control_value;
-}
-
-
-void
-interrupt_execution() noexcept
-{
-  g_execution_status.set(flags::interrupt);
-}
 
 
 uint32_t
@@ -260,7 +106,11 @@ update_time(uint32_t  t) noexcept
         }
 
 
-      step_execution();
+        if(g_execution_stack.size())
+        {
+          g_execution_stack.back()->step();
+        }
+
 
       redraw_video();
 

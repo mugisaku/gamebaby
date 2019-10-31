@@ -219,6 +219,104 @@ draw_string_safely_as_right_align(color  col, std::u16string_view  sv, int  x, i
 
 
 
+void
+canvas::
+draw_string_in_area(color  col, std::string_view     sv, int  x, int  y, int  w, int  h) const noexcept
+{
+  const int  x_base  = x  ;
+  const int  x_limit = x+w;
+  const int  y_limit = y+h;
+
+  utf8_decoder  dec(sv.data());
+
+    while(dec)
+    {
+      auto  c = static_cast<char16_t>(dec());
+
+        if(!c)
+        {
+          break;
+        }
+
+
+        if(c == '\n')
+        {
+          x  =        x_base;
+          y += g_font_height;
+
+            if(y >= y_limit)
+            {
+              break;
+            }
+        }
+
+      else
+        {
+          draw_glyph(col,get_glyph(c),x,y);
+
+          x += g_font_width;
+
+            if(x >= x_limit)
+            {
+              x  =        x_base;
+              y += g_font_height;
+
+                if(y >= y_limit)
+                {
+                  break;
+                }
+            }
+        }
+    }
+}
+
+
+void
+canvas::
+draw_string_in_area(color  col, std::u16string_view  sv, int  x, int  y, int  w, int  h) const noexcept
+{
+  const int  x_base  = x  ;
+  const int  x_limit = x+w;
+  const int  y_limit = y+h;
+
+    for(auto  u16: sv)
+    {
+      auto  c = u16;
+
+        if(c == '\n')
+        {
+          x  =        x_base;
+          y += g_font_height;
+
+            if(y >= y_limit)
+            {
+              break;
+            }
+        }
+
+      else
+        {
+          draw_glyph(col,get_glyph(c),x,y);
+
+          x += g_font_width;
+
+            if(x >= x_limit)
+            {
+              x  =        x_base;
+              y += g_font_height;
+
+                if(y >= y_limit)
+                {
+                  break;
+                }
+            }
+        }
+    }
+}
+
+
+
+
 }
 
 

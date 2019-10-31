@@ -284,6 +284,39 @@ public:
 };
 
 
+class
+execution
+{
+  struct flags{
+    static constexpr int     change = 1; 
+    static constexpr int  interrupt = 2; 
+  };
+
+
+  status_value<int>  m_status;
+
+  std::vector<callback_wrapper>  m_stack;
+
+  int  m_control_value;
+
+public:
+  execution() noexcept{}
+  execution(callback_wrapper  cb) noexcept: m_stack({cb}){}
+
+  void    reset(callback_wrapper  cb) noexcept;
+  void     push(callback_wrapper  cb) noexcept;
+  void  replace(callback_wrapper  cb) noexcept;
+  void   pop(int  v=0) noexcept;
+
+  void  step() noexcept;
+
+  int  get_control_value() noexcept;
+
+  void  interrupt() noexcept;
+
+};
+
+
 
 
 }

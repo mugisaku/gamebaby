@@ -65,10 +65,8 @@ add_subdirectory(libgbpng)
 
 
 set(CHILDREN
-#  children/children.cpp
-# children/FallBlockPazzle/FallBlockPazzle_context.cpp
-#  children/FallBlockPazzle/FallBlockPazzle_space.cpp
-# children/FallBlockPazzle/FallBlockPazzle_stage.cpp
+  children/FallBlockPazzle/FallBlockPazzle_space.cpp
+  children/FallBlockPazzle/FallBlockPazzle_stage.cpp
 )
 
 
@@ -76,7 +74,7 @@ include_directories(./ /usr/local/include)
 link_directories(/usr/local/lib)
 
 add_executable("test_sdl${EXECUTABLE_EXTENSION}" test_sdl.cpp)
-add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp "${CHILDREN}")
+add_executable("gg_sdl${EXECUTABLE_EXTENSION}" gg_sdl.cpp ${CHILDREN})
 #add_executable("ww_sdl${EXECUTABLE_EXTENSION}" ww_sdl.cpp)
 #add_executable("mkfont_sdl${EXECUTABLE_EXTENSION}" mkfont_sdl.cpp)
 #add_executable("mksnd_sdl${EXECUTABLE_EXTENSION}" mksnd_sdl.cpp)
@@ -92,7 +90,7 @@ add_executable("ks_sdl${EXECUTABLE_EXTENSION}" ks_sdl.cpp "${CHILDREN}")
 #add_executable("mkeyesquat2${EXECUTABLE_EXTENSION}" mkeyesquat2.cpp)
 
 target_link_libraries("test_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
-target_link_libraries("ks_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
+target_link_libraries("gg_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("ww_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "ww" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("mkfont_sdl${EXECUTABLE_EXTENSION}" "sdlglu" "mkfont" "gbstd" "gbpng" ${BASIC_LIBS})
 #target_link_libraries("png2lit${EXECUTABLE_EXTENSION}" "sdlglu" "onch" "gbstd" "gbpng" ${BASIC_LIBS})

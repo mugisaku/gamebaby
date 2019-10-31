@@ -130,6 +130,46 @@ public:
 };
 
 
+class node;
+
+
+class
+node_reference
+{
+  friend class node;
+
+  struct data;
+
+  data*  m_data=nullptr;
+
+  void  unrefer() noexcept;
+  void  unpoint() noexcept;
+
+public:
+  node_reference() noexcept{}
+  node_reference(node&  nd) noexcept{assign(nd);}
+  node_reference(const node_reference&   rhs) noexcept{assign(rhs);}
+  node_reference(      node_reference&&  rhs) noexcept{assign(std::move(rhs));}
+ ~node_reference(){unrefer();}
+
+  node_reference&  operator=(node&  nd) noexcept{return assign(nd);}
+  node_reference&  operator=(const node_reference&   rhs) noexcept{return assign(rhs);}
+  node_reference&  operator=(      node_reference&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  operator bool() const noexcept;
+
+  node&  operator*()  const noexcept;
+  node*  operator->() const noexcept;
+
+  node_reference&  assign(node&  nd) noexcept;
+  node_reference&  assign(const node_reference&   rhs) noexcept;
+  node_reference&  assign(      node_reference&&  rhs) noexcept;
+
+  void  print() const noexcept;
+
+};
+
+
 class
 node
 {
@@ -140,11 +180,13 @@ node
 
   node*  m_parent=nullptr;
 
+  node_reference  m_self_reference;
+
   std::string  m_name;
 
   struct flags{
-    static constexpr int  active = 1;
-    static constexpr int    lock = 2;
+    static constexpr int  inactive = 1;
+    static constexpr int      lock = 2;
 
   };
 
@@ -156,6 +198,7 @@ node
       integer,
   real_number,
       pointer,
+    reference,
      callback,
        sprite,
         timer,
@@ -170,6 +213,7 @@ node
     double  d;
     void*            ptr;
     callback_wrapper  cb;
+    node_reference   ref;
     sprite  spr;
     timer   tmr;
     clock   clk;
@@ -185,7 +229,7 @@ node
 public:
   static node*  create_root() noexcept{return new node;}
 
- ~node(){clear();}
+ ~node(){  clear();  m_self_reference.unpoint();  m_self_reference.unrefer();}
 
   node(const node& ) noexcept=delete;
   node(      node&&) noexcept=delete;
@@ -202,12 +246,15 @@ public:
   double&            be_real_number() noexcept;
   callback_wrapper&  be_callback() noexcept;
   directory&         be_directory() noexcept;
+  node_reference&    be_reference() noexcept;
   sprite&            be_sprite() noexcept;
   timer&             be_timer() noexcept;
   clock&             be_clock() noexcept;
 
   const std::string&  get_name() const noexcept{return m_name;}
   void                set_name(std::string_view  sv) noexcept{m_name = sv;}
+
+  bool  is_active() const noexcept{return !m_status.test(flags::inactive);}
 
   bool  is_null()        const noexcept{return m_kind == kind::null;}
   bool  is_pointer()     const noexcept{return m_kind == kind::pointer;}
@@ -218,6 +265,7 @@ public:
   bool  is_timer()       const noexcept{return m_kind == kind::timer;}
   bool  is_clock()       const noexcept{return m_kind == kind::clock;}
   bool  is_directory()   const noexcept{return m_kind == kind::directory;}
+  bool  is_reference()   const noexcept{return m_kind == kind::reference;}
 
   int&     get_integer() noexcept{return m_data.i;}
   double&  get_real_number() noexcept{return m_data.d;}
@@ -226,6 +274,8 @@ public:
   sprite&            get_sprite() noexcept{return m_data.spr;}
   timer&             get_timer() noexcept{return m_data.tmr;}
   clock&             get_clock() noexcept{return m_data.clk;}
+
+  node_reference&  get_reference() noexcept{return m_data.ref;}
 
   void*&  get_pointer() noexcept{return m_data.ptr;}
 

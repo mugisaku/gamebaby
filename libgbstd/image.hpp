@@ -550,6 +550,9 @@ public:
   void  draw_string_safely_as_right_align(color  col, std::u16string_view  sv, int  x, int  y) const noexcept;
   void  draw_string_safely_as_right_align(color  col, std::u16string_view  sv, point  pt) const noexcept{draw_string_safely_as_right_align(col,sv,pt.x,pt.y);}
 
+  void  draw_string_in_area(color  col, std::string_view     sv, int  x, int  y, int  w, int  h) const noexcept;
+  void  draw_string_in_area(color  col, std::u16string_view  sv, int  x, int  y, int  w, int  h) const noexcept;
+
   void  draw_canvas(const canvas&  cv, int  x, int  y) const noexcept;
   void  draw_canvas(const canvas&  cv, point  pt) const noexcept{draw_canvas(cv,pt.x,pt.y);}
 

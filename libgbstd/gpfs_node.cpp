@@ -12,6 +12,7 @@ namespace gpfs{
 
 node::
 node() noexcept:
+m_self_reference(*this),
 m_name("**ROOT DIRECTORY**"),
 m_kind(kind::null)
 {
@@ -21,6 +22,7 @@ m_kind(kind::null)
 
 node::
 node(std::string_view  name) noexcept:
+m_self_reference(*this),
 m_name(name),
 m_kind(kind::null)
 {
@@ -143,6 +145,22 @@ be_directory() noexcept
 }
 
 
+node_reference&
+node::
+be_reference() noexcept
+{
+  clear();
+
+  m_kind = kind::reference;
+
+  new(&m_data) node_reference();
+
+  m_data.dir.m_self_node = this;
+
+  return m_data.ref;
+}
+
+
 
 
 void
@@ -152,6 +170,7 @@ clear() noexcept
     switch(m_kind)
     {
   case(kind::directory): m_data.dir.~directory();break;
+  case(kind::reference): m_data.ref.~node_reference();break;
   case(kind::callback ): m_data.cb.~callback_wrapper();break;
   case(kind::sprite   ): m_data.spr.~sprite();break;
   case(kind::timer    ): m_data.tmr.~timer();break;
@@ -171,6 +190,7 @@ print() const noexcept
 {
   const char*  type_s = is_directory()?   "directory"
                        :is_pointer()?     "pointer"
+                       :is_reference()?   "reference"
                        :is_integer()?     "integer"
                        :is_real_number()? "real_number"
                        :is_callback()?    "callback"
@@ -187,9 +207,12 @@ print() const noexcept
   case(kind::directory):
       printf("{\n");
 
-      get_directory().print();
+      m_data.dir.print();
 
       printf("\n}\n");
+    break;
+  case(kind::reference):
+      m_data.ref.print();
     break;
   case(kind::integer): printf("%d",m_data.i);break;
   case(kind::real_number): printf("%f",m_data.d);break;

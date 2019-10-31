@@ -15,14 +15,8 @@ namespace gbstd{
 
 
 
-void  reset_execution(callback_wrapper  cb) noexcept;
 void  push_execution(callback_wrapper  cb) noexcept;
-void  replace_execution(callback_wrapper  cb) noexcept;
-void   pop_execution(int  v=0) noexcept;
-
-int  get_control_value() noexcept;
-
-void  interrupt_execution() noexcept;
+void   pop_execution(                    ) noexcept;
 
 
 uint32_t     get_time(           ) noexcept;

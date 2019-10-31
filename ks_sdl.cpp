@@ -24,9 +24,6 @@ gbstd::alarm
 g_alarm;
 
 
-
-
-
 struct
 space
 {
@@ -386,7 +383,7 @@ chink() noexcept
 
   g_stage.m_status.unset(stage::flags::chink);
 
-  replace_execution(evaluate);
+  g_exec.replace(evaluate);
 }
 
 
@@ -399,7 +396,7 @@ blink() noexcept
 
         if(g_stage.m_blink_counter >= 10)
         {
-          replace_execution(chink);
+          g_exec.replace(chink);
 
           return;
         }
@@ -411,7 +408,7 @@ blink() noexcept
     }
 
 
-  interrupt_execution();
+  g_exec.interrupt();
 }
 
 
@@ -439,7 +436,7 @@ evaluate() noexcept
 
       g_stage.m_status.set(stage::flags::chink);
 
-      replace_execution(blink);
+      g_exec.replace(blink);
     }
 
   else
@@ -449,7 +446,7 @@ evaluate() noexcept
       g_stage.m_total_score += g_stage.m_temporary_score    ;
                                g_stage.m_temporary_score = 0;
 
-      pop_execution();
+      g_exec.pop();
     }
 }
 
@@ -463,7 +460,7 @@ control_by_cursor(space*  next) noexcept
     {
       g_stage.m_temporary_score = 0;
 
-      replace_execution(evaluate);
+      g_exec.replace(evaluate);
     }
 
   else
@@ -539,7 +536,7 @@ control_drop() noexcept
     }
 
 
-  interrupt_execution();
+  g_exec.interrupt();
 }
 
 
@@ -552,11 +549,11 @@ gameover() noexcept
 
       g_stage.reset();
 
-      pop_execution();
+      g_exec.pop();
     }
 
 
-  interrupt_execution();
+  g_exec.interrupt();
 }
 
 
@@ -569,7 +566,7 @@ start() noexcept
     {
       g_stage.m_status.set(stage::flags::gameover);
 
-      push_execution(gameover);
+      g_exec.push(gameover);
     }
 
   else
@@ -597,7 +594,7 @@ start() noexcept
         }
 
 
-      push_execution(control_drop);
+      g_exec.push(control_drop);
     }
 }
 
@@ -629,7 +626,7 @@ main(int  argc, char**  argv)
    ->be_sprite()
     .set_callback({g_stage,&stage::draw});
 
-  push_execution(start);
+  g_exec.push(start);
 
   gbstd::set_caption("計算ゲーム");
 
@@ -643,6 +640,8 @@ R"(ルール:<br>
   gbstd::show_twitter_link();
 
   sdl::update_screen();
+
+  gbstd::push_execution(g_exec);
 
   sdl::start_loop();
 

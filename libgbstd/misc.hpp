@@ -126,7 +126,8 @@ public:
 };
 
 
-class canvas;
+class    canvas;
+class execution;
 
 
 class
@@ -135,10 +136,12 @@ callback_wrapper
   void*  m_userdata=nullptr;
 
   union{
-    void  (       *fnptr)();
-    void  (       *cv_fnptr)(const canvas&);
+    void  (     *fnptr)();
+    void  (  *cv_fnptr)(const canvas&);
+    void  (*exec_fnptr)(execution&);
     void  (dummy::*membfnptr)();
     void  (dummy::*cv_membfnptr)(const canvas&);
+    void  (dummy::*exec_membfnptr)(execution&);
   } m_callback;
 
 public:
@@ -150,8 +153,12 @@ public:
   template<typename  T>
   callback_wrapper(T&  t, void  (T::*cb)(const canvas&)) noexcept{assign(t,cb);}
 
+  template<typename  T>
+  callback_wrapper(T&  t, void  (T::*cb)(execution&)) noexcept{assign(t,cb);}
+
   callback_wrapper(void  (*cb)(             )) noexcept{assign(cb);}
   callback_wrapper(void  (*cb)(const canvas&)) noexcept{assign(cb);}
+  callback_wrapper(void  (*cb)(execution&)) noexcept{assign(cb);}
 
 
   callback_wrapper&  operator=(void  (*cb)(             )) noexcept {return assign(cb);}
@@ -174,6 +181,14 @@ public:
     return *this;
   }
 
+  callback_wrapper&  assign(void(*cb)(execution&)) noexcept
+  {
+    m_userdata            = nullptr;
+    m_callback.exec_fnptr =      cb;
+
+    return *this;
+  }
+
   template<typename  T>
   callback_wrapper&  assign(T&  t, void(T::*cb)()) noexcept
   {
@@ -192,6 +207,15 @@ public:
     return *this;
   }
 
+  template<typename  T>
+  callback_wrapper&  assign(T&  t, void(T::*cb)(execution&)) noexcept
+  {
+    m_userdata                =                                               &t;
+    m_callback.exec_membfnptr = reinterpret_cast<void(dummy::*)(execution&)>(cb);
+
+    return *this;
+  }
+
 
   void  operator()() const noexcept
   {
@@ -203,6 +227,12 @@ public:
   {
          if(m_userdata         ){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.cv_membfnptr)(cv);}
     else if(m_callback.cv_fnptr){m_callback.cv_fnptr(cv);}
+  }
+
+  void  operator()(execution&  exec) const noexcept
+  {
+         if(m_userdata           ){(reinterpret_cast<dummy*>(m_userdata)->*m_callback.exec_membfnptr)(exec);}
+    else if(m_callback.exec_fnptr){m_callback.exec_fnptr(exec);}
   }
 
 };
