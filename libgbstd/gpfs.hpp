@@ -145,6 +145,8 @@ node_reference
   void  unrefer() noexcept;
   void  unpoint() noexcept;
 
+  void  initialize(node&  nd) noexcept;
+
 public:
   node_reference() noexcept{}
   node_reference(node&  nd) noexcept{assign(nd);}
@@ -173,6 +175,7 @@ public:
 class
 node
 {
+  friend class node_reference;
   friend class directory;
 
   node*  m_previous=nullptr;

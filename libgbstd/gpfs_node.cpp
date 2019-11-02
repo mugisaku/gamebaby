@@ -12,20 +12,21 @@ namespace gpfs{
 
 node::
 node() noexcept:
-m_self_reference(*this),
 m_name("**ROOT DIRECTORY**"),
 m_kind(kind::null)
 {
+  m_self_reference.initialize(*this);
+
   be_directory();
 }
 
 
 node::
 node(std::string_view  name) noexcept:
-m_self_reference(*this),
 m_name(name),
 m_kind(kind::null)
 {
+  m_self_reference.initialize(*this);
 }
 
 
@@ -154,8 +155,6 @@ be_reference() noexcept
   m_kind = kind::reference;
 
   new(&m_data) node_reference();
-
-  m_data.dir.m_self_node = this;
 
   return m_data.ref;
 }

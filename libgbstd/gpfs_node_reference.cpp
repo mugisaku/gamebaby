@@ -30,9 +30,11 @@ unrefer() noexcept
 
         if(!--n)
         {
-          delete m_data          ;
-                 m_data = nullptr;
+          delete m_data;
         }
+
+
+      m_data = nullptr;
     }
 }
 
@@ -48,6 +50,17 @@ unpoint() noexcept
 }
 
 
+void
+node_reference::
+initialize(node&  nd) noexcept
+{
+  m_data = new data;
+
+  m_data->m_pointer = &nd;
+  m_data->m_counter =   1;
+}
+
+
 node_reference::operator bool() const noexcept{return m_data && m_data->m_pointer;}
 
 
@@ -59,14 +72,7 @@ node_reference&
 node_reference::
 assign(node&  nd) noexcept
 {
-  unrefer();
-
-  m_data = new data;
-
-  m_data->m_pointer = &nd;
-  m_data->m_counter =   1;
-
-  return *this;
+  return assign(nd.m_self_reference);
 }
 
 
@@ -108,7 +114,12 @@ print() const noexcept
 {
     if(m_data)
     {
-      printf("pointer is %svalid",m_data->m_pointer? "":"in");
+      printf("pointer is %svalid, ",m_data->m_pointer? "":"in");
+
+        if(*this)
+        {
+          m_data->m_pointer->print();
+        }
     }
 
   else
