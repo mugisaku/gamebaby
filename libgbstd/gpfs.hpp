@@ -83,6 +83,8 @@ public:
   directory&  operator=(const directory& ) noexcept=delete;
   directory&  operator=(      directory&&) noexcept=delete;
 
+  node&  operator[](std::string_view  nodepath) noexcept;
+
   bool  is_root() const noexcept;
 
   node*    get_self_node() const noexcept{return m_self_node;}
@@ -120,7 +122,8 @@ public:
     node&  operator*()  const noexcept{return *m_pointer;}
     node*  operator->() const noexcept{return  m_pointer;}
 
-    iterator&  operator++() noexcept;
+    iterator&  operator++(   ) noexcept;
+    iterator   operator++(int) noexcept;
 
   };
 
@@ -188,8 +191,8 @@ node
   std::string  m_name;
 
   struct flags{
-    static constexpr int  inactive = 1;
-    static constexpr int      lock = 2;
+    static constexpr int  ignore = 1;
+    static constexpr int    lock = 2;
 
   };
 
@@ -244,6 +247,11 @@ public:
 
   operator bool() const noexcept{return !is_null();}
 
+  node&    set_ignore_flag() noexcept{  m_status.set(  flags::ignore);  return *this;}
+  node&  unset_ignore_flag() noexcept{  m_status.unset(flags::ignore);  return *this;}
+
+  bool  test_ignore_flag() const noexcept{return m_status.test(flags::ignore);}
+
   void*&             be_pointer() noexcept;
   int&               be_integer() noexcept;
   double&            be_real_number() noexcept;
@@ -256,8 +264,6 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
   void                set_name(std::string_view  sv) noexcept{m_name = sv;}
-
-  bool  is_active() const noexcept{return !m_status.test(flags::inactive);}
 
   bool  is_null()        const noexcept{return m_kind == kind::null;}
   bool  is_pointer()     const noexcept{return m_kind == kind::pointer;}

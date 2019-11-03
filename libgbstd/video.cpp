@@ -18,7 +18,10 @@ namespace{
 bool  g_redraw_flag=true;
 
 gpfs::directory*
-g_sprites_dir;
+g_video_dir;
+
+gpfs::directory*
+g_video_sprites_dir;
 
 color  g_background_color;
 
@@ -114,11 +117,53 @@ redraw_video() noexcept
 
       g_canvas.fill(g_background_color);
 
-        for(auto&  nd: *g_sprites_dir)
+
+      static std::vector<gpfs::directory::iterator>  it_stack;
+
+      it_stack.emplace_back(g_video_sprites_dir->begin());
+
+        while(it_stack.size())
         {
-            if(nd.is_sprite())
+          auto&  it = it_stack.back();
+
+            for(;;)
             {
-              nd.get_sprite()(g_canvas);
+                if(!it)
+                {
+                  it_stack.pop_back();
+
+                  break;
+                }
+
+
+              auto  nd = &*it++;
+REPROC:
+                if(!nd->test_ignore_flag())
+                {
+                    if(nd->is_sprite())
+                    {
+                      nd->get_sprite()(g_canvas);
+                    }
+
+                  else
+                    if(nd->is_reference())
+                    {
+                      auto&  ref = nd->get_reference();
+
+                        if(ref)
+                        {
+                          nd = &*ref;
+
+                          goto REPROC;
+                        }
+                    }
+
+                  else
+                    if(nd->is_directory())
+                    {
+                      it_stack.emplace_back(nd->get_directory().begin());
+                    }
+                }
             }
         }
 
@@ -139,7 +184,8 @@ set_video_size(int  w, int  h) noexcept
 
       initialize_javascript();
 
-      g_sprites_dir = get_root_directory().create_directory("/video/sprites");
+      g_video_dir         = get_root_directory().create_directory("/video");
+      g_video_sprites_dir = g_video_dir->create_directory("sprites");
 
       initialized = true;
     }
@@ -162,6 +208,13 @@ const image&
 get_video_image() noexcept
 {
   return g_image;
+}
+
+
+gpfs::directory&
+get_video_sprites_directory() noexcept
+{
+  return *g_video_sprites_dir;
 }
 
 

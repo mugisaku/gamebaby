@@ -9,9 +9,14 @@
 #include"libgbstd/misc.hpp"
 
 
+
+
 namespace gbstd{
 
 
+namespace gpfs{
+class directory;
+}
 
 
 class
@@ -61,8 +66,7 @@ bool   test_redraw_flag() noexcept;
 const color&  get_background_color(               ) noexcept;
 void          set_background_color(color  bg_color) noexcept;
 
-void  allocate_sprites(int  n) noexcept;
-sprite&  get_sprite(int  i) noexcept;
+gpfs::directory&  get_video_sprites_directory() noexcept;
 
 void  redraw_video() noexcept;
 

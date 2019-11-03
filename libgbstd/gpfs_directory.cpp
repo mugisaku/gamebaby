@@ -9,6 +9,24 @@ namespace gpfs{
 
 
 
+node&
+directory::
+operator[](std::string_view  nodepath) noexcept
+{
+  auto  nd = find_node_by_path(nodepath);
+
+    if(nd)
+    {
+      return *nd;
+    }
+
+
+  return *create_node_by_path(nodepath);
+}
+
+
+
+
 bool
 directory::
 is_root() const noexcept
@@ -355,6 +373,17 @@ operator++() noexcept
   m_pointer = m_pointer->m_next;
 
   return *this;
+}
+
+
+directory::iterator
+directory::iterator::
+operator++(int) noexcept
+{
+  directory::iterator  tmp(m_pointer)                   ;
+                           m_pointer = m_pointer->m_next;
+
+  return tmp;
 }
 
 
