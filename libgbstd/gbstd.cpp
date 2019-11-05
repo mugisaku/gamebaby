@@ -72,38 +72,43 @@ update_time(uint32_t  t) noexcept
 
     if(!lock && (t > g_time))
     {
+      struct clock_proc{
+        uint32_t  diff;
+
+        void  operator()(gpfs::node&  nd) noexcept{
+          auto&  clk = nd.get_clock();
+
+            if(!clk.is_stopped() && !clk.is_paused())
+            {
+              clk >>= diff;
+            }
+        }
+
+      };
+
+
       lock = true;
 
       auto  diff = t-g_time;
 
       g_time = t;
 
-        for(auto&  nd: *g_clocks_dir)
-        {
-            if(nd.is_clock())
-            {
-              auto&  clk = nd.get_clock();
+      static std::vector<gpfs::node_reference>  dirref_stack;
 
-                if(!clk.is_stopped() && !clk.is_paused())
-                {
-                  clk >>= diff;
-                }
-            }
-        }
+      dirref_stack.emplace_back(g_clocks_dir->get_self_node()->get_self_reference());
+
+      gpfs::process_directory_recursively(dirref_stack,
+        [](const gpfs::node&  nd){return !nd.test_ignore_flag() && nd.is_clock();},
+        clock_proc{diff}
+      );
 
 
-        for(auto&  nd: *g_timers_dir)
-        {
-            if(nd.is_timer())
-            {
-              auto&  tm = nd.get_timer();
+      dirref_stack.emplace_back(g_timers_dir->get_self_node()->get_self_reference());
 
-                if(!tm.is_stopped() && !tm.is_paused())
-                {
-                  tm();
-                }
-            }
-        }
+      gpfs::process_directory_recursively(dirref_stack,
+        [](const gpfs::node&  nd){return !nd.test_ignore_flag() && nd.is_timer();},
+        [](      gpfs::node&  nd){nd.get_timer()();}
+      );
 
 
         if(g_execution_stack.size())

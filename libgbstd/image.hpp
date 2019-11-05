@@ -112,6 +112,9 @@ basic_point
   basic_point&  operator/=(basic_point  rhs) noexcept{  x /= rhs.x;  y /= rhs.y;  return *this;}
   basic_point&  operator%=(basic_point  rhs) noexcept{  x %= rhs.x;  y %= rhs.y;  return *this;}
 
+  int  move_x(int  amount) noexcept{  x += amount;  return x;}
+  int  move_y(int  amount) noexcept{  y += amount;  return y;}
+
   void  print() const noexcept{printf("{x:%3d,y:%3d}",static_cast<int>(x),static_cast<int>(y));}
 
 };

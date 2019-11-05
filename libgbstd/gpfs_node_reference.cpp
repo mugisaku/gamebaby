@@ -70,9 +70,9 @@ node*  node_reference::operator->() const noexcept{return  m_data->m_pointer;}
 
 node_reference&
 node_reference::
-assign(node&  nd) noexcept
+assign(const node&  nd) noexcept
 {
-  return assign(nd.m_self_reference);
+  return assign(nd.get_self_reference());
 }
 
 
@@ -100,6 +100,8 @@ assign(node_reference&&  rhs) noexcept
 {
     if(this != &rhs)
     {
+      unrefer();
+
       std::swap(m_data,rhs.m_data);
     }
 

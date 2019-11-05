@@ -36,11 +36,6 @@ set(SOURCES
   values/object.cpp
   values/array.cpp
   values/object.cpp
-  menus/table.cpp
-  menus/view.cpp
-  menus/basic_menu_window.cpp
-  menus/stack.cpp
-  menus/object.cpp
   widgets/operating_node.cpp
   widgets/node.cpp
   widgets/node_iterator.cpp
@@ -52,7 +47,7 @@ set(SOURCES
   widgets/dial.cpp
   widgets/checkbox.cpp
   widgets/radio_button.cpp
-  widgets/menu_handler.cpp
+#  widgets/menu_handler.cpp
   widgets/slider.cpp
   file_ops/file_op.cpp
   file_ops/riff_chunk.cpp
@@ -76,6 +71,7 @@ set(SOURCES
   ilc_javascript.cpp
   utility.cpp
   video.cpp
+  video_window.cpp
   gbstd.cpp
 )
 

@@ -36,11 +36,15 @@ void*&
 node::
 be_pointer() noexcept
 {
-  clear();
+    if(!is_pointer())
+    {
+      clear();
 
-  m_kind = kind::pointer;
+      m_kind = kind::pointer;
 
-  m_data.ptr = nullptr;
+      m_data.ptr = nullptr;
+    }
+
 
   return m_data.ptr;
 }
@@ -50,11 +54,15 @@ int&
 node::
 be_integer() noexcept
 {
-  clear();
+    if(!is_integer())
+    {
+      clear();
 
-  m_kind = kind::integer;
+      m_kind = kind::integer;
 
-  m_data.i = 0;
+      m_data.i = 0;
+    }
+
 
   return m_data.i;
 }
@@ -64,11 +72,15 @@ double&
 node::
 be_real_number() noexcept
 {
-  clear();
+    if(!is_real_number())
+    {
+      clear();
 
-  m_kind = kind::real_number;
+      m_kind = kind::real_number;
 
-  m_data.d = 0;
+      m_data.d = 0;
+    }
+
 
   return m_data.d;
 }
@@ -78,11 +90,15 @@ callback_wrapper&
 node::
 be_callback() noexcept
 {
-  clear();
+    if(!is_callback())
+    {
+      clear();
 
-  m_kind = kind::callback;
+      m_kind = kind::callback;
 
-  new(&m_data.cb) callback_wrapper();
+      new(&m_data.cb) callback_wrapper();
+    }
+
 
   return m_data.cb;
 }
@@ -92,11 +108,15 @@ sprite&
 node::
 be_sprite() noexcept
 {
-  clear();
+    if(!is_sprite())
+    {
+      clear();
 
-  m_kind = kind::sprite;
+      m_kind = kind::sprite;
 
-  new(&m_data) sprite();
+      new(&m_data) sprite();
+    }
+
 
   return m_data.spr;
 }
@@ -106,11 +126,15 @@ timer&
 node::
 be_timer() noexcept
 {
-  clear();
+    if(!is_timer())
+    {
+      clear();
 
-  m_kind = kind::timer;
+      m_kind = kind::timer;
 
-  new(&m_data) timer();
+      new(&m_data) timer();
+    }
+
 
   return m_data.tmr;
 }
@@ -120,11 +144,15 @@ clock&
 node::
 be_clock() noexcept
 {
-  clear();
+    if(!is_clock())
+    {
+      clear();
 
-  m_kind = kind::clock;
+      m_kind = kind::clock;
 
-  new(&m_data) clock();
+      new(&m_data) clock();
+    }
+
 
   return m_data.clk;
 }
@@ -134,13 +162,17 @@ directory&
 node::
 be_directory() noexcept
 {
-  clear();
+    if(!is_directory())
+    {
+      clear();
 
-  m_kind = kind::directory;
+      m_kind = kind::directory;
 
-  new(&m_data) directory();
+      new(&m_data) directory();
 
-  m_data.dir.m_self_node = this;
+      m_data.dir.m_self_node = this;
+    }
+
 
   return m_data.dir;
 }
@@ -150,11 +182,15 @@ node_reference&
 node::
 be_reference() noexcept
 {
-  clear();
+    if(!is_reference())
+    {
+      clear();
 
-  m_kind = kind::reference;
+      m_kind = kind::reference;
 
-  new(&m_data) node_reference();
+      new(&m_data) node_reference();
+    }
+
 
   return m_data.ref;
 }
@@ -180,6 +216,8 @@ clear() noexcept
 
 
   m_kind = kind::null;
+
+  m_status.clear();
 }
 
 

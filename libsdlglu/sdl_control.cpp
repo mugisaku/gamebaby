@@ -44,12 +44,12 @@ process_key_down(const SDL_KeyboardEvent&  evt, gbstd::key_state&  keys) noexcep
       break;
     case(SDLK_RETURN):
     case(SDLK_z):
-        keys.set_acl();
+        keys.set_acr();
         break;
     case(SDLK_RCTRL):
     case(SDLK_LCTRL):
     case(SDLK_x    ):
-        keys.set_acr();
+        keys.set_acl();
         break;
 /*
     case(SDLK_a    ):
@@ -84,12 +84,12 @@ process_key_up(const SDL_KeyboardEvent&  evt, gbstd::key_state&  keys) noexcept
    break;
   case(SDLK_RETURN):
   case(SDLK_z     ):
-      keys.unset_acl();
+      keys.unset_acr();
       break;
   case(SDLK_RCTRL):
   case(SDLK_LCTRL):
   case(SDLK_x    ):
-      keys.unset_acr();
+      keys.unset_acl();
       break;
 /*
     case(SDLK_a    ):

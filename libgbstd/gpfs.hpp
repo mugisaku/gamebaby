@@ -152,12 +152,12 @@ node_reference
 
 public:
   node_reference() noexcept{}
-  node_reference(node&  nd) noexcept{assign(nd);}
+  node_reference(const node&  nd) noexcept{assign(nd);}
   node_reference(const node_reference&   rhs) noexcept{assign(rhs);}
   node_reference(      node_reference&&  rhs) noexcept{assign(std::move(rhs));}
  ~node_reference(){unrefer();}
 
-  node_reference&  operator=(node&  nd) noexcept{return assign(nd);}
+  node_reference&  operator=(const node&  nd) noexcept{return assign(nd);}
   node_reference&  operator=(const node_reference&   rhs) noexcept{return assign(rhs);}
   node_reference&  operator=(      node_reference&&  rhs) noexcept{return assign(std::move(rhs));}
 
@@ -166,7 +166,7 @@ public:
   node&  operator*()  const noexcept;
   node*  operator->() const noexcept;
 
-  node_reference&  assign(node&  nd) noexcept;
+  node_reference&  assign(const node&  nd) noexcept;
   node_reference&  assign(const node_reference&   rhs) noexcept;
   node_reference&  assign(      node_reference&&  rhs) noexcept;
 
@@ -178,7 +178,6 @@ public:
 class
 node
 {
-  friend class node_reference;
   friend class directory;
 
   node*  m_previous=nullptr;
@@ -247,6 +246,8 @@ public:
 
   operator bool() const noexcept{return !is_null();}
 
+  const node_reference&  get_self_reference() const noexcept{return m_self_reference;}
+
   node&    set_ignore_flag() noexcept{  m_status.set(  flags::ignore);  return *this;}
   node&  unset_ignore_flag() noexcept{  m_status.unset(flags::ignore);  return *this;}
 
@@ -303,6 +304,55 @@ public:
   void  unhook() noexcept;
 
 };
+
+
+
+
+template<typename  Test, typename  Proc>
+void
+process_directory_recursively(std::vector<node_reference>&  dirref_stack, Test  test, Proc  proc) noexcept
+{
+    while(dirref_stack.size())
+    {
+      auto  dirref = std::move(dirref_stack.back());
+
+      dirref_stack.pop_back();
+
+        if(dirref)
+        {
+          auto  it = dirref->get_directory().begin();
+
+            while(it)
+            {
+              auto  ndptr = &*it++;
+REPROC:
+                if(test(*ndptr))
+                {
+                  proc(*ndptr);
+                }
+
+              else
+                if(ndptr->is_reference())
+                {
+                  auto&  ndref = ndptr->get_reference();
+
+                    if(ndref)
+                    {
+                      ndptr = &*ndref;
+
+                      goto REPROC;
+                    }
+                }
+
+              else
+                if(ndptr->is_directory())
+                {
+                  dirref_stack.emplace_back(ndptr->get_self_reference());
+                }
+            }
+        }
+    }
+}
 
 
 

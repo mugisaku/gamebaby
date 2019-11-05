@@ -20,6 +20,96 @@ class directory;
 
 
 class
+window_style
+{
+  int     m_frame_top_width=0;
+  int  m_frame_bottom_width=0;
+
+  int   m_frame_left_width=0;
+  int  m_frame_right_width=0;
+
+  color  m_fill_color;
+
+public:
+  window_style&  set_frame_top_width(   int  n) noexcept{  m_frame_top_width    = n;  return *this;}
+  window_style&  set_frame_bottom_width(int  n) noexcept{  m_frame_bottom_width = n;  return *this;}
+  window_style&  set_frame_left_width(  int  n) noexcept{  m_frame_left_width   = n;  return *this;}
+  window_style&  set_frame_right_width( int  n) noexcept{  m_frame_right_width  = n;  return *this;}
+
+  int  get_frame_top_width(   ) const noexcept{return m_frame_top_width   ;}
+  int  get_frame_bottom_width() const noexcept{return m_frame_bottom_width;}
+  int  get_frame_left_width(  ) const noexcept{return m_frame_left_width  ;}
+  int  get_frame_right_width( ) const noexcept{return m_frame_right_width ;}
+
+  color          get_fill_color(          ) const noexcept{return m_fill_color                     ;}
+  window_style&  set_fill_color(color  col)       noexcept{       m_fill_color = col;  return *this;}
+
+};
+
+
+class
+window
+{
+  struct flags{
+    static constexpr int  open = 1;
+    static constexpr int  show = 2;
+  };
+
+  status_value<int>  m_status;
+
+  point  m_position;
+
+  int  m_content_width =0;
+  int  m_content_height=0;
+
+  window_style  m_style;
+
+public:
+          window() noexcept{}
+ virtual ~window(){}
+
+  bool  is_opened() const noexcept{return m_status.test(flags::open);}
+  bool  is_shown()  const noexcept{return m_status.test(flags::show);}
+
+  window&  show() noexcept{  m_status.set(  flags::show);  return *this;}
+  window&  hide() noexcept{  m_status.unset(flags::show);  return *this;}
+
+  window&  set_x_position(int  n) noexcept{  m_position.x = n;  return *this;}
+  window&  set_y_position(int  n) noexcept{  m_position.y = n;  return *this;}
+
+  int  get_x_position() const noexcept{return m_position.x;}
+  int  get_y_position() const noexcept{return m_position.y;}
+
+  int  get_width()  const noexcept;
+  int  get_height() const noexcept;
+
+  int  get_content_width()  const noexcept{return m_content_width ;}
+  int  get_content_height() const noexcept{return m_content_height;}
+
+  window&  set_content_width( int  v) noexcept{  m_content_width  = v;  return *this;}
+  window&  set_content_height(int  v) noexcept{  m_content_height = v;  return *this;}
+
+  int  get_content_x_position() const noexcept{return m_position.x+get_style().get_frame_left_width();}
+  int  get_content_y_position() const noexcept{return m_position.y+get_style().get_frame_top_width();}
+
+  canvas  get_content_canvas(const canvas&  base_cv) const noexcept;
+  canvas      get_frame_top_canvas(const canvas&  base_cv) const noexcept;
+  canvas     get_frame_left_canvas(const canvas&  base_cv) const noexcept;
+  canvas    get_frame_right_canvas(const canvas&  base_cv) const noexcept;
+  canvas   get_frame_bottom_canvas(const canvas&  base_cv) const noexcept;
+  canvas  get_frame_content_canvas(const canvas&  base_cv) const noexcept;
+
+        window_style&  get_style()       noexcept{return m_style;}
+  const window_style&  get_style() const noexcept{return m_style;}
+
+  virtual void  render_frame(const canvas&  cv) noexcept;
+
+  virtual canvas  render(const canvas&  cv) noexcept;
+
+};
+
+
+class
 sprite
 {
   status_value<int>  m_status;

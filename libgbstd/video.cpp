@@ -118,54 +118,14 @@ redraw_video() noexcept
       g_canvas.fill(g_background_color);
 
 
-      static std::vector<gpfs::directory::iterator>  it_stack;
+      static std::vector<gpfs::node_reference>  dirref_stack;
 
-      it_stack.emplace_back(g_video_sprites_dir->begin());
+      dirref_stack.emplace_back(g_video_sprites_dir->get_self_node()->get_self_reference());
 
-        while(it_stack.size())
-        {
-          auto&  it = it_stack.back();
+      constexpr auto  test = [](const gpfs::node&  nd)->bool{return !nd.test_ignore_flag() && nd.is_sprite();};
+      constexpr auto  proc = [](      gpfs::node&  nd)      {nd.get_sprite()(g_canvas);};
 
-            for(;;)
-            {
-                if(!it)
-                {
-                  it_stack.pop_back();
-
-                  break;
-                }
-
-
-              auto  nd = &*it++;
-REPROC:
-                if(!nd->test_ignore_flag())
-                {
-                    if(nd->is_sprite())
-                    {
-                      nd->get_sprite()(g_canvas);
-                    }
-
-                  else
-                    if(nd->is_reference())
-                    {
-                      auto&  ref = nd->get_reference();
-
-                        if(ref)
-                        {
-                          nd = &*ref;
-
-                          goto REPROC;
-                        }
-                    }
-
-                  else
-                    if(nd->is_directory())
-                    {
-                      it_stack.emplace_back(nd->get_directory().begin());
-                    }
-                }
-            }
-        }
+      process_directory_recursively(dirref_stack,test,proc);
 
 
       lock = false;

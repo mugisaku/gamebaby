@@ -2,6 +2,7 @@
 
 
 
+
 namespace gbstd{
 namespace widgets{
 
@@ -22,13 +23,14 @@ void
 menu_handler::
 process_before_reform() noexcept
 {
-  set_content_width( m_view->get_table().get_cell_width() *m_view->get_width() );
-  set_content_height(m_view->get_table().get_cell_height()*m_view->get_height());
+//  set_content_width( m_view->get_table().get_cell_width() *m_view->get_width() );
+//  set_content_height(m_view->get_table().get_cell_height()*m_view->get_height());
 }
 
 
 
 
+/*
 menu_handler&
 menu_handler::
 set_view(menus::view&  v) noexcept
@@ -42,6 +44,7 @@ set_view(menus::view&  v) noexcept
 
   return *this;
 }
+*/
 
 
 void

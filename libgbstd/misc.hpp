@@ -59,26 +59,6 @@ public:
 };
 
 
-template<typename  T>
-class
-post_incrementor
-{
-  T&  m_value;
-
-public:
-  post_incrementor(T&  v) noexcept: m_value(v){}
-
-  T  operator()(int  amount) noexcept
-  {
-    auto  t = m_value          ;
-              m_value += amount;
-
-    return t;
-  }
-
-};
-
-
 
 
 class dummy{};

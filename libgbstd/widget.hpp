@@ -6,7 +6,6 @@
 #include"libgbstd/utility.hpp"
 #include"libgbstd/misc.hpp"
 #include"libgbstd/gbstd.hpp"
-#include"libgbstd/menu.hpp"
 #include<memory>
 #include<cstdio>
 
@@ -751,6 +750,7 @@ public:
 };
 
 
+/*
 class
 menu_handler: public node
 {
@@ -760,8 +760,6 @@ public:
   using callback = void(*)(menu_event  evt);
 
 private:
-  menus::view*  m_view=nullptr;
-
   callback  m_callback=nullptr;
 
   point  m_current_pos;
@@ -783,9 +781,6 @@ protected:
   menu_handler(operating_node&  root) noexcept;
 
 public:
-  menus::view&  get_view() const noexcept{return *m_view;}
-
-  menu_handler&  set_view(menus::view&  v) noexcept;
   menu_handler&  set_callback(callback  cb=nullptr) noexcept{  m_callback = cb;  return *this;}
 
   menus::cell&  get_current_cell() const noexcept{return m_view->get_cell(m_current_pos.x,m_current_pos.y);}
@@ -808,6 +803,7 @@ public:
   node&   create_down_button(operating_node&  root) noexcept;
 
 };
+*/
 
 
 
@@ -870,9 +866,11 @@ public:
   radio_button&  create_radio_button(                 ) noexcept{return *(new radio_button(*this       ));}
   radio_button&  create_radio_button(checkbox&  member) noexcept{return *(new radio_button(*this,member));}
 
+/*
   menu_handler&  create_menu_handler() noexcept{return *(new menu_handler(*this));}
   menu_handler&  create_menu_handler(menus::view&  v, void  (*cb)(menu_event)) noexcept
   {return create_menu_handler().set_view(v).set_callback(cb);}
+*/
 
   slider&  create_vertical_slider()   noexcept{return *(new slider(*this,slider::kind::vertical));}
   slider&  create_horizontal_slider() noexcept{return *(new slider(*this,slider::kind::horizontal));}
