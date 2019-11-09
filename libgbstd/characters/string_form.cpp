@@ -33,7 +33,7 @@ string_form(const char*  fmt, ...) noexcept
 }
 
 
-const char*
+std::string_view
 string_form::
 operator()(const char*  fmt, ...) noexcept
 {
@@ -57,7 +57,7 @@ operator()(const char*  fmt, ...) noexcept
 
   va_end(ap);
 
-  return m_buffer;
+  return std::string_view(m_buffer,m_length);
 }
 
 

@@ -28,12 +28,14 @@ endif()
 set(CMAKE_C_FLAGS   "-std=c1z -Werror")
 set(CMAKE_C_LINK_FLAGS   "")
 set(CMAKE_CXX_FLAGS "-std=c++17 -Werror")
+set(CMAKE_CXX_LINK_FLAGS   "")
 
 
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS}   -O2 -march=core2 -fomit-frame-pointer")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O2 -march=core2 -fomit-frame-pointer")
 set(CMAKE_C_FLAGS_DEBUG     "${CMAKE_C_FLAGS}   -O0 -g")
 set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS} -O0 -g")
+set(CMAKE_EXE_LINKER_FLAGS "")
 
 
 if(EMSC)
@@ -67,6 +69,8 @@ add_subdirectory(libgbpng)
 set(CHILDREN
   children/FallBlockPazzle/FallBlockPazzle_space.cpp
   children/FallBlockPazzle/FallBlockPazzle_stage.cpp
+  children/Dungeon/Dungeon_structure.cpp
+  children/Dungeon/Dungeon_world.cpp
 )
 
 

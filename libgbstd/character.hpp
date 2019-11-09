@@ -44,8 +44,8 @@ public:
   string_form() noexcept{}
   string_form(const char*  fmt, ...) noexcept;
 
-  const char*  operator()(const char*  fmt, ...) noexcept;
-  const char*  operator()() const noexcept{return m_buffer;}
+  std::string_view  operator()(const char*  fmt, ...) noexcept;
+  std::string_view  operator()() const noexcept{return std::string_view(m_buffer,m_length);}
 
   int  size() const noexcept{return m_length;}
 

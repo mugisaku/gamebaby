@@ -1,4 +1,5 @@
 #include"children/FallBlockPazzle/FallBlockPazzle.hpp"
+#include"children/Dungeon/Dungeon.hpp"
 #include"libgbstd/gpfs.hpp"
 #include"libsdlglu/sdl.hpp"
 
@@ -10,8 +11,8 @@ namespace{
 const std::vector<game_information>
 g_games =
 {
-    stage::get_information(),
-//  dungeon::get_information(),
+  FallBlockPazzle::stage::get_information(),
+          Dungeon::world::get_information(),
 };
 
 
@@ -32,8 +33,8 @@ public:
     set_x_position(20);
     set_y_position(20);
 
-    set_content_width( g_font_width *20);
-    set_content_height(g_font_height*10);
+    set_content_width( g_font_width *30);
+    set_content_height(g_font_height*14);
 
     get_style().set_fill_color(colors::blue);
 
@@ -76,9 +77,12 @@ draw_information(const canvas&  cv) noexcept
 
   auto  cont_cv = g_inf_window.render(cv);
 
-  cont_cv.draw_string(colors::white,inf.title,0,0);
-  cont_cv.draw_string(colors::white,inf.category_name,0,g_font_height*2);
-  cont_cv.draw_string_in_area(colors::white,inf.description,0,g_font_height*4,g_font_width*20,g_font_height*6);
+  string_form  sf;
+
+  cont_cv.draw_string(colors::white,sf("タイトル: %s",inf.title.data()),0,0);
+  cont_cv.draw_string(colors::white,sf("カテゴリィ: %s",inf.category_name.data()),0,g_font_height*2);
+  cont_cv.draw_string(colors::white,"せつめい:",0,g_font_height*4);
+  cont_cv.draw_string_in_area(colors::white,inf.description,0,g_font_height*5,g_font_width*30,g_font_height*8);
 }
 
 
@@ -96,7 +100,7 @@ draw_ask_window(const canvas&  cv) noexcept
 
 
   int  x = g_ask_window.get_x_position();
-  int  y = g_ask_window.get_y_position()+24;
+  int  y = g_ask_window.get_y_position()+28;
 
   cv.draw_canvas(misc_cv,!g_ask_index? x-20:x+4,y);
 }
@@ -130,16 +134,16 @@ ask(execution&  exec) noexcept
 
         if(!g_ask_index)
         {
+          get_root_directory()["/video/sprites/spr00"]
+            .set_ignore_flag()
+          ;
+
           g_games[g_index].boot();
         }
 
       else
         {
           g_ask_index = 0;
-
-          get_root_directory()["/video/sprites/spr00"]
-            .unset_ignore_flag()
-          ;
 
           exec.replace(select);
         }

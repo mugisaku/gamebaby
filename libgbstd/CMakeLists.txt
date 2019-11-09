@@ -24,6 +24,7 @@ set(SOURCES
   characters/font.cpp
   characters/text.cpp
   characters/string_set.cpp
+  characters/string_form.cpp
   images/image.cpp
   images/image__png.cpp
   images/canvas.cpp
