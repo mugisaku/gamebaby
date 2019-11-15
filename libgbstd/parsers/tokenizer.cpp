@@ -56,7 +56,7 @@ read_quoted_string(char  close_char)
 {
   std::string  s;
 
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
       auto  c = *m_pointer++;
 
@@ -199,7 +199,7 @@ read_block(operator_code  open, operator_code  close)
 
   auto  close_len = close.get_length();
 
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
         if(!step(toks,close,close_len))
         {
@@ -224,6 +224,12 @@ tokenizer::
 step(std::vector<token>&  toks, operator_code  close, int close_len)
 {
 START:
+    if(m_pointer >= m_end_pointer)
+    {
+      return false;
+    }
+
+
   auto  c = *m_pointer;
 
     if((c ==  ' ') ||
@@ -376,25 +382,19 @@ START:
 
 token_block
 tokenizer::
-operator()(const char*  p)
+operator()(std::string_view  sv)
 {
   std::vector<token>  toks;
 
-  m_pointer = p;
+  m_pointer     = sv.data();
+  m_end_pointer = sv.data()+sv.size();
 
   m_line_counter = 0;
 
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
         if(!step(toks,"",0))
         {
-          break;
-        }
-
-
-        if(m_pointer == p)
-        {
-          report;
           break;
         }
     }

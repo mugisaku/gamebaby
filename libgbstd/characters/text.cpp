@@ -8,13 +8,6 @@ namespace gbstd{
 
 
 
-text::node*
-text::
-m_stock_pointer;
-
-
-
-
 text&
 text::
 assign(text&&  rhs) noexcept
@@ -23,11 +16,13 @@ assign(text&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_top_pointer      ,rhs.m_top_pointer);
-      std::swap(m_bottom_pointer   ,rhs.m_bottom_pointer);
-      std::swap(m_current_pointer  ,rhs.m_current_pointer);
-      std::swap(m_character_counter,rhs.m_character_counter);
-      std::swap(m_number_of_lines  ,rhs.m_number_of_lines);
+      std::swap(m_character_buffer,rhs.m_character_buffer);
+      std::swap(m_lines,rhs.m_lines);
+      std::swap(m_width,rhs.m_width);
+      std::swap(m_height,rhs.m_height);
+      std::swap(m_top_line    ,rhs.m_top_line);
+      std::swap(m_bottom_line ,rhs.m_bottom_line);
+      std::swap(m_current_line,rhs.m_current_line);
     }
 
 
@@ -41,193 +36,88 @@ text&
 text::
 clear() noexcept
 {
-  auto  ptr = m_top_pointer;
+  m_character_buffer.clear();
+  m_lines.clear();
 
-  m_top_pointer     = nullptr;
-  m_bottom_pointer  = nullptr;
-  m_current_pointer = nullptr;
+  m_top_line     = nullptr;
+  m_bottom_line  = nullptr;
+  m_current_line = nullptr;
 
-    while(ptr)
-    {
-      auto  next = ptr->m_next;
-                   ptr->m_next = m_stock_pointer      ;
-                                 m_stock_pointer = ptr;
-
-      ptr = next;
-    }
-
-
-  m_character_counter = 0;
-  m_number_of_lines   = 0;
+  m_width  = 0;
+  m_height = 0;
 
   return *this;
 }
 
 
-text::node*
+text&
 text::
-new_node() noexcept
+resize(int  w, int  h) noexcept
 {
-    if(!m_stock_pointer)
-    {
-      m_stock_pointer = new node;
+  clear();
 
-      m_stock_pointer->m_next = nullptr;
+  m_width  = w;
+  m_height = h;
+
+  m_character_buffer.resize(w*h);
+  m_lines.resize(h);
+
+
+  auto  p = m_character_buffer.data();
+
+    for(int  y = 0;  y < h;  ++y)
+    {
+      auto&  ln = m_lines[y];
+
+      ln.m_next = &m_lines[(y < (h-1))? (y+1):0];
+
+      ln.m_buffer = p     ;
+                    p += w;
+
+      ln.m_length = 0;
     }
 
 
-  auto  nd = m_stock_pointer                          ;
-             m_stock_pointer = m_stock_pointer->m_next;
+  m_top_line     = m_lines.data();
+  m_bottom_line  = m_lines.data()+(h-1);
+  m_current_line = m_lines.data();
 
-    if(m_bottom_pointer)
+  m_full_flag = false;
+
+  return *this;
+}
+
+
+bool
+text::
+push(char16_t  c) noexcept
+{
+START:
+    if(m_current_line->m_length < m_width)
     {
-      m_bottom_pointer->m_next = nd;
+        if(c == '\n')
+        {
+          goto NEWLINE;
+        }
+
+
+      m_current_line->m_buffer[m_current_line->m_length++] = c;
+
+      return true;
+    }
+
+  else
+    if(m_current_line != m_bottom_line)
+    {
+NEWLINE:
+      m_current_line = m_current_line->m_next;
+
+      return true;
     }
 
   else
     {
-      m_top_pointer     = nd;
-      m_current_pointer = nd;
-    }
-
-
-  m_bottom_pointer = nd;
-
-  nd->m_next = nullptr;
-
-  nd->m_line.m_content_length = 0;
-  nd->m_line.m_display_length = 0;
-
-  ++m_number_of_lines;
-
-  return nd;
-}
-
-
-text&
-text::
-push(std::string_view  sv) noexcept
-{
-  auto  nd = new_node();
-
-  utf8_decoder  dec(sv.data());
-
-    while(dec)
-    {
-        if(nd->m_line.is_full())
-        {
-          nd = new_node();
-        }
-
-
-      auto  c = dec();
-
-        if(c == '\n')
-        {
-          nd = new_node();
-        }
-
-      else
-        {
-          nd->m_line.push(c);
-
-          ++m_character_counter;
-        }
-    }
-
-
-  return *this;
-}
-
-
-text&
-text::
-push(std::u16string_view  sv) noexcept
-{
-  auto  nd = new_node();
-
-    for(auto  c: sv)
-    {
-        if(nd->m_line.is_full())
-        {
-          nd = new_node();
-        }
-
-
-        if(c == '\n')
-        {
-          nd = new_node();
-        }
-
-      else
-        {
-          nd->m_line.push(c);
-
-          ++m_character_counter;
-        }
-    }
-
-
-  return *this;
-}
-
-
-text&
-text::
-pop() noexcept
-{
-    if(m_top_pointer)
-    {
-      m_character_counter -= m_top_pointer->m_line.m_display_length;
-
-        if(m_current_pointer == m_top_pointer)
-        {
-          m_current_pointer = m_current_pointer->m_next;
-        }
-
-
-      auto  nd = m_top_pointer                        ;
-                 m_top_pointer = m_top_pointer->m_next;
-
-      nd->m_next = m_stock_pointer     ;
-                   m_stock_pointer = nd;
-
-        if(!--m_number_of_lines)
-        {
-          m_bottom_pointer = nullptr;
-        }
-    }
-
-
-  return *this;
-}
-
-
-bool
-text::
-expose_one_character() noexcept
-{
-START:
-    if(m_current_pointer)
-    {
-      auto&  ln = m_current_pointer->m_line;
-
-        if(!ln.is_displaying_all())
-        {
-          ++ln.m_display_length;
-
-          --m_character_counter;
-
-          return true;
-        }
-
-      else
-        if(m_current_pointer->m_next)
-        {
-          m_current_pointer = m_current_pointer->m_next;
-
-          goto START;
-        }
+      m_full_flag = true;
     }
 
 
@@ -235,35 +125,45 @@ START:
 }
 
 
-bool
+text&
 text::
-expose_all_characters_of_current_line() noexcept
+rotate() noexcept
 {
-START:
-    if(m_current_pointer)
+  m_top_line     = m_top_line->m_next;
+  m_bottom_line  = m_bottom_line->m_next;
+  m_current_line = m_current_line->m_next;
+
+  m_current_line->m_length = 0;
+
+  m_full_flag = false;
+
+  return *this;
+}
+
+
+const std::vector<std::u16string_view>&
+text::
+make_line_list() noexcept
+{
+  m_line_list.clear();
+
+  auto  it = m_top_line;
+
+    for(;;)
     {
-      auto&  ln = m_current_pointer->m_line;
+      m_line_list.emplace_back(it->get_view());
 
-        if(!ln.is_displaying_all())
+        if(it == m_current_line)
         {
-          m_character_counter -= ln.m_content_length-ln.m_display_length;
-
-          ln.m_display_length = ln.m_content_length;
-
-          return true;
+          break;
         }
 
-      else
-        if(m_current_pointer->m_next)
-        {
-          m_current_pointer = m_current_pointer->m_next;
 
-          goto START;
-        }
+      it = it->m_next;
     }
 
 
-  return false;
+  return m_line_list;
 }
 
 
@@ -273,15 +173,25 @@ print() const noexcept
 {
   printf("text{\n");
 
-    for(auto&  ln: *this)
-    {
-      utf8_encoder  enc;
+  utf8_encoder  enc;
 
-        for(auto  c: ln)
+  auto  it = m_top_line;
+
+    for(;;)
+    {
+        for(auto  c: it->get_view())
         {
           printf("%s",enc(c).codes);
         }
 
+
+        if(it == m_current_line)
+        {
+          break;
+        }
+
+
+      it = it->m_next;
 
       printf("\n");
     }
@@ -291,48 +201,6 @@ print() const noexcept
 }
 
 
-
-
-text::iterator
-text::iterator::
-operator++(int) noexcept
-{
-  auto  tmp = *this;
-
-  m_pointer = m_pointer->m_next;
-
-  return tmp;
-}
-
-
-text::iterator
-text::iterator::
-operator+(int  n) const noexcept
-{
-  auto  ptr = m_pointer;
-
-    while(n--)
-    {
-      ptr = ptr->m_next;
-    }
-
-
-  return iterator(ptr);
-}
-
-
-text::iterator&
-text::iterator::
-operator+=(int  n) noexcept
-{
-    while(n--)
-    {
-      m_pointer = m_pointer->m_next;
-    }
-
-
-  return *this;
-}
 
 
 }

@@ -86,6 +86,17 @@ encode(int  c, int  shift_amount=0) noexcept
 }
 
 
+utf8_decoder&
+utf8_decoder::
+assign(std::string_view  sv) noexcept
+{
+  m_pointer = sv.data();
+  m_end     = sv.data()+sv.size();
+
+  return *this;
+}
+
+
 char32_t
 utf8_decoder::
 operator()() noexcept

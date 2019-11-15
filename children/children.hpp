@@ -4,6 +4,7 @@
 
 #include"libgbstd/control.hpp"
 #include"libgbstd/image.hpp"
+#include"libgbstd/character.hpp"
 #include"libgbstd/utility.hpp"
 #include"libgbstd/random.hpp"
 #include"libgbstd/ilc.hpp"

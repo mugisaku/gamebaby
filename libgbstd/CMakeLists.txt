@@ -65,6 +65,9 @@ set(SOURCES
   sounds/short_noise_device.cpp
   sounds/scale_table.cpp
   control_execution.cpp
+  control_asm_element.cpp
+  control_program_space.cpp
+  control_program_execution.cpp
   gpfs_directory.cpp
   gpfs_node.cpp
   gpfs_node_reference.cpp

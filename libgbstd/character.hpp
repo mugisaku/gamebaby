@@ -58,14 +58,17 @@ class
 utf8_decoder
 {
   const char*  m_pointer=nullptr;
+  const char*  m_end    =nullptr;
 
 public:
-  constexpr utf8_decoder(              ) noexcept{}
-  constexpr utf8_decoder(const char*  s) noexcept: m_pointer(s){}
+  utf8_decoder(                    ) noexcept{}
+  utf8_decoder(std::string_view  sv) noexcept{assign(sv);}
 
-  utf8_decoder&  operator=(const char*  s) noexcept{m_pointer = s;  return *this;}
+  utf8_decoder&  operator=(std::string_view  sv) noexcept{return assign(sv);}
 
-  operator bool() const noexcept{return *m_pointer;}
+  utf8_decoder&  assign(std::string_view  sv) noexcept;
+
+  operator bool() const noexcept{return m_pointer < m_end;}
 
   char32_t  operator()() noexcept;
 
@@ -95,65 +98,37 @@ std::u16string  make_u16string(std::string_view  sv) noexcept;
 void  print(std::u16string_view  sv) noexcept;
 
 
-class text;
-
-
-class
-text_line
-{
-  friend class text;
-
-  static constexpr int  m_buffer_length = 80;
-
-  char16_t  m_buffer[m_buffer_length];
-
-  int  m_content_length=0;
-  int  m_display_length=0;
-
-public:
-  const char16_t&  operator[](int  i) const noexcept{return m_buffer[i];}
-
-  bool  is_full() const noexcept{return m_content_length >= m_buffer_length;}
-
-  bool  is_displaying_all() const noexcept{return m_display_length == m_content_length;}
-
-  void  push(char16_t  c) noexcept{m_buffer[m_content_length++] = c;}
-
-  int  get_length() const noexcept{return m_content_length;}
-  int  get_display_length() const noexcept{return m_display_length;}
-
-  std::u16string_view  get_view() const noexcept{return std::u16string_view(m_buffer,m_display_length);}
-
-  const char16_t*  begin() const noexcept{return m_buffer                 ;}
-  const char16_t*    end() const noexcept{return m_buffer+m_display_length;}
-
-};
-
-
 class
 text
 {
-  struct node{
-    text_line  m_line;
+  struct line{
+    line*  m_next;
 
-    node*  m_next;
+    char16_t*  m_buffer;
+
+    int  m_length=0;
+
+    std::u16string_view  get_view() const noexcept{return std::u16string_view(m_buffer,m_length);}
+
   };
 
-  static node*  m_stock_pointer;
 
-  node*     m_top_pointer=nullptr;
-  node*  m_bottom_pointer=nullptr;
+  std::vector<char16_t>  m_character_buffer;
+  std::vector<line>      m_lines;
 
-  node*  m_current_pointer=nullptr;
+  line*      m_top_line=nullptr;
+  line*   m_bottom_line=nullptr;
+  line*  m_current_line=nullptr;
 
-  uint32_t  m_character_counter=0;
+  int  m_width =0;
+  int  m_height=0;
 
-  int  m_number_of_lines=0;
+  bool  m_full_flag=false;
 
-  node*  new_node() noexcept;
+  std::vector<std::u16string_view>  m_line_list;
 
 public:
-  text() noexcept{}
+  text(int  w=0, int  h=0) noexcept{resize(w,h);}
   text(const text&   rhs) noexcept=delete;
   text(      text&&  rhs) noexcept{assign(std::move(rhs));}
  ~text(){clear();}
@@ -161,54 +136,25 @@ public:
   text&  operator=(const text&   rhs) noexcept=delete;
   text&  operator=(      text&&  rhs) noexcept{return assign(std::move(rhs));}
 
-//  text&  assign(const text&   rhs) noexcept;
+  text&  assign(const text&   rhs) noexcept=delete;
   text&  assign(      text&&  rhs) noexcept;
 
   text&  clear() noexcept;
 
-  int  get_number_of_lines() const noexcept{return m_number_of_lines;}
+  text&  resize(int  w, int  h) noexcept;
 
-  text&  push(std::string_view     sv) noexcept;
-  text&  push(std::u16string_view  sv) noexcept;
+  int  get_width()  const noexcept{return m_width;}
+  int  get_height() const noexcept{return m_height;}
 
-  text&   pop() noexcept;
+  bool  push(char16_t  c) noexcept;
 
-  bool  expose_one_character() noexcept;
-  void  expose_all_characters() noexcept{while(expose_all_characters_of_current_line());}
-  bool  expose_all_characters_of_current_line() noexcept;
+  text&  rotate() noexcept;
 
-  bool  is_displaying_all_characters() const noexcept{return !m_character_counter;}
+  bool  is_full() const noexcept{return m_full_flag;}
+
+  const std::vector<std::u16string_view>&  make_line_list() noexcept;
 
   void  print() const noexcept;
-
-
-  class iterator{
-    const node*  m_pointer=nullptr;
-
-  public:
-    iterator(const node*  ptr) noexcept: m_pointer(ptr){}
-
-    const text_line&  operator *() const noexcept{return  m_pointer->m_line;}
-    const text_line*  operator->() const noexcept{return &m_pointer->m_line;}
-
-    operator bool() const noexcept{return m_pointer;}
-
-    bool  operator==(iterator  rhs) noexcept{return m_pointer == rhs.m_pointer;}
-    bool  operator!=(iterator  rhs) noexcept{return m_pointer != rhs.m_pointer;}
-
-    iterator&  operator++() noexcept{  m_pointer = m_pointer->m_next;  return *this;}
-    iterator  operator++(int) noexcept;
-
-    iterator  operator+(int  n) const noexcept;
-    iterator&  operator+=(int  n) noexcept;
-
-  };
-
-
-  iterator  bottom() const noexcept{return iterator(m_bottom_pointer);}
-
-  iterator  begin() const noexcept{return iterator(m_top_pointer);}
-  iterator    end() const noexcept{return iterator(nullptr);}
 
 };
 

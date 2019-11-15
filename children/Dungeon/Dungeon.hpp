@@ -3,6 +3,7 @@
 
 
 #include"children/children.hpp"
+#include<deque>
 
 
 
@@ -99,31 +100,58 @@ constexpr relative_direction   left = relative_direction(3);
 
 
 class     space;
+class     floor;
 class structure;
-
-
-struct
-wall
-{
-  space*  m_space;
-
-  bool  m_passage;
-
-  int  m_event_index;
-
-};
+class     world;
 
 
 struct
 space
 {
-  structure*  m_structure;
+  floor*  m_floor=nullptr;
 
   gbstd::point  m_point;
 
   bool  m_block=false;
 
-  wall  m_walls[g_number_of_directions];
+  int  m_event_index=0;
+
+};
+
+
+struct
+floor
+{
+  structure*  m_structure=nullptr;
+
+  static constexpr int  m_width  = 32;
+  static constexpr int  m_height = 32;
+
+  int  m_number=0;
+
+  space  m_table[m_height][m_width];
+
+  void  reset(structure&  st, int  n) noexcept;
+
+  space&  get_space(gbstd::point  pt) noexcept{return m_table[pt.y][pt.x];}
+
+};
+
+
+class
+event
+{
+  std::string_view  m_name;
+
+  void  (world::*m_callback)(gbstd::execution&);
+
+public:
+  constexpr event(const char*  name, void  (world::*cb)(gbstd::execution&)) noexcept:
+  m_name(name), m_callback(cb){}
+
+  constexpr bool  operator==(std::string_view  sv) const noexcept{return m_name == sv;}
+
+  void  operator()(world&  w, gbstd::execution&  exec) const noexcept{exec.push({w,m_callback});}
 
 };
 
@@ -131,12 +159,15 @@ space
 struct
 structure
 {
-  static constexpr int  m_width  = 32;
-  static constexpr int  m_height = 32;
+  static constexpr int  m_number_of_floors = 10;
 
-  space  m_table[m_height][m_width];
+  std::string  m_name;
+
+  floor  m_floors[m_number_of_floors];
 
   void  reset() noexcept;
+
+  std::vector<event>  m_event_table;
 
 };
 
@@ -144,11 +175,25 @@ structure
 struct
 venturer
 {
-  structure*  m_structure;
+  floor*  m_floor=nullptr;
+
+  int  m_hp_max=30;
+  int  m_hp    =30;
+
+  int  m_strength=10;
+  int  m_defense =10;
+  int  m_agility =10;
+  int  m_luck    =10;
 
   gbstd::point  m_point;
 
   absolute_direction  m_direction;
+
+  floor&  get_current_floor() const noexcept{return *m_floor;}
+  space&  get_current_space() const noexcept{return  m_floor->get_space(m_point);}
+
+  void  draw_status(const gbstd::canvas&  cv) noexcept;
+  void  draw_around(const gbstd::canvas&  cv) noexcept;
 
 };
 
@@ -159,16 +204,46 @@ world
   venturer    m_venturer;
   structure   m_structure;
 
+  std::deque<char16_t>  m_character_buffer;
+
+  gbstd::text  m_text;
+
+  gbstd::alarm  m_text_alarm;
+
+  bool  m_rapid_stream=false;
+  bool  m_stream_finished=false;
+
+  gbstd::gpfs::node_reference  m_base_sprite;
+  gbstd::gpfs::node_reference  m_text_sprite;
+
+  std::vector<event>  m_event_table;
+
+  void  push_text(std::string     sv) noexcept;
+  void  push_text(std::u16string  sv) noexcept;
+
   bool  is_block(gbstd::point  pt) const noexcept;
+
+  void  event_nop(gbstd::execution&  exec) noexcept;
+  void  event_text1(gbstd::execution&  exec) noexcept;
+  void  event_text2(gbstd::execution&  exec) noexcept;
+
+  void  start_stream_text(gbstd::execution&  exec) noexcept;
+  void        stream_text(gbstd::execution&  exec) noexcept;
 
   void  wait_input(gbstd::execution&  exec) noexcept;
 
   void  initialize(gbstd::execution&  exec) noexcept;
 
-  void  draw_around(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
+  void  finish_event(gbstd::execution&  exec) noexcept;
+
   void  draw_walls(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
 
-  void  draw(const gbstd::canvas&  cv) noexcept;
+  void  draw_base(const gbstd::canvas&  cv) noexcept;
+  void  draw_text(const gbstd::canvas&  cv) noexcept;
+
+  void  drive_event(int  i, gbstd::execution&  exec) noexcept{m_event_table[i](*this,exec);}
+
+public:
 
   static game_information  get_information() noexcept;
 

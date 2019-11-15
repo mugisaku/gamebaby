@@ -11,7 +11,7 @@ void
 tokenizer::
 skip_linestyle_comment() noexcept
 {
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
       auto  c = *m_pointer;
 
@@ -42,7 +42,7 @@ void
 tokenizer::
 skip_blockstyle_comment()
 {
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
       auto  c = *m_pointer;
 
@@ -85,7 +85,7 @@ void
 tokenizer::
 skip_spaces()
 {
-    for(;;)
+    while(m_pointer < m_end_pointer)
     {
       auto  c = *m_pointer;
 

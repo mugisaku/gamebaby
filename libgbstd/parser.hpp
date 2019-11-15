@@ -187,6 +187,7 @@ tokenizer
   int  m_line_counter=0;
 
   const char*  m_pointer=nullptr;
+  const char*  m_end_pointer=nullptr;
 
   token_info  m_info;
 
@@ -217,7 +218,7 @@ tokenizer
   void  update_info() noexcept{m_info = token_info(m_pointer,m_line_counter);}
 
 public:
-  token_block  operator()(const char*  p);
+  token_block  operator()(std::string_view  sv);
 
 };
 

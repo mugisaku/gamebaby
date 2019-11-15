@@ -10,8 +10,114 @@ namespace Dungeon{
 
 void
 world::
+event_nop(gbstd::execution&  exec) noexcept
+{
+}
+
+
+void
+world::
+finish_event(gbstd::execution&  exec) noexcept
+{
+  exec.pop();
+}
+
+
+void
+world::
+event_text1(gbstd::execution&  exec) noexcept
+{
+  push_text(u"てきすとてすと１");
+
+  start_stream_text(exec);
+}
+
+
+void
+world::
+event_text2(gbstd::execution&  exec) noexcept
+{
+  push_text(u"てきすとてすと２");
+
+  start_stream_text(exec);
+}
+
+
+
+
+void
+world::
+start_stream_text(gbstd::execution&  exec) noexcept
+{
+  m_text_sprite->unset_ignore_flag();
+
+  exec.replace({*this,&world::stream_text});
+}
+
+
+void
+world::
+stream_text(gbstd::execution&  exec) noexcept
+{
+    if(m_character_buffer.size())
+    {
+        if(m_rapid_stream || m_text_alarm)
+        {
+          m_text_alarm.reset();
+
+          auto  c = m_character_buffer.front();
+
+          auto  res = m_text.push(c);
+
+            if(res)
+            {
+              m_character_buffer.pop_front();
+            }
+
+          else
+            if(gbstd::get_keys().test_acr())
+            {
+              m_text.rotate();
+            }
+        }
+    }
+
+  else
+    if(!m_stream_finished)
+    {
+      m_stream_finished = true;
+
+        if(gbstd::get_keys().test_acr())
+        {
+          gbstd::barrier_keys();
+        }
+    }
+
+  else
+    if(gbstd::get_keys().test_acr())
+    {
+      gbstd::barrier_keys();
+
+      m_text_sprite->set_ignore_flag();
+
+      exec.pop();
+    }
+
+
+  m_rapid_stream = gbstd::get_keys().test_acr();
+
+
+  exec.interrupt();
+}
+
+
+void
+world::
 wait_input(gbstd::execution&  exec) noexcept
 {
+  auto   prev_pt = m_venturer.m_point;
+  auto  prev_dir = m_venturer.m_direction;
+
   auto&   pt = m_venturer.m_point;
   auto&  dir = m_venturer.m_direction;
 
@@ -29,10 +135,10 @@ wait_input(gbstd::execution&  exec) noexcept
 
         if((x >= 0) &&
            (y >= 0) &&
-           (x < (structure::m_width -1)) &&
-           (y < (structure::m_height-1)))
+           (x < (floor::m_width -1)) &&
+           (y < (floor::m_height-1)))
         {
-          m_structure.m_table[y][x].m_block = true;
+          m_venturer.m_floor->m_table[y][x].m_block = true;
         }
     }
 
@@ -49,7 +155,7 @@ wait_input(gbstd::execution&  exec) noexcept
       else
         if(dir.is_x_positive())
         {
-            if(pt.x < (structure::m_width-1))
+            if(pt.x < (floor::m_width-1))
             {
               ++pt.x;
             }
@@ -64,7 +170,7 @@ wait_input(gbstd::execution&  exec) noexcept
       else
         if(dir.is_y_positive())
         {
-            if(pt.y < (structure::m_height-1))
+            if(pt.y < (floor::m_height-1))
             {
               ++pt.y;
             }
@@ -96,7 +202,18 @@ wait_input(gbstd::execution&  exec) noexcept
     }
 
 
-  exec.interrupt();
+    if((prev_pt  !=  pt) ||
+       (prev_dir != dir))
+    {
+      auto&  sp = m_venturer.m_floor->m_table[pt.y][pt.x];
+
+      drive_event(sp.m_event_index,exec);
+    }
+
+  else
+    {
+      exec.interrupt();
+    }
 }
 
 
@@ -104,41 +221,35 @@ void
 world::
 initialize(gbstd::execution&  exec) noexcept
 {
-  gbstd::get_root_directory()["/video/sprites/Dungeonn.spr00"]
-    .be_sprite()
-    .set_callback({*this,&world::draw})
+  m_base_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr00"];
+  m_text_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr01"];
+
+  m_base_sprite->be_sprite()
+    .set_callback({*this,&world::draw_base})
   ;
 
+  m_text_sprite->be_sprite()
+    .set_callback({*this,&world::draw_text})
+  ;
+
+  m_structure.reset();
+  m_structure.m_name = "はじまりのまち";
+  m_venturer.m_floor = m_structure.m_floors;
+
+  m_text.resize(10,3);
+
+  m_text_alarm.assign(gbstd::get_root_directory()["/clocks/Dungeon.clk00"].be_clock()).set_interval(100);
+
+  m_event_table = {
+    event("なにも　なし",&world::event_nop),
+    event("テキスト１",&world::event_text1),
+    event("テキスト２",&world::event_text2),
+  };
+
+  m_venturer.get_current_floor().get_space({0,1}).m_event_index = 1;
+  m_venturer.get_current_floor().get_space({0,2}).m_event_index = 2;
+
   exec.replace({*this,&world::wait_input});
-}
-
-
-void
-world::
-draw_around(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept
-{
-    for(int  y = 0;  y < 3;  ++y){
-    for(int  x = 0;  x < 3;  ++x){
-      int  xx = base_pt.x+-1+x;
-      int  yy = base_pt.y+-1+y;
-
-        if((xx >= 0) && (xx < structure::m_width ) &&
-           (yy >= 0) && (yy < structure::m_height))
-        {
-          auto&  sp = m_structure.m_table[yy][xx];
-
-            if(sp.m_block)
-            {
-              cv.fill_rectangle(gbstd::colors::white,24*x,24*y,24,24);
-            }
-        }           
-    }}
-
-
-  int  src_x = ((dir.is_y_positive() || dir.is_y_negative() )? 4:5)*24;
-  int  src_y =  (dir.is_y_positive() || dir.is_x_positive())? 0:24;
-
-  cv.draw_canvas({gbstd::g_misc_image,src_x,src_y,24,24},24,24);
 }
 
 
@@ -154,13 +265,37 @@ g_wall_image(g_wall_image_bin);
 }
 
 
+void
+world::
+push_text(std::string  sv) noexcept
+{
+  auto  u16s = gbstd::make_u16string(sv);
+
+  push_text(u16s);
+}
+
+
+void
+world::
+push_text(std::u16string  sv) noexcept
+{
+    for(auto  c: sv)
+    {
+      m_character_buffer.emplace_back(c);
+    }
+
+
+  m_stream_finished = false;
+}
+
+
 bool
 world::
 is_block(gbstd::point  pt) const noexcept
 {
-  constexpr gbstd::rectangle  rect(0,0,structure::m_width,structure::m_height);
+  constexpr gbstd::rectangle  rect(0,0,floor::m_width,floor::m_height);
 
-  return (rect.test_point(pt) && m_structure.m_table[pt.y][pt.x].m_block);
+  return (rect.test_point(pt) && m_venturer.m_floor->m_table[pt.y][pt.x].m_block);
 }
 
 
@@ -196,7 +331,7 @@ draw_walls(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas& 
 
 void
 world::
-draw(const gbstd::canvas&  cv) noexcept
+draw_base(const gbstd::canvas&  cv) noexcept
 {
   gbstd::string_form  sf;
 
@@ -207,8 +342,25 @@ draw(const gbstd::canvas&  cv) noexcept
 
   cv.draw_canvas({g_wall_image,0,0,24*4,24*4},0,0);
 
-  draw_around(pt,dir,{cv,0,24*8+16,24*3,24*3});
+  m_venturer.draw_status({cv,24*4,      0,gbstd::g_font_width*8,gbstd::g_font_height*8});
+  m_venturer.draw_around({cv,   0,24*8+16,24*3,24*3});
+
   draw_walls(pt,dir,{cv});
+}
+
+
+void
+world::
+draw_text(const gbstd::canvas&  cv) noexcept
+{
+  auto  ls = m_text.make_line_list();
+
+  gbstd::point  text_pt;
+
+    for(auto&  sv: ls)
+    {
+      cv.draw_string(gbstd::colors::white,sv,text_pt.move_x(0),text_pt.move_y(gbstd::g_font_height));
+    }
 }
 
 
@@ -221,13 +373,9 @@ get_information() noexcept
   inf.screen_width  = 320;
   inf.screen_height = 320;
 
-  inf.title = "おやめください　ダンナさま";
+  inf.title = "ディープなダンジョン";
   inf.category_name = "3Dダンジョン";
-  inf.description =
- R"(だいがくせいのタケトは　しんじていた　ゆうじんに　たがくの　しゃっきんを　せおわされてしまう
-しついの　なか　へんさいの　しゅだんを　さがす　タケトのまえに　「あなたを　やといたい　という　ひとがいる」　と　はかくの　ほうしゅうを　ていじする　おとこが　あらわれる
-あやしいと　おもいながらも　おとこに　つれられて　いったさきで　タケトは　おのれの　なかに　ねむっていた　おぞましい　よくぼうを　しることに　なるのだった
-)";
+  inf.description = R"()";
 
   inf.boot = [](){
     gbstd::push_execution({*new world,&world::initialize});

@@ -97,7 +97,7 @@ void
 canvas::
 draw_string(color  col, std::string_view  sv, int  x, int  y) const noexcept
 {
-  utf8_decoder  dec(sv.data());
+  utf8_decoder  dec(sv);
 
     while(dec)
     {
@@ -139,7 +139,7 @@ void
 canvas::
 draw_string_safely(color  col, std::string_view  sv, int  x, int  y) const noexcept
 {
-  utf8_decoder  dec(sv.data());
+  utf8_decoder  dec(sv);
 
     while(dec)
     {
@@ -227,7 +227,7 @@ draw_string_in_area(color  col, std::string_view     sv, int  x, int  y, int  w,
   const int  x_limit = x+w;
   const int  y_limit = y+h;
 
-  utf8_decoder  dec(sv.data());
+  utf8_decoder  dec(sv);
 
     while(dec)
     {

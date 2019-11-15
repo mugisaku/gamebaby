@@ -11,8 +11,8 @@ namespace{
 const std::vector<game_information>
 g_games =
 {
-  FallBlockPazzle::stage::get_information(),
           Dungeon::world::get_information(),
+  FallBlockPazzle::stage::get_information(),
 };
 
 
@@ -216,6 +216,12 @@ main(int  argc, char**  argv)
   gbstd::push_execution({initialize});
 
   sdl::init(w,h);
+
+    if(argc > 1)
+    {
+      sdl::start_screen_recording();
+    }
+
 
   sdl::start_loop();
 

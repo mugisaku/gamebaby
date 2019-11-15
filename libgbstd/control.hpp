@@ -5,6 +5,7 @@
 #include<cstdint>
 #include<cstdio>
 #include<vector>
+#include<new>
 #include"libgbstd/image.hpp"
 #include"libgbstd/misc.hpp"
 
@@ -319,7 +320,161 @@ public:
 
 
 
+class process_node;
+
+enum class
+asm_kind
+{
+  null,invoke,branch,label,jump
+};
+
+
+class
+asm_element
+{
+  asm_kind  m_kind=asm_kind::null;
+
+  std::string  m_first;
+  std::string  m_second;
+
+  bool  m_interrupt_flag=false;
+
+public:
+  asm_element() noexcept{}
+  asm_element(asm_kind  k, std::string_view  f, std::string_view  s, bool  interrupt) noexcept:
+  m_kind(k), m_first(f), m_second(s), m_interrupt_flag(interrupt){}
+
+  bool  is_invoke() const noexcept{return m_kind == asm_kind::invoke;}
+  bool  is_branch() const noexcept{return m_kind == asm_kind::branch;}
+  bool  is_label()  const noexcept{return m_kind == asm_kind::label;}
+  bool  is_jump()   const noexcept{return m_kind == asm_kind::jump;}
+
+  bool  is_label(std::string_view  id) const noexcept{return is_label() && (m_first == id);}
+
+  const std::string&  get_first()  const noexcept{return m_first;}
+  const std::string&  get_second() const noexcept{return m_second;}
+
+  bool  test_interrupt_flag() const noexcept{return m_interrupt_flag;}
+
+  void  print() const noexcept;
+
+};
+
+
+
+class
+condition_callback
+{
+  std::string  m_name;
+
+  union{
+    bool  (*m_function_pointer)();
+    bool  (dummy::*m_member_function_pointer)();
+  };
+
+public:
+  condition_callback(std::string_view  name, bool  (*fnptr)()) noexcept:
+  m_name(name), m_function_pointer(fnptr){}
+
+  template<typename  T>
+  condition_callback(std::string_view  name, bool  (T::*fnptr)()) noexcept:
+  m_name(name), m_member_function_pointer(reinterpret_cast<bool(dummy::*)()>(fnptr)){}
+
+  bool  operator==(std::string_view  name) const noexcept{return m_name == name;}
+
+  bool  operator()() const noexcept{return m_function_pointer();}
+
+  template<typename  T>
+  bool  operator()(T&  t) const noexcept{return (reinterpret_cast<dummy&>(t).*m_member_function_pointer)();}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+};
+
+
+class
+body_callback
+{
+  std::string  m_name;
+
+  union{
+    void  (*m_function_pointer)();
+    void  (dummy::*m_member_function_pointer)();
+  };
+
+public:
+  body_callback(std::string_view  name, void  (*fnptr)()) noexcept:
+  m_name(name), m_function_pointer(fnptr){}
+
+  template<typename  T>
+  body_callback(std::string_view  name, void  (T::*fnptr)()) noexcept:
+  m_name(name), m_member_function_pointer(reinterpret_cast<void(dummy::*)()>(fnptr)){}
+
+  bool  operator==(std::string_view  name) const noexcept{return m_name == name;}
+
+  void  operator()() const noexcept{m_function_pointer();}
+
+  template<typename  T>
+  void  operator()(T&  t) const noexcept{(reinterpret_cast<dummy&>(t).*m_member_function_pointer)();}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+};
+
+
+class
+program_space
+{
+  std::vector<condition_callback>  m_condition_callback_table;
+  std::vector<     body_callback>       m_body_callback_table;
+
+  std::vector<asm_element>  m_element_table;
+
+public:
+  void  load_source(std::string_view  sv) noexcept;
+
+  void  add_condition(condition_callback  cb) noexcept{m_condition_callback_table.emplace_back(cb);}
+  void  add_body(          body_callback  cb) noexcept{m_body_callback_table.emplace_back(cb);}
+
+  const asm_element&  operator[](int  pc) const noexcept{return m_element_table[pc];}
+
+  const condition_callback*  find_condition(std::string_view  id) const noexcept;
+  const body_callback*            find_body(std::string_view  id) const noexcept;
+
+  int  find_label(std::string_view  id) const noexcept;
+
+  int  get_number_of_elements() const noexcept{return m_element_table.size();}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+program_execution
+{
+  const program_space*  m_space=nullptr;
+
+  int  m_pc=0;
+
+  void  step(dummy*  ptr) noexcept;
+
+public:
+  program_execution() noexcept{}
+  program_execution(program_space&  sp) noexcept: m_space(&sp){}
+
+  void  step() noexcept{step(nullptr);}
+
+  template<typename  T>
+  void  step(T&  t) noexcept{step(reinterpret_cast<dummy*>(&t));}
+
+};
+
+
+
+
 }
+
 
 
 #endif
