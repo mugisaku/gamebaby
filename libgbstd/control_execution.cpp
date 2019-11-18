@@ -19,6 +19,7 @@ reset(callback_wrapper  cb) noexcept
       m_stack.emplace_back(cb);
 
       m_status.set(flags::change);
+      m_status.unset(flags::halt);
     }
 
   else
@@ -92,12 +93,21 @@ step() noexcept
 {
   static bool  lock;
 
-    if(!lock && m_stack.size())
+    if(m_stack.empty())
+    {
+      halt();
+
+      return;
+    }
+
+
+    if(!lock)
     {
       lock = true;
 
       m_status.unset(flags::interrupt);
       m_status.unset(flags::change   );
+
 
       auto  cb = m_stack.back();
 
@@ -105,7 +115,7 @@ step() noexcept
 
 //      int  x_counter = 0;
 
-        for(;;)
+        while(*this)
         {
             if(!safe_counter--)
             {
@@ -136,6 +146,8 @@ step() noexcept
 
               else
                 {
+                  halt();
+
                   break;
                 }
             }
@@ -164,6 +176,14 @@ execution::
 interrupt() noexcept
 {
   m_status.set(flags::interrupt);
+}
+
+
+void
+execution::
+halt() noexcept
+{
+  m_status.set(flags::halt);
 }
 
 

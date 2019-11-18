@@ -73,6 +73,7 @@ set(CHILDREN
   children/Dungeon/Dungeon_floor.cpp
   children/Dungeon/Dungeon_structure.cpp
   children/Dungeon/Dungeon_world.cpp
+  children/Dungeon/Dungeon_world_draw.cpp
 )
 
 

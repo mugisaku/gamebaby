@@ -52,6 +52,36 @@ clear() noexcept
 
 text&
 text::
+erase() noexcept
+{
+  auto  ln = m_top_line;
+
+    for(;;)
+    {
+      ln->m_length = 0;
+
+        if(ln == m_bottom_line)
+        {
+          break;
+        }
+
+
+      ln = ln->m_next;
+    }
+
+
+  m_top_line     = m_lines.data();
+  m_bottom_line  = m_lines.data()+(m_height-1);
+  m_current_line = m_lines.data();
+
+  m_full_flag = false;
+
+  return *this;
+}
+
+
+text&
+text::
 resize(int  w, int  h) noexcept
 {
   clear();
@@ -112,7 +142,7 @@ START:
 NEWLINE:
       m_current_line = m_current_line->m_next;
 
-      return true;
+      goto START;
     }
 
   else

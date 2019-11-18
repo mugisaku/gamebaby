@@ -140,6 +140,7 @@ public:
   text&  assign(      text&&  rhs) noexcept;
 
   text&  clear() noexcept;
+  text&  erase() noexcept;
 
   text&  resize(int  w, int  h) noexcept;
 

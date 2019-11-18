@@ -8,6 +8,16 @@ namespace gbstd{
 
 
 
+program_space&
+program_space::
+clear_image() noexcept
+{
+  m_image.clear();
+
+  return *this;
+}
+
+
 void
 program_space::
 load_source(std::string_view  sv) noexcept
@@ -20,15 +30,29 @@ load_source(std::string_view  sv) noexcept
 
     while(bv)
     {
+      asm_element  el;
+
         if(bv[0].is_operator_code("*"))
         {
-            if((bv[1].is_identifier() || bv[1].is_single_quoted() || bv[1].is_double_quoted()) &&
-                bv[2].is_operator_code(",") &&
-               (bv[3].is_identifier() || bv[3].is_single_quoted() || bv[3].is_double_quoted()))
-            {
-              m_element_table.emplace_back(asm_kind::branch,bv[1].get_string(),bv[3].get_string(),false);
+          ++bv;
 
-              bv += 4;
+          bool  neg = false;
+
+            if(bv[0].is_operator_code("!"))
+            {
+              neg = true;
+
+              ++bv;
+            }
+
+
+            if((bv[0].is_identifier() || bv[0].is_single_quoted() || bv[0].is_double_quoted()) &&
+                bv[1].is_operator_code(",") &&
+               (bv[2].is_identifier() || bv[2].is_single_quoted() || bv[2].is_double_quoted()))
+            {
+              el = asm_element(neg? asm_kind::jz:asm_kind::jnz,bv[0].get_string(),bv[2].get_string());
+
+              bv += 3;
             }
 
           else
@@ -47,14 +71,14 @@ load_source(std::string_view  sv) noexcept
 
             if(bv[1].is_operator_code(":"))
             {
-              m_element_table.emplace_back(asm_kind::label,s,"",false);
+              el = asm_element(asm_kind::label,s,"");
 
               bv += 2;
             }
 
           else
             {
-              m_element_table.emplace_back(asm_kind::invoke,s,"",false);
+              el = asm_element(asm_kind::invoke,s,"");
 
               ++bv;
             }
@@ -66,6 +90,17 @@ load_source(std::string_view  sv) noexcept
 
           break;
         }
+
+
+        if(bv[0].is_operator_code("."))
+        {
+          el.set_interrupt_flag();
+
+          ++bv;
+        }
+
+
+      m_image.emplace_back(el);
     }
 }
 
@@ -108,11 +143,11 @@ int
 program_space::
 find_label(std::string_view  id) const noexcept
 {
-    for(auto&  el: m_element_table)
+    for(auto&  el: m_image)
     {
         if(el.is_label(id))
         {
-          return &el-m_element_table.data();
+          return &el-m_image.data();
         }
     }
 
@@ -145,7 +180,7 @@ print() const noexcept
 
   int  i = 0;
 
-    for(auto&  el: m_element_table)
+    for(auto&  el: m_image)
     {
       printf("%4d ",i++);
 

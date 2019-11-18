@@ -10,54 +10,37 @@ namespace Dungeon{
 
 void
 world::
-event_nop(gbstd::execution&  exec) noexcept
+display_text1() noexcept
 {
-}
+  push_text(u"バーニラ　バニラ　バーニラ　きゅうじん　バーニラ　バニラで　アルバイトー");
 
-
-void
-world::
-finish_event(gbstd::execution&  exec) noexcept
-{
-  exec.pop();
-}
-
-
-void
-world::
-event_text1(gbstd::execution&  exec) noexcept
-{
-  push_text(u"てきすとてすと１");
-
-  start_stream_text(exec);
-}
-
-
-void
-world::
-event_text2(gbstd::execution&  exec) noexcept
-{
-  push_text(u"てきすとてすと２");
-
-  start_stream_text(exec);
-}
-
-
-
-
-void
-world::
-start_stream_text(gbstd::execution&  exec) noexcept
-{
   m_text_sprite->unset_ignore_flag();
-
-  exec.replace({*this,&world::stream_text});
 }
 
 
 void
 world::
-stream_text(gbstd::execution&  exec) noexcept
+undisplay_text() noexcept
+{
+  m_text.erase();
+
+  m_text_sprite->set_ignore_flag();
+}
+
+
+void
+world::
+display_text2() noexcept
+{
+//  push_text(u"てきすとてすと２");
+
+//  start_stream_text(exec);
+}
+
+
+bool
+world::
+stream_text() noexcept
 {
     if(m_character_buffer.size())
     {
@@ -100,14 +83,31 @@ stream_text(gbstd::execution&  exec) noexcept
 
       m_text_sprite->set_ignore_flag();
 
-      exec.pop();
+      return false;
     }
 
 
   m_rapid_stream = gbstd::get_keys().test_acr();
 
+  return true;
+}
 
-  exec.interrupt();
+
+void
+world::
+execute_program(gbstd::execution&  exec) noexcept
+{
+    if(m_proex)
+    {
+      m_proex.step(*this);
+
+      exec.interrupt();
+    }
+
+  else
+    {
+      exec.pop();
+    }
 }
 
 
@@ -138,7 +138,19 @@ wait_input(gbstd::execution&  exec) noexcept
            (x < (floor::m_width -1)) &&
            (y < (floor::m_height-1)))
         {
-          m_venturer.m_floor->m_table[y][x].m_block = true;
+          auto&  sp = m_venturer.m_floor->m_table[y][x];
+
+          auto&  blk = sp.m_block;
+
+            if(!blk)
+            {
+              blk = true;
+            }
+
+          else
+            {
+              sp.set_way_flag(dir+directions::front);
+            }
         }
     }
 
@@ -207,7 +219,16 @@ wait_input(gbstd::execution&  exec) noexcept
     {
       auto&  sp = m_venturer.m_floor->m_table[pt.y][pt.x];
 
-      drive_event(sp.m_event_index,exec);
+        if(sp.m_event_code.size())
+        {
+          m_prosp.clear_image();
+
+          m_prosp.load_source(sp.m_event_code);
+
+          m_proex = m_prosp;
+
+          exec.push({*this,&world::execute_program});
+        }
     }
 
   else
@@ -239,29 +260,27 @@ initialize(gbstd::execution&  exec) noexcept
   m_text.resize(10,3);
 
   m_text_alarm.assign(gbstd::get_root_directory()["/clocks/Dungeon.clk00"].be_clock()).set_interval(100);
+/*
+  m_venturer.get_current_floor().get_space({0,1}).m_event_code =
+R"(
+  display_text1
+loop:
+ *stream_text,loop.
+  undisplay_text
+)";
 
-  m_event_table = {
-    event("なにも　なし",&world::event_nop),
-    event("テキスト１",&world::event_text1),
-    event("テキスト２",&world::event_text2),
-  };
+  m_venturer.get_current_floor().get_space({0,2}).m_event_code =
+R"(
+display_text2
+)";
 
-  m_venturer.get_current_floor().get_space({0,1}).m_event_index = 1;
-  m_venturer.get_current_floor().get_space({0,2}).m_event_index = 2;
+  m_prosp.add_condition({"stream_text",&world::stream_text});
+  m_prosp.add_body({"undisplay_text",&world::undisplay_text});
+  m_prosp.add_body({"display_text1",&world::display_text1});
+  m_prosp.add_body({"display_text2",&world::display_text2});
+*/
 
   exec.replace({*this,&world::wait_input});
-}
-
-
-namespace{
-const uint8_t
-g_wall_image_bin[] =
-{
-#include"walls.txt"
-};
-
-gbstd::image
-g_wall_image(g_wall_image_bin);
 }
 
 
@@ -299,68 +318,11 @@ is_block(gbstd::point  pt) const noexcept
 }
 
 
-void
+bool
 world::
-draw_walls(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept
+is_way(gbstd::point  pt, absolute_direction  dir) const noexcept
 {
-  auto  lpt = base_pt+transform({ 1,2},dir);
-  auto  cpt = base_pt+transform({ 0,2},dir);
-  auto  rpt = base_pt+transform({-1,2},dir);
-
-    if(is_block(lpt)){cv.draw_canvas(          {g_wall_image,   0,24*8,24*2,24*4},   0,0);}
-    if(is_block(rpt)){cv.draw_canvas_reversely({g_wall_image,   0,24*8,24*2,24*4},24*2,0);}
-    if(is_block(cpt)){cv.draw_canvas(          {g_wall_image,24*2,24*8,24*2,24*4},24*1,0);}
-
-
-  lpt += transform({0,-1},dir);
-  cpt += transform({0,-1},dir);
-  rpt += transform({0,-1},dir);
-
-    if(is_block(lpt)){cv.draw_canvas(          {g_wall_image,   0,24*4,24*2,24*4},   0,0);}
-    if(is_block(rpt)){cv.draw_canvas_reversely({g_wall_image,   0,24*4,24*2,24*4},24*2,0);}
-    if(is_block(cpt)){cv.draw_canvas(          {g_wall_image,24*2,24*4,24*2,24*4},24*1,0);}
-
-
-  lpt += transform({0,-1},dir);
-  rpt += transform({0,-1},dir);
-
-    if(is_block(lpt)){cv.draw_canvas(          {g_wall_image,24*6,0,24*2,24*4},   0,0);}
-    if(is_block(rpt)){cv.draw_canvas_reversely({g_wall_image,24*6,0,24*2,24*4},24*2,0);}
-}
-
-
-void
-world::
-draw_base(const gbstd::canvas&  cv) noexcept
-{
-  gbstd::string_form  sf;
-
-  auto&  pt = m_venturer.m_point;
-  auto  dir = m_venturer.m_direction;
-
-  cv.draw_string(gbstd::colors::white,sf("x: %2d, y: %2d",pt.x,pt.y),0,24*8);
-
-  cv.draw_canvas({g_wall_image,0,0,24*4,24*4},0,0);
-
-  m_venturer.draw_status({cv,24*4,      0,gbstd::g_font_width*8,gbstd::g_font_height*8});
-  m_venturer.draw_around({cv,   0,24*8+16,24*3,24*3});
-
-  draw_walls(pt,dir,{cv});
-}
-
-
-void
-world::
-draw_text(const gbstd::canvas&  cv) noexcept
-{
-  auto  ls = m_text.make_line_list();
-
-  gbstd::point  text_pt;
-
-    for(auto&  sv: ls)
-    {
-      cv.draw_string(gbstd::colors::white,sv,text_pt.move_x(0),text_pt.move_y(gbstd::g_font_height));
-    }
+  return m_venturer.m_floor->m_table[pt.y][pt.x].test_way_flag(dir);
 }
 
 

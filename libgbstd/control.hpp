@@ -291,6 +291,7 @@ execution
   struct flags{
     static constexpr int     change = 1; 
     static constexpr int  interrupt = 2; 
+    static constexpr int       halt = 4; 
   };
 
 
@@ -304,6 +305,8 @@ public:
   execution() noexcept{}
   execution(callback_wrapper  cb) noexcept: m_stack({cb}){}
 
+  operator bool() const noexcept{return !m_status.test(flags::halt);}
+
   void    reset(callback_wrapper  cb) noexcept;
   void     push(callback_wrapper  cb) noexcept;
   void  replace(callback_wrapper  cb) noexcept;
@@ -314,6 +317,7 @@ public:
   int  get_control_value() noexcept;
 
   void  interrupt() noexcept;
+  void       halt() noexcept;
 
 };
 
@@ -325,7 +329,7 @@ class process_node;
 enum class
 asm_kind
 {
-  null,invoke,branch,label,jump
+  null,invoke,label,jz,jnz,
 };
 
 
@@ -341,20 +345,21 @@ asm_element
 
 public:
   asm_element() noexcept{}
-  asm_element(asm_kind  k, std::string_view  f, std::string_view  s, bool  interrupt) noexcept:
-  m_kind(k), m_first(f), m_second(s), m_interrupt_flag(interrupt){}
+  asm_element(asm_kind  k, std::string_view  f, std::string_view  s) noexcept:
+  m_kind(k), m_first(f), m_second(s){}
 
   bool  is_invoke() const noexcept{return m_kind == asm_kind::invoke;}
-  bool  is_branch() const noexcept{return m_kind == asm_kind::branch;}
   bool  is_label()  const noexcept{return m_kind == asm_kind::label;}
-  bool  is_jump()   const noexcept{return m_kind == asm_kind::jump;}
+  bool  is_jz()     const noexcept{return m_kind == asm_kind::jz;}
+  bool  is_jnz()    const noexcept{return m_kind == asm_kind::jnz;}
 
   bool  is_label(std::string_view  id) const noexcept{return is_label() && (m_first == id);}
 
   const std::string&  get_first()  const noexcept{return m_first;}
   const std::string&  get_second() const noexcept{return m_second;}
 
-  bool  test_interrupt_flag() const noexcept{return m_interrupt_flag;}
+  void   set_interrupt_flag()       noexcept{       m_interrupt_flag = true;}
+  bool  test_interrupt_flag() const noexcept{return m_interrupt_flag       ;}
 
   void  print() const noexcept;
 
@@ -428,22 +433,24 @@ program_space
   std::vector<condition_callback>  m_condition_callback_table;
   std::vector<     body_callback>       m_body_callback_table;
 
-  std::vector<asm_element>  m_element_table;
+  std::vector<asm_element>  m_image;
 
 public:
+  program_space&  clear_image() noexcept;
+
   void  load_source(std::string_view  sv) noexcept;
 
   void  add_condition(condition_callback  cb) noexcept{m_condition_callback_table.emplace_back(cb);}
   void  add_body(          body_callback  cb) noexcept{m_body_callback_table.emplace_back(cb);}
 
-  const asm_element&  operator[](int  pc) const noexcept{return m_element_table[pc];}
+  const asm_element&  operator[](int  pc) const noexcept{return m_image[pc];}
 
   const condition_callback*  find_condition(std::string_view  id) const noexcept;
   const body_callback*            find_body(std::string_view  id) const noexcept;
 
   int  find_label(std::string_view  id) const noexcept;
 
-  int  get_number_of_elements() const noexcept{return m_element_table.size();}
+  int  get_number_of_elements() const noexcept{return m_image.size();}
 
   void  print() const noexcept;
 
@@ -457,11 +464,24 @@ program_execution
 
   int  m_pc=0;
 
+  bool  m_halt_flag=false;
+
+  void  invoke(const std::string&  id, dummy*  ptr) noexcept;
+  void  jump(const std::string&  cond, const std::string&  lb, bool  onzero, dummy*  ptr) noexcept;
+
   void  step(dummy*  ptr) noexcept;
 
 public:
   program_execution() noexcept{}
   program_execution(program_space&  sp) noexcept: m_space(&sp){}
+
+  program_execution&  operator=(program_space&  sp) noexcept{return assign(sp);}
+
+  operator bool() const noexcept{return !m_halt_flag;}
+
+  program_execution&  assign(program_space&  sp) noexcept;
+
+  program_execution&  reset() noexcept;
 
   void  step() noexcept{step(nullptr);}
 
