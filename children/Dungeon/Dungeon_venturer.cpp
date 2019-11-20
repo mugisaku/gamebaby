@@ -8,23 +8,59 @@ namespace Dungeon{
 
 
 
+bool
+venturer::
+test_advance() const noexcept
+{
+  auto&  x = m_point.x;
+  auto&  y = m_point.y;
+
+  auto  w = floor::m_width;
+  auto  h = floor::m_height;
+
+  auto&  dir = m_direction;
+  auto&   fl = *m_floor;
+
+       if(dir.is_x_negative()){return (x >= (  2)) && fl.test_passability({x-1,y  }) && fl.test_passability({x-2,y  });}
+  else if(dir.is_x_positive()){return (x <  (w-2)) && fl.test_passability({x+1,y  }) && fl.test_passability({x+2,y  });}
+  else if(dir.is_y_negative()){return (y >= (  2)) && fl.test_passability({x  ,y-1}) && fl.test_passability({x  ,y-2});}
+  else if(dir.is_y_positive()){return (y <  (h-2)) && fl.test_passability({x  ,y+1}) && fl.test_passability({x  ,y+2});}
+
+
+  return false;
+}
+
+
+void
+venturer::
+advance() noexcept
+{
+  auto  dir = m_direction;
+
+       if(dir.is_x_negative()){m_point.x -= 2;}
+  else if(dir.is_x_positive()){m_point.x += 2;}
+  else if(dir.is_y_negative()){m_point.y -= 2;}
+  else if(dir.is_y_positive()){m_point.y += 2;}
+}
+
+
 void
 venturer::
 draw_around(const gbstd::canvas&  cv) noexcept
 {
-    for(int  y = 0;  y < 3;  ++y){
-    for(int  x = 0;  x < 3;  ++x){
-      int  xx = m_point.x+-1+x;
-      int  yy = m_point.y+-1+y;
+    for(int  y = 0;  y < 6;  ++y){
+    for(int  x = 0;  x < 6;  ++x){
+      int  xx = m_point.x+-3+x;
+      int  yy = m_point.y+-3+y;
 
         if((xx >= 0) && (xx < floor::m_width ) &&
            (yy >= 0) && (yy < floor::m_height))
         {
-          auto&  sp = m_floor->m_table[yy][xx];
+          auto&  nd = m_floor->m_table[yy][xx];
 
-            if(sp.m_block)
+            if(nd.is_wall())
             {
-              cv.fill_rectangle(gbstd::colors::white,24*x,24*y,24,24);
+              cv.fill_rectangle(gbstd::colors::white,8*x,8*y,8,8);
             }
         }           
     }}
@@ -32,10 +68,10 @@ draw_around(const gbstd::canvas&  cv) noexcept
 
   auto&  dir = m_direction;
 
-  int  src_x = ((dir.is_y_positive() || dir.is_y_negative() )? 4:5)*24;
-  int  src_y =  (dir.is_y_positive() || dir.is_x_positive())? 0:24;
+  int  src_x = ((dir.is_y_positive() || dir.is_y_negative() )? 0:8)+6*24;
+  int  src_y =  (dir.is_y_positive() || dir.is_x_positive())?  0:8;
 
-  cv.draw_canvas({gbstd::g_misc_image,src_x,src_y,24,24},24,24);
+  cv.draw_canvas({gbstd::g_misc_image,src_x,src_y,8,8},8*3,8*3);
 }
 
 

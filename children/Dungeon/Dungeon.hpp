@@ -106,22 +106,33 @@ class     world;
 
 
 struct
-space
+node
 {
   floor*  m_floor=nullptr;
 
   gbstd::point  m_point;
 
-  bool  m_block=false;
+  char  m_symbol;
+  char  m_lock;
 
-  gbstd::status_value<int>  m_way_flags;
-
-  space&    set_way_flag(absolute_direction  dir) noexcept{  m_way_flags.set(  1<<dir.get_value());  return *this;}
-  space&  unset_way_flag(absolute_direction  dir) noexcept{  m_way_flags.unset(1<<dir.get_value());  return *this;}
-
-  bool  test_way_flag(absolute_direction  dir) const noexcept{return m_way_flags.test(1<<dir.get_value());}
+  char  m_wayhole;
 
   std::string_view  m_event_code;
+
+  bool  is_x_way() const noexcept{return !(m_point.x&1);}
+  bool  is_y_way() const noexcept{return !(m_point.y&1);}
+  bool  is_wall()  const noexcept{return m_symbol == '+';}
+  bool  is_space() const noexcept{return m_symbol == ' ';}
+
+  bool  is_passable() const noexcept{return is_space() || has_wayhole();}
+
+  bool  has_wayhole() const noexcept{return m_wayhole;}
+
+  node&  be_wall()  noexcept{  m_symbol = '+';                      return *this;}
+  node&  be_space() noexcept{  m_symbol = ' ';  m_wayhole = false;  return *this;}
+
+  node&    hold_wayhole() noexcept{  m_wayhole =  true;  return *this;}
+  node&  unhold_wayhole() noexcept{  m_wayhole = false;  return *this;}
 
 };
 
@@ -131,16 +142,23 @@ floor
 {
   structure*  m_structure=nullptr;
 
-  static constexpr int  m_width  = 32;
-  static constexpr int  m_height = 32;
+  static constexpr int  m_width  = 33;
+  static constexpr int  m_height = 33;
+  static constexpr gbstd::rectangle  m_full_rect = {0,0,m_width,m_height};
 
   int  m_number=0;
 
-  space  m_table[m_height][m_width];
+  static node  m_null_node;
+
+  node  m_table[m_height][m_width];
 
   void  reset(structure&  st, int  n) noexcept;
 
-  space&  get_space(gbstd::point  pt) noexcept{return m_table[pt.y][pt.x];}
+  node&  get_node(gbstd::point  pt) noexcept{return m_full_rect.test_point(pt)? m_table[pt.y][pt.x]:m_null_node;}
+
+  bool  test_passability(gbstd::point  pt) const noexcept{return m_table[pt.y][pt.x].is_passable();}
+
+  void  print() const noexcept;
 
 };
 
@@ -177,10 +195,13 @@ venturer
   absolute_direction  m_direction;
 
   floor&  get_current_floor() const noexcept{return *m_floor;}
-  space&  get_current_space() const noexcept{return  m_floor->get_space(m_point);}
+  node&   get_current_node() const noexcept{return  m_floor->get_node(m_point);}
 
   void  draw_status(const gbstd::canvas&  cv) noexcept;
   void  draw_around(const gbstd::canvas&  cv) noexcept;
+
+  bool  test_advance() const noexcept;
+  void       advance()       noexcept;
 
 };
 
@@ -209,9 +230,6 @@ world
   void  push_text(std::string     sv) noexcept;
   void  push_text(std::u16string  sv) noexcept;
 
-  bool  is_block(gbstd::point  pt                         ) const noexcept;
-  bool    is_way(gbstd::point  pt, absolute_direction  dir) const noexcept;
-
   void  undisplay_text() noexcept;
   void  display_text1() noexcept;
   void  display_text2() noexcept;
@@ -226,7 +244,10 @@ world
 
   void  finish_event(gbstd::execution&  exec) noexcept;
 
-  void  draw_walls(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
+
+  void  draw_walls1(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
+  void  draw_walls2(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
+  void  draw_walls3(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept;
 
   void  draw_base(const gbstd::canvas&  cv) noexcept;
   void  draw_text(const gbstd::canvas&  cv) noexcept;

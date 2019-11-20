@@ -133,23 +133,24 @@ wait_input(gbstd::execution&  exec) noexcept
       else if(dir.is_y_negative()){--y;}
       else if(dir.is_y_positive()){++y;}
 
-        if((x >= 0) &&
-           (y >= 0) &&
-           (x < (floor::m_width -1)) &&
-           (y < (floor::m_height-1)))
+      auto&  nd = m_venturer.m_floor->get_node({x,y});
+
+        if(nd.is_space())
         {
-          auto&  sp = m_venturer.m_floor->m_table[y][x];
+          nd.be_wall();
+        }
 
-          auto&  blk = sp.m_block;
-
-            if(!blk)
+      else
+        if(nd.is_wall())
+        {
+            if(nd.has_wayhole())
             {
-              blk = true;
+              nd.be_space();
             }
 
           else
             {
-              sp.set_way_flag(dir+directions::front);
+              nd.hold_wayhole();
             }
         }
     }
@@ -159,33 +160,9 @@ wait_input(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-        if(dir.is_x_negative())
+        if(m_venturer.test_advance())
         {
-            if(pt.x){--pt.x;}
-        }
-
-      else
-        if(dir.is_x_positive())
-        {
-            if(pt.x < (floor::m_width-1))
-            {
-              ++pt.x;
-            }
-        }
-
-      else
-        if(dir.is_y_negative())
-        {
-            if(pt.y){--pt.y;}
-        }
-
-      else
-        if(dir.is_y_positive())
-        {
-            if(pt.y < (floor::m_height-1))
-            {
-              ++pt.y;
-            }
+          m_venturer.advance();
         }
     }
 
@@ -256,10 +233,18 @@ initialize(gbstd::execution&  exec) noexcept
   m_structure.reset();
   m_structure.m_name = "はじまりのまち";
   m_venturer.m_floor = m_structure.m_floors;
+  m_venturer.m_point = {1,1};
 
   m_text.resize(10,3);
 
   m_text_alarm.assign(gbstd::get_root_directory()["/clocks/Dungeon.clk00"].be_clock()).set_interval(100);
+
+
+  auto&  fl = m_venturer.get_current_floor();
+
+//  fl.get_node({0,1}).m_block = true;
+//  fl.get_space({2,1}).m_block = true;
+
 /*
   m_venturer.get_current_floor().get_space({0,1}).m_event_code =
 R"(
@@ -305,24 +290,6 @@ push_text(std::u16string  sv) noexcept
 
 
   m_stream_finished = false;
-}
-
-
-bool
-world::
-is_block(gbstd::point  pt) const noexcept
-{
-  constexpr gbstd::rectangle  rect(0,0,floor::m_width,floor::m_height);
-
-  return (rect.test_point(pt) && m_venturer.m_floor->m_table[pt.y][pt.x].m_block);
-}
-
-
-bool
-world::
-is_way(gbstd::point  pt, absolute_direction  dir) const noexcept
-{
-  return m_venturer.m_floor->m_table[pt.y][pt.x].test_way_flag(dir);
 }
 
 

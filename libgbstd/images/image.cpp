@@ -171,7 +171,7 @@ namespace{
 const uint8_t
 g_misc_png[] =
 {
-#include"misc.png.txt"
+#include"misc.txt"
 };
 }
 
