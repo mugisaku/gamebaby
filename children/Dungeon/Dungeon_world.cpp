@@ -113,6 +113,24 @@ execute_program(gbstd::execution&  exec) noexcept
 
 void
 world::
+start_creation_menu(gbstd::execution&  exec) noexcept
+{
+    if(gbstd::get_keys().test_acr())
+    {
+      gbstd::barrier_keys();
+
+      m_menu_sprite->set_ignore_flag();
+
+      exec.pop();
+    }
+
+
+  exec.interrupt();
+}
+
+
+void
+world::
 wait_input(gbstd::execution&  exec) noexcept
 {
   auto   prev_pt = m_venturer.m_point;
@@ -141,7 +159,7 @@ wait_input(gbstd::execution&  exec) noexcept
         }
 
       else
-        if(nd.is_wall())
+        if(nd.is_wall() && !nd.is_hard_wall())
         {
             if(nd.has_wayhole())
             {
@@ -153,6 +171,16 @@ wait_input(gbstd::execution&  exec) noexcept
               nd.hold_wayhole();
             }
         }
+    }
+
+  else
+    if(gbstd::get_keys().test_acd())
+    {
+      gbstd::barrier_keys();
+
+      m_menu_sprite->unset_ignore_flag();
+
+      exec.push({*this,&world::start_creation_menu});
     }
 
   else
@@ -221,6 +249,7 @@ initialize(gbstd::execution&  exec) noexcept
 {
   m_base_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr00"];
   m_text_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr01"];
+  m_menu_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.menu.spr"];
 
   m_base_sprite->be_sprite()
     .set_callback({*this,&world::draw_base})
@@ -229,6 +258,19 @@ initialize(gbstd::execution&  exec) noexcept
   m_text_sprite->be_sprite()
     .set_callback({*this,&world::draw_text})
   ;
+
+  m_menu_sprite->be_sprite()
+    .set_callback({*this,&world::draw_creation_menu})
+  ;
+
+  m_menu_sprite->set_ignore_flag();
+
+  m_menu.m_window.set_x_position(200);
+  m_menu.m_window.set_y_position(200);
+
+  m_menu.reset({u"のぼりかいだんを　おくぞ",
+                u"くだりかいだんを　おくそ",
+                u"かいだんなど　ふようだ"});
 
   m_structure.reset();
   m_structure.m_name = "はじまりのまち";

@@ -49,7 +49,7 @@ process_key_down(const SDL_KeyboardEvent&  evt, gbstd::key_state&  keys) noexcep
     case(SDLK_RCTRL):
     case(SDLK_LCTRL):
     case(SDLK_x    ):
-        keys.set_acl();
+        keys.set_acd();
         break;
 /*
     case(SDLK_a    ):
@@ -89,7 +89,7 @@ process_key_up(const SDL_KeyboardEvent&  evt, gbstd::key_state&  keys) noexcept
   case(SDLK_RCTRL):
   case(SDLK_LCTRL):
   case(SDLK_x    ):
-      keys.unset_acl();
+      keys.unset_acd();
       break;
 /*
     case(SDLK_a    ):

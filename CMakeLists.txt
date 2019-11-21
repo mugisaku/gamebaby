@@ -69,6 +69,7 @@ add_subdirectory(libgbpng)
 set(CHILDREN
   children/FallBlockPazzle/FallBlockPazzle_space.cpp
   children/FallBlockPazzle/FallBlockPazzle_stage.cpp
+  children/Dungeon/Dungeon_menu.cpp
   children/Dungeon/Dungeon_venturer.cpp
   children/Dungeon/Dungeon_floor.cpp
   children/Dungeon/Dungeon_structure.cpp

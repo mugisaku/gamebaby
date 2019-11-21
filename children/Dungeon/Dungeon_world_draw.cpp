@@ -117,21 +117,57 @@ void
 world::
 draw_walls3(gbstd::point  base_pt, absolute_direction  dir, const gbstd::canvas&  cv) noexcept
 {
-  int  y =   0 ;
-  int  w = 48  ;
+  int  y = 48*2;
+  int  w =  8*2;
   int  h = 48*2;
 
-  auto  lpt = base_pt+transform({ 1,2},dir);
-  auto  cpt = base_pt+transform({ 0,2},dir);
-  auto  rpt = base_pt+transform({-1,2},dir);
-
+  auto&  lfnd = m_venturer.m_floor->get_node(base_pt+transform({ 2,1},dir));
+  auto&   cnd = m_venturer.m_floor->get_node(base_pt+transform({ 0,1},dir));
+  auto&  rfnd = m_venturer.m_floor->get_node(base_pt+transform({-2,1},dir));
+  auto&  lsnd = m_venturer.m_floor->get_node(base_pt+transform({ 1,2},dir));
+  auto&  rsnd = m_venturer.m_floor->get_node(base_pt+transform({-1,2},dir));
 /*
-  y = 48*4;
-
-    if(is_block(cpt))
++++++++++++
++    @    +
++ + + + + +
++         +
++-+-+-+-+-+
++ | | | | +
++++++++++++
+*/
+/*
+    if(lfnd.is_wall())
     {
-//        if(is_way(cpt,dir+directions::front)){cv.draw_canvas({g_wall_image,48*3,y,w,h},48/2,0);}
-//      else                                   {cv.draw_canvas({g_wall_image,48*2,y,w,h},48/2,0);}
+        if(lfnd.has_wayhole()){cv.draw_canvas({g_wall_image,48+24,y,24,h},0,0);}
+      else                    {cv.draw_canvas({g_wall_image,   24,y,24,h},0,0);}
+    }
+
+
+    if(lsnd.is_wall())
+    {
+        if(lsnd.has_wayhole()){cv.draw_canvas({g_wall_image,48*3,y,w,h},w+8,0);}
+      else                    {cv.draw_canvas({g_wall_image,48*2,y,w,h},w+8,0);}
+    }
+
+
+    if(rfnd.is_wall())
+    {
+        if(rfnd.has_wayhole()){cv.draw_canvas({g_wall_image,48,y,24,h},48+24,0);}
+      else                    {cv.draw_canvas({g_wall_image, 0,y,24,h},48+24,0);}
+    }
+
+
+    if(rsnd.is_wall())
+    {
+        if(rsnd.has_wayhole()){cv.draw_canvas({g_wall_image,48*3+8*4,y,w,h},48+w-8,0);}
+      else                    {cv.draw_canvas({g_wall_image,48*2+8*4,y,w,h},48+w-8,0);}
+    }
+
+
+    if(cnd.is_wall())
+    {
+        if(cnd.has_wayhole()){cv.draw_canvas({g_wall_image,48,y,48,h},w+8,0);}
+      else                   {cv.draw_canvas({g_wall_image, 0,y,48,h},w+8,0);}
     }
 */
 }
@@ -170,6 +206,23 @@ draw_text(const gbstd::canvas&  cv) noexcept
     for(auto&  sv: ls)
     {
       cv.draw_string(gbstd::colors::white,sv,text_pt.move_x(0),text_pt.move_y(gbstd::g_font_height));
+    }
+}
+
+
+void
+world::
+draw_creation_menu(const gbstd::canvas&  cv) noexcept
+{
+  auto  cont_cv = m_menu.m_window.render(cv);
+
+  int  y = 0;
+
+    for(auto&  sv: m_menu.m_strings)
+    {
+      cont_cv.draw_string(gbstd::colors::white,sv,0,y);
+
+      y += gbstd::g_font_height;
     }
 }
 

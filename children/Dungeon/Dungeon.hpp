@@ -99,7 +99,7 @@ constexpr relative_direction   left = relative_direction(3);
 }
 
 
-class     space;
+class      node;
 class     floor;
 class structure;
 class     world;
@@ -119,17 +119,23 @@ node
 
   std::string_view  m_event_code;
 
-  bool  is_x_way() const noexcept{return !(m_point.x&1);}
-  bool  is_y_way() const noexcept{return !(m_point.y&1);}
-  bool  is_wall()  const noexcept{return m_symbol == '+';}
-  bool  is_space() const noexcept{return m_symbol == ' ';}
+  bool  is_x_way()      const noexcept{return !(m_point.x&1);}
+  bool  is_y_way()      const noexcept{return !(m_point.y&1);}
+  bool  is_wall()       const noexcept{return (m_symbol == '+') || is_hard_wall();}
+  bool  is_hard_wall()  const noexcept{return m_symbol == '*';}
+  bool  is_space()      const noexcept{return m_symbol == ' ';}
+  bool  is_padding()    const noexcept{return m_symbol == 'O';}
+  bool  is_up_way()     const noexcept{return m_symbol == 'U';}
+  bool  is_down_way()   const noexcept{return m_symbol == 'D';}
 
   bool  is_passable() const noexcept{return is_space() || has_wayhole();}
 
   bool  has_wayhole() const noexcept{return m_wayhole;}
 
-  node&  be_wall()  noexcept{  m_symbol = '+';                      return *this;}
-  node&  be_space() noexcept{  m_symbol = ' ';  m_wayhole = false;  return *this;}
+  node&  be_wall()     noexcept{  m_symbol = '+';                      return *this;}
+  node&  be_space()    noexcept{  m_symbol = ' ';  m_wayhole = false;  return *this;}
+  node&  be_down_way() noexcept{  m_symbol = 'D';  m_wayhole = false;  return *this;}
+  node&  be_up_way()   noexcept{  m_symbol = 'U';  m_wayhole = false;  return *this;}
 
   node&    hold_wayhole() noexcept{  m_wayhole =  true;  return *this;}
   node&  unhold_wayhole() noexcept{  m_wayhole = false;  return *this;}
@@ -148,15 +154,25 @@ floor
 
   int  m_number=0;
 
+  std::string  m_name;
+
   static node  m_null_node;
 
   node  m_table[m_height][m_width];
 
   void  reset(structure&  st, int  n) noexcept;
 
+  floor&            set_name(std::string_view  sv)       noexcept{       m_name = sv;  return *this;}
+  std::string_view  get_name(                    ) const noexcept{return m_name;}
+
   node&  get_node(gbstd::point  pt) noexcept{return m_full_rect.test_point(pt)? m_table[pt.y][pt.x]:m_null_node;}
 
   bool  test_passability(gbstd::point  pt) const noexcept{return m_table[pt.y][pt.x].is_passable();}
+
+  void  unput_way(gbstd::point  pt) noexcept;
+
+  bool    put_up_way(gbstd::point  pt) noexcept;
+  bool  put_down_way(gbstd::point  pt) noexcept;
 
   void  print() const noexcept;
 
@@ -173,6 +189,9 @@ structure
   floor  m_floors[m_number_of_floors];
 
   void  reset() noexcept;
+
+  structure&        set_name(std::string_view  sv)       noexcept{       m_name = sv;  return *this;}
+  std::string_view  get_name(                    ) const noexcept{return m_name;}
 
 };
 
@@ -207,6 +226,20 @@ venturer
 
 
 struct
+menu
+{
+  gbstd::window  m_window;
+
+  std::vector<std::u16string>  m_strings;
+
+  int  m_index;
+
+  void  reset(std::initializer_list<std::u16string_view>  ls) noexcept;
+
+};
+
+
+struct
 world
 {
   venturer    m_venturer;
@@ -224,8 +257,11 @@ world
   bool  m_rapid_stream=false;
   bool  m_stream_finished=false;
 
+  menu  m_menu;
+
   gbstd::gpfs::node_reference  m_base_sprite;
   gbstd::gpfs::node_reference  m_text_sprite;
+  gbstd::gpfs::node_reference  m_menu_sprite;
 
   void  push_text(std::string     sv) noexcept;
   void  push_text(std::u16string  sv) noexcept;
@@ -242,6 +278,8 @@ world
 
   void  initialize(gbstd::execution&  exec) noexcept;
 
+  void  start_creation_menu(gbstd::execution&  exec) noexcept;
+
   void  finish_event(gbstd::execution&  exec) noexcept;
 
 
@@ -251,6 +289,7 @@ world
 
   void  draw_base(const gbstd::canvas&  cv) noexcept;
   void  draw_text(const gbstd::canvas&  cv) noexcept;
+  void  draw_creation_menu(const gbstd::canvas&  cv) noexcept;
 
 public:
 

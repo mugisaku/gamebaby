@@ -60,7 +60,33 @@ draw_around(const gbstd::canvas&  cv) noexcept
 
             if(nd.is_wall())
             {
-              cv.fill_rectangle(gbstd::colors::white,8*x,8*y,8,8);
+                if(nd.has_wayhole())
+                {
+                  cv.fill_rectangle(gbstd::colors::light_gray,8*x,8*y,8,8);
+                }
+
+              else
+                {
+                  cv.fill_rectangle(gbstd::colors::white,8*x,8*y,8,8);
+                }
+            }
+
+          else
+            if(nd.is_padding())
+            {
+              cv.fill_rectangle(gbstd::colors::dark_gray,8*x,8*y,8,8);
+            }
+
+          else
+            if(nd.is_up_way())
+            {
+              cv.fill_rectangle(gbstd::colors::red,8*x,8*y,8,8);
+            }
+
+          else
+            if(nd.is_down_way())
+            {
+              cv.fill_rectangle(gbstd::colors::blue,8*x,8*y,8,8);
             }
         }           
     }}
