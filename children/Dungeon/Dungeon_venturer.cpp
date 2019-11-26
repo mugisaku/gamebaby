@@ -15,8 +15,8 @@ test_advance() const noexcept
   auto&  x = m_point.x;
   auto&  y = m_point.y;
 
-  auto  w = floor::m_width;
-  auto  h = floor::m_height;
+  auto  w = m_floor->get_structure().get_width() ;
+  auto  h = m_floor->get_structure().get_height();
 
   auto&  dir = m_direction;
   auto&   fl = *m_floor;
@@ -44,31 +44,72 @@ advance() noexcept
 }
 
 
+
+void
+venturer::
+move_above() noexcept
+{
+  auto  n = m_floor->get_number();
+
+  m_floor = &m_floor->get_structure()[n+1];
+}
+
+void
+venturer::
+move_below() noexcept
+{
+  auto  n = m_floor->get_number();
+
+  m_floor = &m_floor->get_structure()[n-1];
+}
+
+
+std::string_view
+venturer::
+get_facility_name() const noexcept
+{
+    if(m_floor->get_node(m_point+transform({0,1},m_direction)).is_holed_wall())
+    {
+      auto&  nd = m_floor->get_node(m_point+transform({0,2},m_direction));
+
+      return nd.is_up_way()?   "のぼり"
+            :nd.is_down_way()? "くだり"
+            :"";
+    }
+
+
+  return "";
+}
+
+
+
+
 void
 venturer::
 draw_around(const gbstd::canvas&  cv) noexcept
 {
-    for(int  y = 0;  y < 6;  ++y){
-    for(int  x = 0;  x < 6;  ++x){
-      int  xx = m_point.x+-3+x;
-      int  yy = m_point.y+-3+y;
+  auto  rect = m_floor->get_structure().get_full_rect();
 
-        if((xx >= 0) && (xx < floor::m_width ) &&
-           (yy >= 0) && (yy < floor::m_height))
+    for(int  y = 0;  y < 7;  ++y){
+    for(int  x = 0;  x < 7;  ++x){
+      int  xx = m_point.x-3+x;
+      int  yy = m_point.y-3+y;
+
+      gbstd::point  pt(xx,yy);
+
+        if(rect.test_point(pt))
         {
-          auto&  nd = m_floor->m_table[yy][xx];
+          auto&  nd = m_floor->get_node(pt);
 
             if(nd.is_wall())
             {
-                if(nd.has_wayhole())
-                {
-                  cv.fill_rectangle(gbstd::colors::light_gray,8*x,8*y,8,8);
-                }
+              cv.fill_rectangle(gbstd::colors::white,8*x,8*y,8,8);
+            }
 
-              else
-                {
-                  cv.fill_rectangle(gbstd::colors::white,8*x,8*y,8,8);
-                }
+          else
+            if(nd.is_holed_wall())
+            {
+              cv.fill_rectangle(gbstd::colors::light_gray,8*x,8*y,8,8);
             }
 
           else
@@ -109,7 +150,9 @@ draw_status(const gbstd::canvas&  cv) noexcept
 
   gbstd::string_form  sf;
 
-  cv.draw_string(gbstd::colors::white,sf("%s %2dかい",m_floor->m_structure->m_name.data(),m_floor->m_number+1),pt.move_x(0),pt.move_y(gbstd::g_font_height));
+  auto&  stname = m_floor->get_structure().get_name();
+
+  cv.draw_string(gbstd::colors::white,sf("%s %2dかい",stname.data(),m_floor->get_number()+1),pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,"ほもも",pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,sf("HP %3d/%3d",m_hp,m_hp_max),pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,sf("STR %3d",m_strength),pt.move_x(0),pt.move_y(gbstd::g_font_height));

@@ -92,6 +92,8 @@ public:
   int  get_content_x_position() const noexcept{return m_position.x+get_style().get_frame_left_width();}
   int  get_content_y_position() const noexcept{return m_position.y+get_style().get_frame_top_width();}
 
+  point  get_content_position() const noexcept{return point(get_content_x_position(),get_content_y_position());}
+
   canvas  get_content_canvas(const canvas&  base_cv) const noexcept;
   canvas      get_frame_top_canvas(const canvas&  base_cv) const noexcept;
   canvas     get_frame_left_canvas(const canvas&  base_cv) const noexcept;

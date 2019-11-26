@@ -11,6 +11,46 @@ namespace values{
 
 array&
 array::
+assign(std::string_view  sv) noexcept
+{
+  tokenizer  tknz;
+
+  auto  blk = tknz(sv);
+
+  return assign(blk);
+}
+
+
+array&
+array::
+assign(token_block_view  bv) noexcept
+{
+  clear();
+
+    while(bv)
+    {
+        if(bv[0].is_name() && bv[1].is_operator_code(":") && bv[2])
+        {
+          push(object(bv[2]));
+
+          bv += 3;
+        }
+
+      else
+        {
+          push(object(bv[0]));
+
+          ++bv;
+        }
+    }
+
+
+  return *this;
+}
+
+
+array&
+array::
 assign(std::initializer_list<object>  ls) noexcept
 {
   resize(ls.size());

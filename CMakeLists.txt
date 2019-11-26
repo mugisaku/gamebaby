@@ -71,6 +71,7 @@ set(CHILDREN
   children/FallBlockPazzle/FallBlockPazzle_stage.cpp
   children/Dungeon/Dungeon_menu.cpp
   children/Dungeon/Dungeon_venturer.cpp
+  children/Dungeon/Dungeon_node.cpp
   children/Dungeon/Dungeon_floor.cpp
   children/Dungeon/Dungeon_structure.cpp
   children/Dungeon/Dungeon_world.cpp

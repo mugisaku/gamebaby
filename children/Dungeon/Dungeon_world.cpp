@@ -115,13 +115,52 @@ void
 world::
 start_creation_menu(gbstd::execution&  exec) noexcept
 {
+  auto&  i = m_menu.m_index;
+
     if(gbstd::get_keys().test_acr())
+    {
+      gbstd::barrier_keys();
+
+        switch(i)
+        {
+      case(0): m_venturer.move_above();break;
+      case(1): m_venturer.move_below();break;
+      case(2): m_venturer.get_current_node().be_up_way();break;
+      case(3): m_venturer.get_current_node().be_down_way();break;
+      case(4): m_venturer.get_current_node().be_space();break;
+        }
+    }
+
+  else
+    if(gbstd::get_keys().test_acd())
     {
       gbstd::barrier_keys();
 
       m_menu_sprite->set_ignore_flag();
 
       exec.pop();
+    }
+
+  else
+    if(gbstd::get_keys().test_diu())
+    {
+      gbstd::barrier_keys();
+
+        if(i)
+        {
+          --i;
+        }
+    }
+
+  else
+    if(gbstd::get_keys().test_did())
+    {
+      gbstd::barrier_keys();
+
+        if(i < (m_menu.m_strings.size()-1))
+        {
+          ++i;
+        }
     }
 
 
@@ -133,43 +172,41 @@ void
 world::
 wait_input(gbstd::execution&  exec) noexcept
 {
-  auto   prev_pt = m_venturer.m_point;
-  auto  prev_dir = m_venturer.m_direction;
-
-  auto&   pt = m_venturer.m_point;
-  auto&  dir = m_venturer.m_direction;
+  auto   prev_pt = m_venturer.get_point();
+  auto  prev_dir = m_venturer.get_direction();
 
     if(gbstd::get_keys().test_acr())
     {
       gbstd::barrier_keys();
 
-      int  x = pt.x;
-      int  y = pt.y;
 
-           if(dir.is_x_negative()){--x;}
-      else if(dir.is_x_positive()){++x;}
-      else if(dir.is_y_negative()){--y;}
-      else if(dir.is_y_positive()){++y;}
+      auto  pt = m_venturer.get_point();
 
-      auto&  nd = m_venturer.m_floor->get_node({x,y});
+      int&  x = pt.x;
+      int&  y = pt.y;
+
+           if(prev_dir.is_x_negative()){--x;}
+      else if(prev_dir.is_x_positive()){++x;}
+      else if(prev_dir.is_y_negative()){--y;}
+      else if(prev_dir.is_y_positive()){++y;}
+
+      auto&  nd = m_venturer.get_current_floor().get_node(pt);
 
         if(nd.is_space())
         {
-          nd.be_wall();
+          nd.be_soft_wall();
         }
 
       else
-        if(nd.is_wall() && !nd.is_hard_wall())
+        if(nd.is_holed_wall())
         {
-            if(nd.has_wayhole())
-            {
-              nd.be_space();
-            }
+          nd.be_space();
+        }
 
-          else
-            {
-              nd.hold_wayhole();
-            }
+      else
+        if(nd.is_soft_wall())
+        {
+          nd.be_holed_wall();
         }
     }
 
@@ -199,7 +236,7 @@ wait_input(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-      dir += directions::left;
+      m_venturer += directions::left;
     }
 
   else
@@ -207,7 +244,7 @@ wait_input(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-      dir += directions::right;
+      m_venturer += directions::right;
     }
 
   else
@@ -215,17 +252,20 @@ wait_input(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-      dir += directions::back;
+      m_venturer += directions::back;
     }
 
 
-    if((prev_pt  !=  pt) ||
-       (prev_dir != dir))
+    if((prev_pt  != m_venturer.get_point()) ||
+       (prev_dir != m_venturer.get_direction()))
     {
-      auto&  sp = m_venturer.m_floor->m_table[pt.y][pt.x];
+      auto&  nd = m_venturer.get_current_floor().get_node(m_venturer.get_point());
 
-        if(sp.m_event_code.size())
+      auto  c = nd.get_event_code();
+
+        if(c)
         {
+/*
           m_prosp.clear_image();
 
           m_prosp.load_source(sp.m_event_code);
@@ -233,6 +273,7 @@ wait_input(gbstd::execution&  exec) noexcept
           m_proex = m_prosp;
 
           exec.push({*this,&world::execute_program});
+*/
         }
     }
 
@@ -268,14 +309,14 @@ initialize(gbstd::execution&  exec) noexcept
   m_menu.m_window.set_x_position(200);
   m_menu.m_window.set_y_position(200);
 
-  m_menu.reset({u"のぼりかいだんを　おくぞ",
+  m_menu.reset({u"うえへ　まいりたい",
+                u"したへ　まいりたい",
+                u"のぼりかいだんを　おくぞ",
                 u"くだりかいだんを　おくそ",
                 u"かいだんなど　ふようだ"});
 
-  m_structure.reset();
-  m_structure.m_name = "はじまりのまち";
-  m_venturer.m_floor = m_structure.m_floors;
-  m_venturer.m_point = {1,1};
+  m_venturer.set_current_floor((*m_structures[0])[0]);
+// m_venturer.m_point = {1,1};
 
   m_text.resize(10,3);
 
@@ -333,6 +374,54 @@ push_text(std::u16string  sv) noexcept
 
   m_stream_finished = false;
 }
+
+
+structure&
+world::
+push_structure() noexcept
+{
+  m_structures.emplace_back(std::make_unique<structure>());
+
+  return *m_structures.back();
+}
+
+
+
+
+void
+world::
+print() const noexcept
+{
+}
+
+
+void
+world::
+print(std::string&  sbuf) const noexcept
+{
+  sbuf += "{";
+
+  sbuf += "structures:[\n";
+
+    for(auto&  st: m_structures)
+    {
+      st->print(sbuf);
+
+      sbuf += ",\n";
+    }
+
+
+  sbuf += "}";
+}
+
+
+void
+world::
+scan(std::string_view  sv) noexcept
+{
+}
+
+
 
 
 game_information

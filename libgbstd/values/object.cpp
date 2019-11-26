@@ -12,6 +12,36 @@ namespace values{
 
 object&
 object::
+assign(const token&  tok) noexcept
+{
+  clear();
+
+       if(tok.is_keyword("null")){}
+  else if(tok.is_keyword("true")){assign(true);}
+  else if(tok.is_keyword("false")){assign(false);}
+  else if(tok.is_integer()){assign(static_cast<int>(tok.get_integer()));}
+  else if(tok.is_floating_point_number()){assign(tok.get_floating_point_number());}
+  else if(tok.is_block("{","}")){assign(list(tok.get_block()));}
+  else if(tok.is_block("[","]")){assign(array(tok.get_block()));}
+
+  return *this;
+}
+
+
+object&
+object::
+assign(std::string_view  name, const token&  tok) noexcept
+{
+  assign(tok);
+
+  set_name(name);
+
+  return *this;
+}
+
+
+object&
+object::
 assign(bool   b) noexcept
 {
   clear();
@@ -33,6 +63,20 @@ assign(int  i) noexcept
   new(&m_data) int(i);
 
   m_kind = kind::integer;
+
+  return *this;
+}
+
+
+object&
+object::
+assign(double  f) noexcept
+{
+  clear();
+
+  new(&m_data) double(f);
+
+  m_kind = kind::real_number;
 
   return *this;
 }
@@ -223,6 +267,7 @@ print() const noexcept
   case(kind::null): printf("null");break;
   case(kind::boolean): printf("%s",m_data.b? "true":"false");break;
   case(kind::integer): printf("%d",m_data.i);break;
+  case(kind::real_number): printf("%f",m_data.r);break;
   case(kind::string ): printf("\"%s\"",m_data.s.data());break;
   case(kind::u16string ):
     printf("u\"");

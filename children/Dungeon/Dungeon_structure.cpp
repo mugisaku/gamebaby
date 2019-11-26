@@ -6,15 +6,51 @@
 namespace Dungeon{
 
 
+
+
+floor&
+structure::
+push_new_floor() noexcept
+{
+  m_floors.emplace_back(std::make_unique<floor>(*this,m_floors.size()));
+
+  return *m_floors.back();
+}
+
+
 void
 structure::
-reset() noexcept
+print() const noexcept
 {
-    for(int  i = 0;  i < m_number_of_floors;  ++i)
-    {
-      m_floors[i].reset(*this,i);
-    }
 }
+
+
+void
+structure::
+print(std::string&  sbuf) const noexcept
+{
+  gbstd::string_form  sf;
+
+  sbuf += "{";
+
+  sbuf += sf("name: \"%s\",",m_name.data());
+  sbuf += sf("width: %d,",m_width);
+  sbuf += sf("height: %d,",m_height);
+
+  sbuf += "floors: [";
+
+    for(auto&  fl: m_floors)
+    {
+      fl->print(sbuf);
+
+      sbuf += ",\n";
+    }
+
+
+  sbuf += "]}";
+}
+
+
 
 
 }

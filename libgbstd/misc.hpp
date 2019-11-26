@@ -220,6 +220,18 @@ public:
 
 
 
+template<typename  T>
+class
+list_node_header
+{
+  T*  m_previous;
+  T*  m_next    ;
+
+};
+
+
+
+
 }
 
 

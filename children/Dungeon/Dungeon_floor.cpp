@@ -13,121 +13,95 @@ floor::
 m_null_node;
 
 
-void
 floor::
-reset(structure&  st, int  n) noexcept
+floor(structure&  st, int  n) noexcept
 {
   m_structure = &st;
   m_number    =   n;
 
-    for(int  y = 0;  y < m_height;  ++y){
-    for(int  x = 0;  x <  m_width;  ++x){
-      auto&  nd = m_table[y][x];
+  int  w = st.get_width() ;
+  int  h = st.get_height();
 
-      nd.m_floor = this;
+  m_table.resize(w*h);
 
-      nd.m_point = {x,y};
-
-      nd.m_symbol = (!x || !y || (x == (m_width-1)) || (y == (m_height-1)))? '*'
-                   :( nd.is_x_way() &&  nd.is_y_way())? 'O'
-                   :' ';
-
-      nd.m_wayhole = false;
-
-      nd.m_event_code = "";
+    for(int  y = 0;  y < h;  ++y){
+    for(int  x = 0;  x < w;  ++x){
+      m_table[(w*y)+x].assign(*this,{x,y},w,h);
     }}
 }
 
 
-void
+
+
+node&
 floor::
-unput_way(gbstd::point  pt) noexcept
+get_node(gbstd::point  pt) noexcept
 {
-  auto&  nd = get_node(pt);
-
-    if(nd.is_up_way())
-    {
-        if(m_number < (structure::m_number_of_floors-1))
-        {
-          auto&  target_floor = m_structure->m_floors[m_number+1];
-
-          target_floor.get_node(pt).be_space();
-        }
-    }
-
-  else
-    if(nd.is_down_way())
-    {
-        if(m_number >= 1)
-        {
-          auto&  target_floor = m_structure->m_floors[m_number-1];
-
-          target_floor.get_node(pt).be_space();
-        }
-    }
+  return m_structure->get_full_rect().test_point(pt)? m_table[(m_structure->get_width()*pt.y)+pt.x]:m_null_node;
+}
 
 
-  nd.be_space();
+const node&
+floor::
+get_node(gbstd::point  pt) const noexcept
+{
+  return m_structure->get_full_rect().test_point(pt)? m_table[(m_structure->get_width()*pt.y)+pt.x]:m_null_node;
 }
 
 
 bool
 floor::
-put_up_way(gbstd::point  pt) noexcept
+test_passability(gbstd::point  pt) const noexcept
 {
-    if(m_number < (structure::m_number_of_floors-1))
-    {
-      auto&  target_floor = m_structure->m_floors[m_number+1];
-
-                   get_node(pt).be_up_way();
-      target_floor.get_node(pt).be_down_way();
-
-      return true;
-    }
-
-
-  return false;
+  return m_table[(m_structure->get_width()*pt.y)+pt.x].is_passable();
 }
-
-
-bool
-floor::
-put_down_way(gbstd::point  pt) noexcept
-{
-    if(m_number >= 1)
-    {
-      auto&  target_floor = m_structure->m_floors[m_number-1];
-
-                   get_node(pt).be_down_way();
-      target_floor.get_node(pt).be_up_way();
-
-      return true;
-    }
-
-
-  return false;
-}
-
-
 
 
 void
 floor::
 print() const noexcept
 {
-    for(int  y = 0;  y < m_height;  ++y)
-    {
-        for(int  x = 0;  x <  m_width;  ++x)
-        {
-          auto&  nd = m_table[y][x];
+  int  w = m_structure->get_width() ;
+  int  h = m_structure->get_height();
 
-          printf("%c",nd.m_symbol);
+    for(int  y = 0;  y < h;  ++y)
+    {
+        for(int  x = 0;  x < w;  ++x)
+        {
+          printf("%c",get_node({x,y}).get_symbol());
         }
 
 
       printf("\n");
     }
 }
+
+
+void
+floor::
+print(std::string&  sbuf) const noexcept
+{
+  int  w = m_structure->get_width() ;
+  int  h = m_structure->get_height();
+
+  sbuf += "{nodes:[";
+
+    for(int  y = 0;  y < h;  ++y)
+    {
+        for(int  x = 0;  x < w;  ++x)
+        {
+          get_node({x,y}).print(sbuf);
+        }
+
+
+      sbuf += '\n';
+    }
+
+
+  sbuf += "]}";
+}
+
+
 
 
 }
