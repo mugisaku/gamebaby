@@ -1,4 +1,5 @@
 #include"children/Dungeon/Dungeon.hpp"
+#include"libgbstd/value.hpp"
 
 
 
@@ -288,6 +289,13 @@ void
 world::
 initialize(gbstd::execution&  exec) noexcept
 {
+  scan(R"(
+structures: [
+  [name: "numenume", width: 33, height: 30: floors:[[name:"tortrro1"]]]
+]
+  )");
+
+
   m_base_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr00"];
   m_text_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr01"];
   m_menu_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.menu.spr"];
@@ -316,7 +324,7 @@ initialize(gbstd::execution&  exec) noexcept
                 u"かいだんなど　ふようだ"});
 
   m_venturer.set_current_floor((*m_structures[0])[0]);
-// m_venturer.m_point = {1,1};
+  m_venturer.set_point({1,1});
 
   m_text.resize(10,3);
 
@@ -399,8 +407,6 @@ void
 world::
 print(std::string&  sbuf) const noexcept
 {
-  sbuf += "{";
-
   sbuf += "structures:[\n";
 
     for(auto&  st: m_structures)
@@ -409,9 +415,6 @@ print(std::string&  sbuf) const noexcept
 
       sbuf += ",\n";
     }
-
-
-  sbuf += "}";
 }
 
 
@@ -419,6 +422,22 @@ void
 world::
 scan(std::string_view  sv) noexcept
 {
+  gbstd::values::array  root(sv);
+
+  auto  st = root.find("structures");
+
+    if(st && st->is_array())
+    {
+      m_structures.clear();
+
+        for(auto&  o: st->get_array())
+        {
+            if(o.is_array())
+            {
+              m_structures.emplace_back(std::make_unique<structure>(o.get_array()));
+            }
+        }
+    }
 }
 
 

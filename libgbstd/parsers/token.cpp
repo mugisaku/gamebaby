@@ -257,7 +257,7 @@ print() const noexcept
 
     switch(m_kind)
     {
-  case(kind::null): ;break;
+  case(kind::null): printf("NULL");break;
   case(kind::integer): printf("%llu",m_data.n);break;
   case(kind::identifier): printf("%s ",m_data.s.data());break;
   case(kind::single_quoted): print_string(m_data.s,'\'');break;
@@ -265,6 +265,7 @@ print() const noexcept
   case(kind::floating_point_number): printf("%f",m_data.f);break;
   case(kind::operator_code): printf("%s",m_data.opco.get_string());break;
   case(kind::block): m_data.blk.print();break;
+  default: printf("UNKNOWN");break;
     }
 }
 

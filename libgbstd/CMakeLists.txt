@@ -36,7 +36,7 @@ set(SOURCES
   tile_maps/tile_map_view.cpp
   values/object.cpp
   values/array.cpp
-  values/object.cpp
+  values/list.cpp
   widgets/operating_node.cpp
   widgets/node.cpp
   widgets/node_iterator.cpp

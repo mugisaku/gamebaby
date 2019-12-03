@@ -14,7 +14,7 @@ m_null_node;
 
 
 floor::
-floor(structure&  st, int  n) noexcept
+floor(structure&  st, int  n, gbstd::values::array&  arr) noexcept
 {
   m_structure = &st;
   m_number    =   n;
@@ -26,8 +26,33 @@ floor(structure&  st, int  n) noexcept
 
     for(int  y = 0;  y < h;  ++y){
     for(int  x = 0;  x < w;  ++x){
-      m_table[(w*y)+x].assign(*this,{x,y},w,h);
+      auto&  nd = m_table[(w*y)+x];
+
+      nd.assign(*this,{x,y},w,h);
     }}
+
+
+  auto  name_s = arr.find("name");
+
+    if(name_s)
+    {
+      m_name = name_s->get_string();
+    }
+
+
+  auto  nodes_s = arr.find("nodes");
+
+    if(nodes_s)
+    {
+      auto  s = nodes_s->get_string().data();
+
+        for(int  y = 0;  y < h;  ++y){
+        for(int  x = 0;  x < w;  ++x){
+          auto&  nd = m_table[(w*y)+x];
+
+          nd.scan(s);
+        }}
+    }
 }
 
 
@@ -84,7 +109,11 @@ print(std::string&  sbuf) const noexcept
   int  w = m_structure->get_width() ;
   int  h = m_structure->get_height();
 
-  sbuf += "{nodes:[";
+  sbuf += "[name:\"";
+  sbuf += m_name;
+  sbuf += "\",\n";
+
+  sbuf += "nodes:[";
 
     for(int  y = 0;  y < h;  ++y)
     {
@@ -98,7 +127,7 @@ print(std::string&  sbuf) const noexcept
     }
 
 
-  sbuf += "]}";
+  sbuf += "]]";
 }
 
 

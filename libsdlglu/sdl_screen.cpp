@@ -141,6 +141,8 @@ quit() noexcept
 
   SDL_Quit();
 
+  fflush(stdout);
+
   std::_Exit(0);
 }
 

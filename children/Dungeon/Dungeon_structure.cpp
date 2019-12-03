@@ -8,16 +8,6 @@ namespace Dungeon{
 
 
 
-floor&
-structure::
-push_new_floor() noexcept
-{
-  m_floors.emplace_back(std::make_unique<floor>(*this,m_floors.size()));
-
-  return *m_floors.back();
-}
-
-
 void
 structure::
 print() const noexcept
@@ -31,7 +21,7 @@ print(std::string&  sbuf) const noexcept
 {
   gbstd::string_form  sf;
 
-  sbuf += "{";
+  sbuf += "[";
 
   sbuf += sf("name: \"%s\",",m_name.data());
   sbuf += sf("width: %d,",m_width);
@@ -47,7 +37,62 @@ print(std::string&  sbuf) const noexcept
     }
 
 
-  sbuf += "]}";
+  sbuf += "]]";
+}
+
+
+void
+structure::
+scan(const gbstd::values::array&  arr) noexcept
+{
+  m_floors.clear();
+
+  int  w = 0;
+  int  h = 0;
+
+  gbstd::values::array*  floors_arr = nullptr;
+
+    for(auto&  o: arr)
+    {
+        if(o.test_name("name"))
+        {
+          m_name = o.get_string();
+        }
+
+      else
+        if(o.test_name("width"))
+        {
+          w = o.get_integer();
+        }
+
+      else
+        if(o.test_name("height"))
+        {
+          h = o.get_integer();
+        }
+
+      else
+        if(o.test_name("floors"))
+        {
+          floors_arr = &o.get_array();
+        }
+    }
+
+
+    if(floors_arr)
+    {
+      m_width  = w;
+      m_height = h;
+
+        for(auto&  o: *floors_arr)
+        {
+            if(o.is_array())
+            {
+report;
+              m_floors.emplace_back(std::make_unique<floor>(*this,m_floors.size(),o.get_array()));
+            }
+        }
+    }
 }
 
 

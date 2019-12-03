@@ -102,6 +102,8 @@ public:
 
   bool  has_name() const noexcept{return m_has_name;}
 
+  bool  test_name(std::string_view  sv) const noexcept{return m_has_name && (m_name == sv);}
+
   bool  is_null()       const noexcept{return m_kind == kind::null;}
   bool  is_undefined()  const noexcept{return m_kind == kind::undefined;}
   bool  is_boolean()    const noexcept{return m_kind == kind::boolean;}
@@ -128,8 +130,10 @@ public:
 };
 
 
-extern const object       null;
-extern const object  undefined;
+namespace objects{
+extern object       null;
+extern object  undefined;
+}
 
 
 class
@@ -159,6 +163,7 @@ public:
   array&  operator=(      array&&  rhs) noexcept{return assign(std::move(rhs));}
 
   object&  operator[](int  i) const noexcept{return m_data[i];}
+  object&  operator[](std::string_view  sv) const noexcept;
 
   array&  assign(std::string_view  sv) noexcept;
   array&  assign(token_block_view  bv) noexcept;

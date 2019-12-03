@@ -152,7 +152,8 @@ draw_status(const gbstd::canvas&  cv) noexcept
 
   auto&  stname = m_floor->get_structure().get_name();
 
-  cv.draw_string(gbstd::colors::white,sf("%s %2dかい",stname.data(),m_floor->get_number()+1),pt.move_x(0),pt.move_y(gbstd::g_font_height));
+  cv.draw_string(gbstd::colors::white,sf("%s",stname.data()),pt.move_x(0),pt.move_y(gbstd::g_font_height));
+  cv.draw_string(gbstd::colors::white,sf("%s",m_floor->get_name().data()),pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,"ほもも",pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,sf("HP %3d/%3d",m_hp,m_hp_max),pt.move_x(0),pt.move_y(gbstd::g_font_height));
   cv.draw_string(gbstd::colors::white,sf("STR %3d",m_strength),pt.move_x(0),pt.move_y(gbstd::g_font_height));

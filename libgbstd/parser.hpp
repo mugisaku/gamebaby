@@ -160,17 +160,17 @@ public:
 
   const token_info&  get_info() const noexcept{return m_info;}
 
-  bool  is_null() const noexcept{return m_kind == kind::null;}
-  bool  is_integer() const noexcept{return m_kind == kind::integer;}
-  bool  is_identifier() const noexcept{return m_kind == kind::identifier;}
-  bool  is_keyword(const char*  s) const noexcept{return is_identifier() && (m_data.s == s);}
-  bool  is_single_quoted() const noexcept{return m_kind == kind::single_quoted;}
-  bool  is_double_quoted() const noexcept{return m_kind == kind::double_quoted;}
-  bool  is_name() const noexcept{return is_identifier() || is_single_quoted() || is_double_quoted();}
-  bool  is_operator_code() const noexcept{return m_kind == kind::operator_code;}
+  bool  is_null()                             const noexcept{return m_kind == kind::null;}
+  bool  is_integer()                          const noexcept{return m_kind == kind::integer;}
+  bool  is_identifier()                       const noexcept{return m_kind == kind::identifier;}
+  bool  is_keyword(const char*  s)            const noexcept{return is_identifier() && (m_data.s == s);}
+  bool  is_single_quoted()                    const noexcept{return m_kind == kind::single_quoted;}
+  bool  is_double_quoted()                    const noexcept{return m_kind == kind::double_quoted;}
+  bool  is_string()                           const noexcept{return is_identifier() || is_single_quoted() || is_double_quoted();}
+  bool  is_operator_code()                    const noexcept{return m_kind == kind::operator_code;}
   bool  is_operator_code(operator_code  opco) const noexcept{return is_operator_code() && (m_data.opco == opco);}
-  bool  is_floating_point_number() const noexcept{return m_kind == kind::floating_point_number;}
-  bool  is_block() const noexcept{return m_kind == kind::block;}
+  bool  is_floating_point_number()            const noexcept{return m_kind == kind::floating_point_number;}
+  bool  is_block()                            const noexcept{return m_kind == kind::block;}
   bool  is_block(operator_code  open, operator_code  close) const noexcept;
 
   uint64_t            get_integer()               const noexcept{return m_data.n;}

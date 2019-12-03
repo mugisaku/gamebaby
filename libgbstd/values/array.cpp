@@ -9,6 +9,16 @@ namespace values{
 
 
 
+object&
+array::
+operator[](std::string_view  sv) const noexcept
+{
+  auto  ptr = find(sv);
+
+  return ptr? *ptr:objects::null;
+}
+
+
 array&
 array::
 assign(std::string_view  sv) noexcept
@@ -29,11 +39,17 @@ assign(token_block_view  bv) noexcept
 
     while(bv)
     {
-        if(bv[0].is_name() && bv[1].is_operator_code(":") && bv[2])
+        if(bv[0].is_string() && bv[1].is_operator_code(":") && bv[2])
         {
-          push(object(bv[2]));
+          push(object(bv[0].get_string(),bv[2]));
 
           bv += 3;
+        }
+
+      else
+        if(bv[0].is_operator_code(","))
+        {
+          ++bv;
         }
 
       else

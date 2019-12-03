@@ -145,6 +145,8 @@ public:
   void  print() const noexcept;
   void  print(std::string&  sbuf) const noexcept;
 
+  void  scan(const char*&  s) noexcept;
+
 };
 
 
@@ -162,12 +164,11 @@ floor
   std::vector<node>  m_table;
 
 public:
-  floor(structure&  st, int  n) noexcept;
+  floor(structure&  st, int  n, gbstd::values::array&  arr) noexcept;
 
   int  get_number() const noexcept{return m_number;}
 
-  floor&              set_name(std::string_view  sv)       noexcept{       m_name = sv;  return *this;}
-  const std::string&  get_name(                    ) const noexcept{return m_name;}
+  const std::string&  get_name() const noexcept{return m_name;}
 
   structure&  get_structure() const noexcept{return *m_structure;}
 
@@ -215,7 +216,8 @@ structure
   std::vector<entry>  m_entries;
 
 public:
-  structure() noexcept: m_name("あたらしい　こうぞうぶつ"){push_new_floor();}
+  structure() noexcept{}
+  structure(const gbstd::values::array&  arr) noexcept{scan(arr);}
 
   gbstd::rectangle  get_full_rect() const noexcept{return {0,0,m_width,m_height};}
 
@@ -224,16 +226,14 @@ public:
 
   int  get_number_of_floors() const noexcept{return m_floors.size();}
 
-  floor&   push_new_floor() noexcept;
-  void     pop_tail_floor() noexcept{m_floors.pop_back();}
-
   floor&  operator[](int  i) const noexcept{return *m_floors[(i < 0)? 0:(i >= m_floors.size())? m_floors.size()-1:i];}
 
-  structure&          set_name(std::string_view  sv)       noexcept{       m_name = sv;  return *this;}
-  const std::string&  get_name(                    ) const noexcept{return m_name;}
+  const std::string&  get_name() const noexcept{return m_name;}
 
   void  print() const noexcept;
   void  print(std::string&  sbuf) const noexcept;
+
+  void  scan(const gbstd::values::array&  arr) noexcept;
 
 };
 

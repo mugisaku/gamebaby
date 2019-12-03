@@ -23,6 +23,8 @@ assign(const token&  tok) noexcept
   else if(tok.is_floating_point_number()){assign(tok.get_floating_point_number());}
   else if(tok.is_block("{","}")){assign(list(tok.get_block()));}
   else if(tok.is_block("[","]")){assign(array(tok.get_block()));}
+  else if(tok.is_string()){assign(tok.get_string());}
+  else {  printf("[object assign error]");  tok.print();}
 
   return *this;
 }
@@ -32,11 +34,7 @@ object&
 object::
 assign(std::string_view  name, const token&  tok) noexcept
 {
-  assign(tok);
-
-  set_name(name);
-
-  return *this;
+  return assign(tok).set_name(name);
 }
 
 
@@ -281,8 +279,10 @@ print() const noexcept
 }
 
 
-const object  null      = object::make_null();
-const object  undefined = object::make_undefined();
+namespace objects{
+object  null      = object::make_null();
+object  undefined = object::make_undefined();
+}
 
 
 }}

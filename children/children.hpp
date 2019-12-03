@@ -8,7 +8,9 @@
 #include"libgbstd/utility.hpp"
 #include"libgbstd/random.hpp"
 #include"libgbstd/ilc.hpp"
+#include"libgbstd/value.hpp"
 #include"libgbstd/gbstd.hpp"
+#include<memory>
 
 
 
