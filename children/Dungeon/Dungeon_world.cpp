@@ -9,6 +9,14 @@ namespace Dungeon{
 
 
 
+namespace{
+constexpr const char*
+g_data_path = "dungeon_data.txt.cpp";
+}
+
+
+
+
 void
 world::
 display_text1() noexcept
@@ -122,14 +130,7 @@ start_creation_menu(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-        switch(i)
-        {
-      case(0): m_venturer.move_above();break;
-      case(1): m_venturer.move_below();break;
-      case(2): m_venturer.get_current_node().be_up_way();break;
-      case(3): m_venturer.get_current_node().be_down_way();break;
-      case(4): m_venturer.get_current_node().be_space();break;
-        }
+      m_menu();
     }
 
   else
@@ -158,7 +159,7 @@ start_creation_menu(gbstd::execution&  exec) noexcept
     {
       gbstd::barrier_keys();
 
-        if(i < (m_menu.m_strings.size()-1))
+        if(i < (m_menu.m_items.size()-1))
         {
           ++i;
         }
@@ -285,15 +286,24 @@ wait_input(gbstd::execution&  exec) noexcept
 }
 
 
+
+
+void  world::move_to_upper_floor() noexcept{m_venturer.move_above();}
+void  world::move_to_lower_floor() noexcept{m_venturer.move_below();}
+void  world::put_upstairs() noexcept{m_venturer.get_current_node().be_up_way();}
+void  world::put_downstairs() noexcept{m_venturer.get_current_node().be_down_way();}
+void  world::unput_stairs() noexcept{m_venturer.get_current_node().be_space();}
+
+
+
+
 void
 world::
 initialize(gbstd::execution&  exec) noexcept
 {
-  scan(R"(
-structures: [
-  [name: "numenume", width: 33, height: 30: floors:[[name:"tortrro1"]]]
-]
-  )");
+  scan(
+#include"dungeon_data.txt.cpp"
+  );
 
 
   m_base_sprite = gbstd::get_root_directory()["/video/sprites/Dungeon.spr00"];
@@ -317,11 +327,11 @@ structures: [
   m_menu.m_window.set_x_position(200);
   m_menu.m_window.set_y_position(200);
 
-  m_menu.reset({u"うえへ　まいりたい",
-                u"したへ　まいりたい",
-                u"のぼりかいだんを　おくぞ",
-                u"くだりかいだんを　おくそ",
-                u"かいだんなど　ふようだ"});
+  m_menu.reset({menu::item(u"うえへ　まいりたい",{*this,&world::move_to_upper_floor}),
+                menu::item(u"したへ　まいりたい",{*this,&world::move_to_lower_floor}),
+                menu::item(u"のぼりかいだんを　おくぞ",{*this,&world::put_upstairs}),
+                menu::item(u"くだりかいだんを　おくそ",{*this,&world::put_downstairs}),
+                menu::item(u"かいだんなど　ふようだ",{*this,&world::unput_stairs})});
 
   m_venturer.set_current_floor((*m_structures[0])[0]);
   m_venturer.set_point({1,1});

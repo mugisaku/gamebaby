@@ -1,6 +1,7 @@
 #include"children/FallBlockPazzle/FallBlockPazzle.hpp"
 #include"children/Dungeon/Dungeon.hpp"
 #include"libgbstd/gpfs.hpp"
+#include"libgbstd/vm.hpp"
 #include"libsdlglu/sdl.hpp"
 
 

@@ -72,6 +72,14 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
+  vms/vm_block.cpp
+  vms/vm_function.cpp
+  vms/vm_space.cpp
+  vms/vm_operand.cpp
+  vms/vm_unary_operation.cpp
+  vms/vm_binary_operation.cpp
+  vms/vm_store_instruction.cpp
+  vms/vm_codeline.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

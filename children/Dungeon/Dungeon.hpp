@@ -288,13 +288,17 @@ public:
 struct
 menu
 {
+  using item = std::pair<std::u16string_view,gbstd::callback_wrapper>;
+
   gbstd::window  m_window;
 
-  std::vector<std::u16string>  m_strings;
+  std::vector<item>  m_items;
 
   int  m_index;
 
-  void  reset(std::initializer_list<std::u16string_view>  ls) noexcept;
+  void  reset(std::initializer_list<item>  ls) noexcept;
+
+  void  operator()() const noexcept{m_items[m_index].second();}
 
 };
 
@@ -336,6 +340,12 @@ world
   void  execute_program(gbstd::execution&  exec) noexcept;
 
   void  wait_input(gbstd::execution&  exec) noexcept;
+
+  void  move_to_upper_floor() noexcept;
+  void  move_to_lower_floor() noexcept;
+  void  put_upstairs() noexcept;
+  void  put_downstairs() noexcept;
+  void  unput_stairs() noexcept;
 
   void  initialize(gbstd::execution&  exec) noexcept;
 

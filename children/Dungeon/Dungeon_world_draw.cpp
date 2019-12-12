@@ -203,9 +203,9 @@ draw_creation_menu(const gbstd::canvas&  cv) noexcept
 
   int  y = 0;
 
-    for(auto&  sv: m_menu.m_strings)
+    for(auto&  item: m_menu.m_items)
     {
-      cont_cv.draw_string(gbstd::colors::white,sv,0,y);
+      cont_cv.draw_string(gbstd::colors::white,item.first,0,y);
 
       y += gbstd::g_font_height;
     }

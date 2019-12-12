@@ -6,6 +6,7 @@
 #include"libgbstd/image.hpp"
 #include"libgbstd/character.hpp"
 #include"libgbstd/utility.hpp"
+#include"libgbstd/file_op.hpp"
 #include"libgbstd/random.hpp"
 #include"libgbstd/ilc.hpp"
 #include"libgbstd/value.hpp"
