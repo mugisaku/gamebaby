@@ -10,27 +10,29 @@ namespace gbstd{
 
 value
 unary_operation::
-evaluate(const space&  sp) const noexcept
+evaluate(evaluation_context&  ctx) const noexcept
 {
-  auto  v = m_operand.evaluate(sp);
+  auto  v = m_operand.evaluate(ctx);
 
     if(m_kind == kind::dereference)
     {
+      auto&  mem = ctx->m_function->get_space().get_memory();
+
         if(v.is_u8_pointer())
         {
-          v = value::make_data(*sp.get_memory().get_ptr8(v.get_data()));
+          v = value::make_data(*mem.get_ptr8(v.get_data()));
         }
 
       else
         if(v.is_u16_pointer())
         {
-          v = value::make_data(*sp.get_memory().get_ptr16(v.get_data()));
+          v = value::make_data(*mem.get_ptr16(v.get_data()));
         }
 
       else
         if(v.is_u32_pointer())
         {
-          v = value::make_data(*sp.get_memory().get_ptr32(v.get_data()));
+          v = value::make_data(*mem.get_ptr32(v.get_data()));
         }
     }
 

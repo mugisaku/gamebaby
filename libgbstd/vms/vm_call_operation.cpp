@@ -10,13 +10,13 @@ namespace gbstd{
 
 value
 call_operation::
-evaluate(const space&  sp) const noexcept
+evaluate(evaluation_context&  ctx) const noexcept
 {
-  auto  fn = sp.find_function(m_function_name);
+  auto  target = ctx->m_function->get_space().find_function(m_function_name);
 
-    if(fn)
+    if(target)
     {
-      return fn->start(m_arguments);
+//      return target->start(m_arguments);
     }
 
 

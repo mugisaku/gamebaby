@@ -17,6 +17,7 @@ assign(const codeline&   rhs) noexcept
       clear();
 
       m_kind  = rhs.m_kind;
+      m_block = rhs.m_block;
       m_label = rhs.m_label;
 
         switch(m_kind)
@@ -46,6 +47,7 @@ assign(codeline&&  rhs) noexcept
       clear();
 
       std::swap(m_kind ,rhs.m_kind );
+      std::swap(m_block,rhs.m_block);
       std::swap(m_label,rhs.m_label);
 
         switch(m_kind)
@@ -79,11 +81,13 @@ clear() noexcept
   case(kind::unary_operation ): m_data.unop.~unary_operation();break;
   case(kind::binary_operation): m_data.binop.~binary_operation();break;
   case(kind::phi_operation   ): m_data.phiop.~phi_operation();break;
-  case(kind::phi_operation   ): m_data.calop.~call_operation();break;
+  case(kind::call_operation  ): m_data.calop.~call_operation();break;
     }
 
 
   m_kind = kind::null;
+
+  m_block = nullptr;
 
   m_label.clear();
 }

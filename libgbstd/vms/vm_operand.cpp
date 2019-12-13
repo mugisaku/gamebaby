@@ -115,11 +115,11 @@ clear() noexcept
 
 value
 operand::
-evaluate(const space&  sp) const noexcept
+evaluate(evaluation_context&  ctx) const noexcept
 {
   return is_integer()? value::make_data(m_data.i)
         :is_value()?   m_data.v
-        :is_operation()? sp.evaluate(m_data.s)
+//        :is_operation()? fn.evaluate(m_data.s)
         :value::make_null();
 }
 
