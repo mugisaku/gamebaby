@@ -21,7 +21,6 @@ assign(const operand&   rhs) noexcept
         switch(m_kind)
         {
       case(kind::operation): new(&m_data) std::string(rhs.m_data.s);break;
-      case(kind::integer  ): new(&m_data) int(rhs.m_data.i);break;
       case(kind::value    ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
@@ -39,12 +38,11 @@ assign(operand&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_kind,rhs.m_kind);
+      std::swap(m_kind ,rhs.m_kind);
 
         switch(m_kind)
         {
       case(kind::operation): new(&m_data) std::string(std::move(rhs.m_data.s));break;
-      case(kind::integer  ): new(&m_data) int(rhs.m_data.i);break;
       case(kind::value    ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
@@ -63,20 +61,6 @@ assign(std::string_view  sv) noexcept
   new(&m_data) std::string(sv);
 
   m_kind = kind::operation;
-
-  return *this;
-}
-
-
-operand&
-operand::
-assign(int  i) noexcept
-{
-  clear();
-
-  new(&m_data) int(i);
-
-  m_kind = kind::integer;
 
   return *this;
 }
@@ -104,7 +88,6 @@ clear() noexcept
     {
   case(kind::null): break;
   case(kind::operation): m_data.s.~basic_string();break;
-  case(kind::integer): break;
   case(kind::value): m_data.v.~value();break;
     }
 
@@ -117,10 +100,24 @@ value
 operand::
 evaluate(evaluation_context&  ctx) const noexcept
 {
-  return is_integer()? value::make_data(m_data.i)
-        :is_value()?   m_data.v
-//        :is_operation()? fn.evaluate(m_data.s)
-        :value::make_null();
+    if(is_value())
+    {
+      return m_data.v;
+    }
+
+  else
+    if(is_operation())
+    {
+      auto  op = ctx->get_function().find_operation(m_data.s);
+
+        if(op)
+        {
+          return op->evaluate(ctx);
+        }
+    }
+
+
+  return value::make_null();
 }
 
 

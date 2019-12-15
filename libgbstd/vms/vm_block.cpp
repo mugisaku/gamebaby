@@ -10,23 +10,28 @@ namespace gbstd{
 
 codeline&
 block::
-create_codeline(std::string_view  lb) noexcept
+create_codeline() noexcept
 {
-  m_codelines.emplace_back(*this,lb);
+  m_codelines.emplace_back(*this);
 
   return m_codelines.back();
 }
 
 
-const codeline*
+const operation*
 block::
-find_codeline(std::string_view  label) const noexcept
+find_operation(std::string_view  label) const noexcept
 {
     for(auto&  cl: m_codelines)
     {
-        if(cl.get_label() == label)
+        if(cl.is_operation())
         {
-          return &cl;
+          auto&  op = cl.get_operation();
+
+            if(op.get_label() == label)
+            {
+              return &op;
+            }
         }
     }
 

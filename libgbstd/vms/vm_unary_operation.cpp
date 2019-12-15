@@ -16,7 +16,7 @@ evaluate(evaluation_context&  ctx) const noexcept
 
     if(m_kind == kind::dereference)
     {
-      auto&  mem = ctx->m_function->get_space().get_memory();
+      auto&  mem = ctx->get_function().get_space().get_memory();
 
         if(v.is_u8_pointer())
         {

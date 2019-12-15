@@ -18,7 +18,6 @@ assign(const codeline&   rhs) noexcept
 
       m_kind  = rhs.m_kind;
       m_block = rhs.m_block;
-      m_label = rhs.m_label;
 
         switch(m_kind)
         {
@@ -26,10 +25,7 @@ assign(const codeline&   rhs) noexcept
       case(kind::branch_instruction): new(&m_data) branch_instruction(rhs.m_data.br);break;
       case(kind::return_instruction): new(&m_data) return_instruction(rhs.m_data.ret);break;
 
-      case(kind::unary_operation ): new(&m_data) unary_operation(rhs.m_data.unop);break;
-      case(kind::binary_operation): new(&m_data) binary_operation(rhs.m_data.binop);break;
-      case(kind::phi_operation   ): new(&m_data) phi_operation(rhs.m_data.phiop);break;
-      case(kind::call_operation  ): new(&m_data) call_operation(rhs.m_data.calop);break;
+      case(kind::operation): new(&m_data) operation(rhs.m_data.op);break;
         }
     }
 
@@ -48,7 +44,6 @@ assign(codeline&&  rhs) noexcept
 
       std::swap(m_kind ,rhs.m_kind );
       std::swap(m_block,rhs.m_block);
-      std::swap(m_label,rhs.m_label);
 
         switch(m_kind)
         {
@@ -56,10 +51,7 @@ assign(codeline&&  rhs) noexcept
       case(kind::branch_instruction): new(&m_data) branch_instruction(std::move(rhs.m_data.br));break;
       case(kind::return_instruction): new(&m_data) return_instruction(std::move(rhs.m_data.ret));break;
 
-      case(kind::unary_operation ): new(&m_data) unary_operation(std::move(rhs.m_data.unop));break;
-      case(kind::binary_operation): new(&m_data) binary_operation(std::move(rhs.m_data.binop));break;
-      case(kind::phi_operation   ): new(&m_data) phi_operation(std::move(rhs.m_data.phiop));break;
-      case(kind::call_operation  ): new(&m_data) call_operation(std::move(rhs.m_data.calop));break;
+      case(kind::operation): new(&m_data) operation(std::move(rhs.m_data.op));break;
         }
     }
 
@@ -78,18 +70,13 @@ clear() noexcept
   case(kind::branch_instruction): m_data.br.~branch_instruction();break;
   case(kind::return_instruction): m_data.ret.~return_instruction();break;
 
-  case(kind::unary_operation ): m_data.unop.~unary_operation();break;
-  case(kind::binary_operation): m_data.binop.~binary_operation();break;
-  case(kind::phi_operation   ): m_data.phiop.~phi_operation();break;
-  case(kind::call_operation  ): m_data.calop.~call_operation();break;
+  case(kind::operation ): m_data.op.~operation();break;
     }
 
 
   m_kind = kind::null;
 
   m_block = nullptr;
-
-  m_label.clear();
 }
 
 
@@ -137,55 +124,13 @@ set_content(return_instruction&&  ret) noexcept
 
 codeline&
 codeline::
-set_content(unary_operation&&  unop) noexcept
+set_content(operation&&  op) noexcept
 {
   clear();
 
-  new(&m_data) unary_operation(std::move(unop));
+  new(&m_data) operation(std::move(op));
 
-  m_kind = kind::unary_operation;
-
-  return *this;
-}
-
-
-codeline&
-codeline::
-set_content(binary_operation&&  binop) noexcept
-{
-  clear();
-
-  new(&m_data) binary_operation(std::move(binop));
-
-  m_kind = kind::binary_operation;
-
-  return *this;
-}
-
-
-codeline&
-codeline::
-set_content(phi_operation&&  phiop) noexcept
-{
-  clear();
-
-  new(&m_data) phi_operation(std::move(phiop));
-
-  m_kind = kind::phi_operation;
-
-  return *this;
-}
-
-
-codeline&
-codeline::
-set_content(call_operation&&  calop) noexcept
-{
-  clear();
-
-  new(&m_data) call_operation(std::move(calop));
-
-  m_kind = kind::call_operation;
+  m_kind = kind::operation;
 
   return *this;
 }
