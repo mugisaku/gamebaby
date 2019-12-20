@@ -10,6 +10,8 @@
 #include<string_view>
 #include<utility>
 #include<vector>
+#include"libgbstd/misc.hpp"
+#include"libgbstd/utility.hpp"
 
 
 namespace gbstd{
@@ -17,7 +19,12 @@ namespace gbstd{
 
 
 
-class evaluation_context;
+class execution_frame;
+class codeline;
+class operand;
+class operation;
+class function;
+class space;
 
 
 class
@@ -54,13 +61,28 @@ public:
   constexpr int  get_data() const noexcept{return m_data;}
 
   static constexpr value  make_null() noexcept{return {kind::null,0};}
-  static constexpr value  make_defined() noexcept{return {kind::undefined,0};}
+  static constexpr value  make_undefined() noexcept{return {kind::undefined,0};}
   static constexpr value  make_data(int  i) noexcept{return {kind::data,i};}
   static constexpr value  make_null_pointer() noexcept{return {kind::null_pointer,0};}
   static constexpr value  make_u8_pointer(  int  addr) noexcept{return {kind::u8_pointer,addr};}
   static constexpr value  make_u16_pointer(  int  addr) noexcept{return {kind::u16_pointer,addr};}
   static constexpr value  make_u32_pointer(  int  addr) noexcept{return {kind::u32_pointer,addr};}
   static constexpr value  make_pointer(  int  addr) noexcept{return {kind::pointer,addr};}
+
+  void  print() const noexcept
+  {
+      switch(m_kind)
+      {
+    case(kind::null        ): printf("null");break;
+    case(kind::undefined   ): printf("undefined");break;
+    case(kind::data        ): printf("%d(data)",m_data);break;
+    case(kind::null_pointer): printf("null_pointer");break;
+    case(kind::u8_pointer  ): printf("%d(u8ptr)",m_data);break;
+    case(kind::u16_pointer ): printf("%d(u16ptr)",m_data);break;
+    case(kind::u32_pointer ): printf("%d(u32ptr)",m_data);break;
+    case(kind::pointer     ): printf("%d(ptr)",m_data);break;
+      }
+  }
 
 };
 
@@ -70,6 +92,7 @@ operand
 {
   enum class kind{
     null,
+    operation_label,
     operation,
     value,
   } m_kind=kind::null;
@@ -77,6 +100,7 @@ operand
   union data{
     std::string  s;
     value        v;
+    const operation*  op;
 
    data() noexcept{}
   ~data()         {}
@@ -103,10 +127,15 @@ public:
 
   void  clear() noexcept;
 
-  bool  is_operation() const noexcept{return m_kind == kind::operation;}
-  bool  is_value()     const noexcept{return m_kind == kind::value;}
+  bool  is_operation_label() const noexcept{return m_kind == kind::operation_label;}
+  bool  is_operation()       const noexcept{return m_kind == kind::operation;}
+  bool  is_value()           const noexcept{return m_kind == kind::value;}
 
-  value  evaluate(evaluation_context&  ctx) const noexcept;
+  bool  is_constant(const function&  fn) const noexcept;
+
+  value  evaluate(execution_frame&  frm) const noexcept;
+
+  void  print() const noexcept;
 
 };
 
@@ -128,21 +157,17 @@ public:
 };
 
 
-class codeline;
-class block;
-class function;
-class space;
-
-
 class
 space
 {
-  memory*  m_memory;
+  memory&  m_memory;
 
   std::vector<std::unique_ptr<function>>  m_function_table;
 
 public:
-  memory&  get_memory() const noexcept{return *m_memory;}
+  space(memory&  mem) noexcept: m_memory(mem){}
+
+  memory&  get_memory() const noexcept{return m_memory;}
 
   function&  create_function(std::string_view  name) noexcept;
 
@@ -154,78 +179,47 @@ public:
 
 
 class
-argument
+variable
 {
   std::string  m_label;
 
   value  m_value;
 
 public:
-  argument(std::string_view  label, value  v) noexcept: m_label(label), m_value(v){}
+  variable() noexcept{}
+  variable(std::string_view  lb, value  v) noexcept: m_label(lb), m_value(v){}
 
-  const value*  operator->() const noexcept{return &m_value;}
+  const std::string&  get_label() const noexcept{return m_label;}
 
-  const std::string&  get_name() const noexcept{return m_label;}
-  const value&       get_value() const noexcept{return m_value;}
+  value&  get_value() noexcept{return m_value;}
 
 };
 
 
 class
-evaluation_frame
+execution_frame
 {
   const function&  m_function;
 
-  std::vector<argument>  m_argument_list;
+  std::vector<variable>  m_variable_list;
 
-  const block*  m_current_block=nullptr;
-  const block*  m_previous_block=nullptr;
+  uint32_t  m_pc=0;
 
-  const codeline*  m_current_codeline=nullptr;
-  const codeline*  m_end_codeline    =nullptr;
+  value  m_returned_value;
 
-public:
-  evaluation_frame(const function&  fn, std::initializer_list<argument>  args={}) noexcept;
-
-  operator bool() const noexcept{return m_current_codeline < m_end_codeline;}
-
-  const function&  get_function() const noexcept{return m_function;}
-
-  const std::vector<argument>&  get_argument_list() const noexcept{return m_argument_list;}
-
-  evaluation_frame&  seek_block(std::string_view  label) noexcept;
-
-  const block*   get_current_block() const noexcept{return m_current_block;}
-  const block*  get_previous_block() const noexcept{return m_previous_block;}
-
-  const codeline&  get_codeline() const noexcept{return *m_current_codeline;}
-
-  evaluation_frame&  advance() noexcept;
-
-};
-
-
-class
-evaluation_context
-{
-  std::vector<evaluation_frame>  m_frame_stack;
+  bool  m_returned;
 
   void  store(value  dst, value  src) noexcept;
   void  step(const codeline&  codeln) noexcept;
 
 public:
-  evaluation_context(const function&  fn) noexcept;
+  execution_frame(const function&  fn, execution_frame*  parent=nullptr) noexcept;
 
-  operator bool() const noexcept{return m_frame_stack.size();}
+  const function&  get_function() const noexcept{return m_function;}
 
-  evaluation_frame&  operator *() noexcept{return  m_frame_stack.back();}
-  evaluation_frame*  operator->() noexcept{return &m_frame_stack.back();}
+  value  get_returned_value() const noexcept{return m_returned_value;}
 
-  evaluation_frame&  push(evaluation_frame&&  frm) noexcept{  m_frame_stack.emplace_back(std::move(frm));  return m_frame_stack.back();}
-
-  void  pop() noexcept{m_frame_stack.pop_back();}
-
-  void  run() noexcept;
+  value  run() noexcept;
 
 };
 
@@ -245,6 +239,17 @@ public:
   const operand&  get_destination() const noexcept{return m_destination;}
   const operand&       get_source() const noexcept{return      m_source;}
 
+  void  print() const noexcept
+  {
+    printf("st ");
+
+    m_destination.print();
+
+    printf(" ");
+
+    m_source.print();
+  }
+
 };
 
 
@@ -252,15 +257,28 @@ class
 branch_instruction
 {
   operand  m_condition;
-  std::string  m_label;
+
+  std::string  m_zero_label;
+  std::string  m_nonzero_label;
 
 public:
-  branch_instruction(operand&&  cond, std::string_view  lb) noexcept:
-  m_condition(std::move(cond)), m_label(lb){}
+  branch_instruction(operand&&  cond, std::string_view  z, std::string_view  nz) noexcept:
+  m_condition(std::move(cond)), m_zero_label(z), m_nonzero_label(nz){}
 
-  const std::string&  get_label() const noexcept{return m_label;}
+  const std::string&  get_zero_label()    const noexcept{return m_zero_label;}
+  const std::string&  get_nonzero_label() const noexcept{return m_nonzero_label;}
 
   const operand&  get_condition() const noexcept{return m_condition;}
+
+
+  void  print() const noexcept
+  {
+    printf("br ");
+
+    m_condition.print();
+
+    printf(" %s %s",m_nonzero_label.data(),m_zero_label.data());
+  }
 
 };
 
@@ -275,6 +293,14 @@ public:
   m_operand(std::move(o)){}
 
   const operand&  get_operand() const noexcept{return m_operand;}
+
+
+  void  print() const noexcept
+  {
+    printf("ret ");
+
+    m_operand.print();
+  }
 
 };
 
@@ -299,7 +325,9 @@ unary_operation
   m_kind(k), m_operand(std::move(o)){}
 
 public:
-  value  evaluate(evaluation_context&  ctx) const noexcept;
+  value  evaluate(execution_frame&  frm) const noexcept;
+
+  bool  is_constant(const function&  fn) const noexcept{return m_operand.is_constant(fn);}
 
   static unary_operation  make_neg(        operand&&  o) noexcept{return {kind::neg        ,std::move(o)};}
   static unary_operation  make_bit_not(    operand&&  o) noexcept{return {kind::bit_not    ,std::move(o)};}
@@ -341,7 +369,9 @@ binary_operation
   m_kind(k), m_left(std::move(l)), m_right(std::move(r)){}
 
 public:
-  value  evaluate(evaluation_context&  ctx) const noexcept;
+  value  evaluate(execution_frame&  frm) const noexcept;
+
+  bool  is_constant(const function&  fn) const noexcept{return m_left.is_constant(fn) && m_right.is_constant(fn);}
 
   static binary_operation  make_add(        operand&&  l, operand&&  r) noexcept{return {kind::add        ,std::move(l),std::move(r)};}
   static binary_operation  make_sub(        operand&&  l, operand&&  r) noexcept{return {kind::sub        ,std::move(l),std::move(r)};}
@@ -368,37 +398,6 @@ public:
 
 
 class
-phi_entry
-{
-  std::string  m_label;
-
-  operand  m_operand;
-
-public:
-  phi_entry() noexcept{}
-  phi_entry(std::string_view  label, operand&&  o) noexcept: m_label(label), m_operand(std::move(o)){}
-
-  const std::string&  get_label() const noexcept{return m_label;}
-
-  value  evaluate(evaluation_context&  ctx) const noexcept;
-
-};
-
-
-class
-phi_operation
-{
-  std::vector<phi_entry>  m_entries;
-
-public:
-  phi_operation() noexcept{}
-
-  value  evaluate(evaluation_context&  ctx) const noexcept;
-
-};
-
-
-class
 call_operation
 {
   std::string  m_function_name;
@@ -409,7 +408,7 @@ public:
   call_operation(std::string_view  fn_name, std::initializer_list<operand>  args) noexcept:
   m_function_name(fn_name), m_arguments(args){}
 
-  value  evaluate(evaluation_context&  ctx) const noexcept;
+  value  evaluate(execution_frame&  frm) const noexcept;
 
 };
 
@@ -421,7 +420,6 @@ operation
     null,
     unary,
     binary,
-    phi,
     call,
 
   } m_kind=kind::null;
@@ -430,7 +428,6 @@ operation
   union data{
     unary_operation    un;
     binary_operation  bin;
-    phi_operation     phi;
     call_operation    cal;
 
     data() noexcept{}
@@ -440,7 +437,18 @@ operation
 
   std::string  m_label;
 
-  std::unique_ptr<value>  m_value=std::make_unique<value>();
+  struct result{
+    static constexpr int      test_flag = 1;
+    static constexpr int  constant_flag = 2;
+
+    gbstd::status_value<int>  m_status;
+
+    value  m_value=value::make_undefined();
+
+    result() noexcept{}
+  };
+
+  std::unique_ptr<result>  m_result=std::make_unique<result>();
 
 public:
   operation() noexcept{}
@@ -459,7 +467,6 @@ public:
 
   operation&  set_content(unary_operation&&     un) noexcept;
   operation&  set_content(binary_operation&&   bin) noexcept;
-  operation&  set_content(phi_operation&&      phi) noexcept;
   operation&  set_content(call_operation&&     cal) noexcept;
 
   operation&          set_label(std::string_view  lb)       noexcept{       m_label = lb;  return *this;}
@@ -467,15 +474,17 @@ public:
 
   const unary_operation&   get_unary()  const noexcept{return m_data.un;}
   const binary_operation&  get_binary() const noexcept{return m_data.bin;}
-  const phi_operation&     get_phi()    const noexcept{return m_data.phi;}
   const call_operation&    get_call()   const noexcept{return m_data.cal;}
 
   bool  is_unary()  const noexcept{return m_kind == kind::unary;}
   bool  is_binary() const noexcept{return m_kind == kind::binary;}
-  bool  is_phi()    const noexcept{return m_kind == kind::phi;}
   bool  is_call()   const noexcept{return m_kind == kind::call;}
 
-  const value&  evaluate(evaluation_context&  ctx) const noexcept;
+  bool  is_constant(const function&  fn) const noexcept;
+
+  const value&  evaluate(execution_frame&  frm) const noexcept;
+
+  void  print() const noexcept;
 
 };
 
@@ -485,14 +494,13 @@ codeline
 {
   enum class kind{
     null,
-    label,
     store_instruction,
     branch_instruction,
     return_instruction,
     operation,
   } m_kind=kind::null;
 
-  block*  m_block=nullptr;
+  function*  m_function=nullptr;
 
   union data{
     store_instruction   st;
@@ -507,7 +515,7 @@ codeline
 
 public:
   codeline() noexcept{}
-  codeline(block&  blk) noexcept: m_block(&blk){}
+  codeline(function&  fn) noexcept: m_function(&fn){}
   codeline(const codeline&   rhs) noexcept{assign(rhs);}
   codeline(      codeline&&  rhs) noexcept{assign(std::move(rhs));}
  ~codeline(){clear();}
@@ -530,7 +538,7 @@ public:
   const return_instruction&  get_return_instruction() const noexcept{return m_data.ret;}
   const operation&           get_operation()     const noexcept{return m_data.op;}
 
-  block&  get_block() const noexcept{return *m_block;}
+  function&  get_function() const noexcept{return *m_function;}
 
   bool  is_null()               const noexcept{return m_kind == kind::null;}
   bool  is_store_instruction()  const noexcept{return m_kind == kind::store_instruction;}
@@ -538,46 +546,52 @@ public:
   bool  is_return_instruction() const noexcept{return m_kind == kind::return_instruction;}
   bool  is_operation()          const noexcept{return m_kind == kind::operation;}
 
+  void  print() const noexcept;
+
 };
 
 
 
 
 class
-block
+entry_point
 {
-  function*  m_function=nullptr;
-
   std::string  m_label;
 
-  std::vector<codeline>  m_codelines;
+  uint32_t  m_value=0;
 
 public:
-  block(function&  fn, std::string_view  lb) noexcept: m_function(&fn), m_label(lb){}
+  entry_point() noexcept{}
+  entry_point(std::string_view  lb, uint32_t  v) noexcept: m_label(lb), m_value(v){}
 
   const std::string&  get_label() const noexcept{return m_label;}
 
-  function&  get_function() const noexcept{return *m_function;}
-
-  const operation*  find_operation(std::string_view  label) const noexcept;
-
-  codeline&  create_codeline() noexcept;
-
-  const codeline*  begin() const noexcept{return m_codelines.data()                   ;}
-  const codeline*    end() const noexcept{return m_codelines.data()+m_codelines.size();}
+  uint32_t  get_value() const noexcept{return m_value;}
 
 };
+
+
 
 
 class
-parameter
+variable_initializer
 {
-public:
-  std::string  m_type_name;
-
   std::string  m_label;
 
+  operand  m_operand;
+
+public:
+  variable_initializer() noexcept{}
+  variable_initializer(std::string_view  lb, operand&&  o) noexcept: m_label(lb), m_operand(std::move(o)){}
+
+  const std::string&  get_label() const noexcept{return m_label;}
+
+  value  get_value(execution_frame&  frm) const noexcept{return m_operand.evaluate(frm);}
+
 };
+
+
+using variable_initializer_list = std::vector<variable_initializer>;
 
 
 class
@@ -587,23 +601,35 @@ function
 
   std::string  m_name;
 
-  std::vector<parameter>  m_parameter_list;
+  variable_initializer_list  m_variable_initializer_list;
 
-  std::vector<std::unique_ptr<block>>  m_blocks;
+  std::vector<codeline>   m_codelines;
+
+  std::vector<entry_point>   m_entry_point_list;
 
 public:
   function(space&  sp, std::string_view  name) noexcept: m_space(&sp), m_name(name){}
 
+  const codeline&  operator[](int  i) const noexcept{return m_codelines[i];}
+
+  int  get_number_of_codelines() const noexcept{return m_codelines.size();}
+
   const std::string&  get_name() const noexcept{return m_name;}
+
+  const variable_initializer_list&  get_variable_initializer_list() const noexcept{return m_variable_initializer_list;}
+
+  function&  append_variable_initializer(std::string_view  lb, operand&&  o) noexcept;
+  function&  append_entry_point(std::string_view  lb) noexcept;
 
   space&  get_space() const noexcept{return *m_space;}
 
-  block&  create_block(std::string_view  label) noexcept;
+  codeline&  create_codeline() noexcept;
 
-  const block*      find_block(    std::string_view  label) const noexcept;
   const operation*  find_operation(std::string_view  label) const noexcept;
 
-  const block&  get_entry_block() const noexcept{return *m_blocks.front();}
+  const entry_point*  find_entry_point(std::string_view  label) const noexcept;
+
+  void  print() const noexcept;
 
 };
 

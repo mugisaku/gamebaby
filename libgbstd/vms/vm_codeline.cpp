@@ -16,8 +16,8 @@ assign(const codeline&   rhs) noexcept
     {
       clear();
 
-      m_kind  = rhs.m_kind;
-      m_block = rhs.m_block;
+      m_kind     = rhs.m_kind;
+      m_function = rhs.m_function;
 
         switch(m_kind)
         {
@@ -42,8 +42,8 @@ assign(codeline&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_kind ,rhs.m_kind );
-      std::swap(m_block,rhs.m_block);
+      std::swap(m_kind    ,rhs.m_kind    );
+      std::swap(m_function,rhs.m_function);
 
         switch(m_kind)
         {
@@ -76,7 +76,7 @@ clear() noexcept
 
   m_kind = kind::null;
 
-  m_block = nullptr;
+  m_function = nullptr;
 }
 
 
@@ -134,6 +134,24 @@ set_content(operation&&  op) noexcept
 
   return *this;
 }
+
+
+
+
+void
+codeline::
+print() const noexcept
+{
+    switch(m_kind)
+    {
+  case(kind::store_instruction ): m_data.st.print();break;
+  case(kind::branch_instruction): m_data.br.print();break;
+  case(kind::return_instruction): m_data.ret.print();break;
+
+  case(kind::operation ): m_data.op.print();break;
+    }
+}
+
 
 
 

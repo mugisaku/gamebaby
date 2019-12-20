@@ -10,13 +10,15 @@ namespace gbstd{
 
 value
 call_operation::
-evaluate(evaluation_context&  ctx) const noexcept
+evaluate(execution_frame&  frm) const noexcept
 {
-  auto  target = ctx->get_function().get_space().find_function(m_function_name);
+  auto  target = frm.get_function().get_space().find_function(m_function_name);
 
     if(target)
     {
-//      return target->start(m_arguments);
+      execution_frame  cofrm(*target,&frm);
+
+      return cofrm.run();
     }
 
 

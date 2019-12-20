@@ -20,8 +20,9 @@ assign(const operand&   rhs) noexcept
 
         switch(m_kind)
         {
-      case(kind::operation): new(&m_data) std::string(rhs.m_data.s);break;
-      case(kind::value    ): new(&m_data) value(rhs.m_data.v);break;
+      case(kind::operation_label): new(&m_data) std::string(rhs.m_data.s);break;
+      case(kind::operation      ): m_data.op = rhs.m_data.op;break;
+      case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
 
@@ -42,8 +43,9 @@ assign(operand&&  rhs) noexcept
 
         switch(m_kind)
         {
-      case(kind::operation): new(&m_data) std::string(std::move(rhs.m_data.s));break;
-      case(kind::value    ): new(&m_data) value(rhs.m_data.v);break;
+      case(kind::operation_label): new(&m_data) std::string(std::move(rhs.m_data.s));break;
+      case(kind::operation      ): m_data.op = rhs.m_data.op;break;
+      case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
 
@@ -60,7 +62,7 @@ assign(std::string_view  sv) noexcept
 
   new(&m_data) std::string(sv);
 
-  m_kind = kind::operation;
+  m_kind = kind::operation_label;
 
   return *this;
 }
@@ -87,7 +89,8 @@ clear() noexcept
     switch(m_kind)
     {
   case(kind::null): break;
-  case(kind::operation): m_data.s.~basic_string();break;
+  case(kind::operation_label): m_data.s.~basic_string();break;
+  case(kind::operation): ;break;
   case(kind::value): m_data.v.~value();break;
     }
 
@@ -96,9 +99,18 @@ clear() noexcept
 }
 
 
+bool
+operand::
+is_constant(const function&  fn) const noexcept
+{
+   return is_operation()? fn.find_operation(m_data.s)->is_constant(fn)
+         :true;
+}
+
+
 value
 operand::
-evaluate(evaluation_context&  ctx) const noexcept
+evaluate(execution_frame&  frm) const noexcept
 {
     if(is_value())
     {
@@ -108,16 +120,30 @@ evaluate(evaluation_context&  ctx) const noexcept
   else
     if(is_operation())
     {
-      auto  op = ctx->get_function().find_operation(m_data.s);
+      auto  op = frm.get_function().find_operation(m_data.s);
 
         if(op)
         {
-          return op->evaluate(ctx);
+          return op->evaluate(frm);
         }
     }
 
 
   return value::make_null();
+}
+
+
+void
+operand::
+print() const noexcept
+{
+    switch(m_kind)
+    {
+  case(kind::null): break;
+  case(kind::operation_label): printf("%s",m_data.s.data());break;
+  case(kind::operation): ;break;
+  case(kind::value): m_data.v.print();break;
+    }
 }
 
 

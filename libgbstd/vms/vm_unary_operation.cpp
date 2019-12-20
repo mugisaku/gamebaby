@@ -10,13 +10,13 @@ namespace gbstd{
 
 value
 unary_operation::
-evaluate(evaluation_context&  ctx) const noexcept
+evaluate(execution_frame&  frm) const noexcept
 {
-  auto  v = m_operand.evaluate(ctx);
+  auto  v = m_operand.evaluate(frm);
 
     if(m_kind == kind::dereference)
     {
-      auto&  mem = ctx->get_function().get_space().get_memory();
+      auto&  mem = frm.get_function().get_space().get_memory();
 
         if(v.is_u8_pointer())
         {

@@ -10,10 +10,10 @@ namespace gbstd{
 
 value
 binary_operation::
-evaluate(evaluation_context&  ctx) const noexcept
+evaluate(execution_frame&  frm) const noexcept
 {
-  auto  lv = m_left.evaluate( ctx);
-  auto  rv = m_right.evaluate(ctx);
+  auto  lv = m_left.evaluate( frm);
+  auto  rv = m_right.evaluate(frm);
 
     if(lv.is_u8_pointer() && rv.is_data())
     {

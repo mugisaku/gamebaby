@@ -8,32 +8,33 @@ namespace gbstd{
 
 
 
-block&
+codeline&
 function::
-create_block(std::string_view  label) noexcept
+create_codeline() noexcept
 {
-  auto  ptr = new block(*this,label);
+  m_codelines.emplace_back(*this);
 
-  m_blocks.emplace_back(ptr);
-
-  return *ptr;
+  return m_codelines.back();
 }
 
 
-const block*
+function&
 function::
-find_block(std::string_view  label) const noexcept
+append_variable_initializer(std::string_view  lb, operand&&  o) noexcept
 {
-    for(auto&  blk: m_blocks)
-    {
-        if(blk->get_label() == label)
-        {
-          return blk.get();
-        }
-    }
+  m_variable_initializer_list.emplace_back(lb,std::move(o));
+
+  return *this;
+}
 
 
-  return nullptr;
+function&
+function::
+append_entry_point(std::string_view  lb) noexcept
+{
+  m_entry_point_list.emplace_back(lb,m_codelines.size());
+
+  return *this;
 }
 
 
@@ -41,18 +42,56 @@ const operation*
 function::
 find_operation(std::string_view  label) const noexcept
 {
-    for(auto&  blk: m_blocks)
+    for(auto&  cl: m_codelines)
     {
-      auto  op = blk->find_operation(label);
-
-        if(op)
+        if(cl.is_operation())
         {
-          return op;
+          auto&  op = cl.get_operation();
+
+            if(op.get_label() == label)
+            {
+              return &op;
+            }
         }
     }
 
 
   return nullptr;
+}
+
+
+const entry_point*
+function::
+find_entry_point(std::string_view  label) const noexcept
+{
+    for(auto&  ep: m_entry_point_list)
+    {
+        if(ep.get_label() == label)
+        {
+          return &ep;
+        }
+    }
+
+
+  return nullptr;
+}
+
+
+void
+function::
+print() const noexcept
+{
+  printf("function %s\n{\n",m_name.data());
+
+    for(auto&  cl: m_codelines)
+    {
+      cl.print();
+
+      printf("\n");
+    }
+
+
+  printf("}\n\n\n");
 }
 
 
