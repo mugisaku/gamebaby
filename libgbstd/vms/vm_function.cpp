@@ -8,14 +8,46 @@ namespace gbstd{
 
 
 
-codeline&
+function&
 function::
-create_codeline() noexcept
+append_store_instruction(operand  dst, operand  src) noexcept
 {
-  m_codelines.emplace_back(*this);
+  m_codelines.emplace_back(*this,store_instruction(std::move(dst),std::move(src)));
 
-  return m_codelines.back();
+  return *this;
 }
+
+
+function&
+function::
+append_branch_instruction(operand  cond, std::string_view  nz, std::string_view  z) noexcept
+{
+  m_codelines.emplace_back(*this,branch_instruction(std::move(cond),nz,z));
+
+  return *this;
+}
+
+
+function&
+function::
+append_return_instruction(operand  o) noexcept
+{
+  m_codelines.emplace_back(*this,return_instruction(std::move(o)));
+
+  return *this;
+}
+
+
+function&
+function::
+append_operation(operation  op) noexcept
+{
+  m_codelines.emplace_back(*this,std::move(op));
+
+  return *this;
+}
+
+
 
 
 function&
@@ -23,6 +55,16 @@ function::
 append_variable_initializer(std::string_view  lb, operand&&  o) noexcept
 {
   m_variable_initializer_list.emplace_back(lb,std::move(o));
+
+  return *this;
+}
+
+
+function&
+function::
+append_parameter(std::string_view  lb) noexcept
+{
+  m_parameter_list.emplace_back(lb);
 
   return *this;
 }
@@ -81,7 +123,15 @@ void
 function::
 print() const noexcept
 {
-  printf("function %s\n{\n",m_name.data());
+  printf("function %s(",m_name.data());
+
+    for(auto&  p: m_parameter_list)
+    {
+      printf("%s, ",p.data());
+    }
+
+
+  printf(")\n{\n");
 
     for(auto&  cl: m_codelines)
     {

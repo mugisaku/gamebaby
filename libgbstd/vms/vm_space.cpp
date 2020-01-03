@@ -20,7 +20,7 @@ create_function(std::string_view  name) noexcept
 }
 
 
-const function*
+function*
 space::
 find_function(std::string_view  name) const noexcept
 {
@@ -37,21 +37,16 @@ find_function(std::string_view  name) const noexcept
 }
 
 
-value
+void
 space::
-evaluate(std::string_view  name) const noexcept
+print() const noexcept
 {
-/*
-    for(auto&  o: m_operation_table)
+    for(auto&  f: m_function_table)
     {
-        if(o->get_name() == name)
-        {
-          return o->evaluate(*this);
-        }
-    }
-*/
+      f->print();
 
-  return value::make_null();
+      printf("\n");
+    }
 }
 
 

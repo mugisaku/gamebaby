@@ -82,7 +82,7 @@ clear() noexcept
 
 codeline&
 codeline::
-set_content(store_instruction&&  st) noexcept
+assign(store_instruction&&  st) noexcept
 {
   clear();
 
@@ -96,7 +96,7 @@ set_content(store_instruction&&  st) noexcept
 
 codeline&
 codeline::
-set_content(branch_instruction&&  br) noexcept
+assign(branch_instruction&&  br) noexcept
 {
   clear();
 
@@ -110,7 +110,7 @@ set_content(branch_instruction&&  br) noexcept
 
 codeline&
 codeline::
-set_content(return_instruction&&  ret) noexcept
+assign(return_instruction&&  ret) noexcept
 {
   clear();
 
@@ -124,7 +124,7 @@ set_content(return_instruction&&  ret) noexcept
 
 codeline&
 codeline::
-set_content(operation&&  op) noexcept
+assign(operation&&  op) noexcept
 {
   clear();
 

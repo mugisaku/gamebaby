@@ -57,6 +57,27 @@ evaluate(execution_frame&  frm) const noexcept
 }
 
 
+void
+unary_operation::
+print() const noexcept
+{
+    switch(m_kind)
+    {
+  case(kind::neg        ): printf("neg");break;
+  case(kind::bit_not    ): printf("bit_not");break;
+  case(kind::logical_not): printf("logical_not");break;
+  case(kind::get_size   ): printf("get_size");break;
+  case(kind::get_address): printf("get_address");break;
+  case(kind::dereference): printf("dereference");break;
+    }
+
+
+  printf(" ");
+
+  m_operand.print();
+}
+
+
 
 
 }

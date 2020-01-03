@@ -21,7 +21,7 @@ assign(const operand&   rhs) noexcept
         switch(m_kind)
         {
       case(kind::operation_label): new(&m_data) std::string(rhs.m_data.s);break;
-      case(kind::operation      ): m_data.op = rhs.m_data.op;break;
+      case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
       case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
@@ -44,7 +44,7 @@ assign(operand&&  rhs) noexcept
         switch(m_kind)
         {
       case(kind::operation_label): new(&m_data) std::string(std::move(rhs.m_data.s));break;
-      case(kind::operation      ): m_data.op = rhs.m_data.op;break;
+      case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
       case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
@@ -63,6 +63,20 @@ assign(std::string_view  sv) noexcept
   new(&m_data) std::string(sv);
 
   m_kind = kind::operation_label;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(int64_t  i) noexcept
+{
+  clear();
+
+  new(&m_data) int64_t(i);
+
+  m_kind = kind::integer_literal;
 
   return *this;
 }
@@ -90,21 +104,12 @@ clear() noexcept
     {
   case(kind::null): break;
   case(kind::operation_label): m_data.s.~basic_string();break;
-  case(kind::operation): ;break;
+  case(kind::integer_literal): /*m_data.i.~int()*/;break;
   case(kind::value): m_data.v.~value();break;
     }
 
 
   m_kind = kind::null;
-}
-
-
-bool
-operand::
-is_constant(const function&  fn) const noexcept
-{
-   return is_operation()? fn.find_operation(m_data.s)->is_constant(fn)
-         :true;
 }
 
 
@@ -118,14 +123,23 @@ evaluate(execution_frame&  frm) const noexcept
     }
 
   else
-    if(is_operation())
+    if(is_integer_literal())
     {
-      auto  op = frm.get_function().find_operation(m_data.s);
+      return value::make_data(m_data.i);
+    }
 
-        if(op)
+  else
+    if(is_operation_label())
+    {
+      auto  var = frm.find_variable(m_data.s);
+
+        if(var)
         {
-          return op->evaluate(frm);
+          return var->get_value();
         }
+
+
+      printf("%s not found",m_data.s.data());
     }
 
 
@@ -141,7 +155,7 @@ print() const noexcept
     {
   case(kind::null): break;
   case(kind::operation_label): printf("%s",m_data.s.data());break;
-  case(kind::operation): ;break;
+  case(kind::integer_literal): printf("%lld",m_data.i);break;
   case(kind::value): m_data.v.print();break;
     }
 }

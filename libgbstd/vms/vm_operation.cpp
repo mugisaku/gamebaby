@@ -19,8 +19,6 @@ assign(const operation&   rhs) noexcept
       m_kind  = rhs.m_kind;
       m_label = rhs.m_label;
 
-      *m_result = *rhs.m_result;
-
         switch(m_kind)
         {
       case(kind::unary ): new(&m_data) unary_operation(rhs.m_data.un);break;
@@ -44,7 +42,6 @@ assign(operation&&  rhs) noexcept
 
       std::swap(m_kind ,rhs.m_kind );
       std::swap(m_label,rhs.m_label);
-      std::swap(m_result,rhs.m_result);
 
         switch(m_kind)
         {
@@ -59,9 +56,51 @@ assign(operation&&  rhs) noexcept
 }
 
 
+operation&
+operation::
+assign(std::string_view  lb, unary_operation&&  un) noexcept
+{
+  set_label(lb);
+
+  return set_content(std::move(un));
+}
+
+
+operation&
+operation::
+assign(std::string_view  lb, binary_operation&&  bin) noexcept
+{
+  set_label(lb);
+
+  return set_content(std::move(bin));
+}
+
+
+operation&
+operation::
+assign(std::string_view  lb, call_operation&&  cal) noexcept
+{
+  set_label(lb);
+
+  return set_content(std::move(cal));
+}
+
+
+
+
 void
 operation::
 clear() noexcept
+{
+  m_label.clear();
+
+  unset_content();
+}
+
+
+void
+operation::
+unset_content() noexcept
 {
     switch(m_kind)
     {
@@ -72,10 +111,6 @@ clear() noexcept
 
 
   m_kind = kind::null;
-
-  m_label.clear();
-
-  *m_result = result();
 }
 
 
@@ -83,7 +118,7 @@ operation&
 operation::
 set_content(unary_operation&&  un) noexcept
 {
-  clear();
+  unset_content();
 
   new(&m_data) unary_operation(std::move(un));
 
@@ -97,7 +132,7 @@ operation&
 operation::
 set_content(binary_operation&&  bin) noexcept
 {
-  clear();
+  unset_content();
 
   new(&m_data) binary_operation(std::move(bin));
 
@@ -111,7 +146,7 @@ operation&
 operation::
 set_content(call_operation&&  cal) noexcept
 {
-  clear();
+  unset_content();
 
   new(&m_data) call_operation(std::move(cal));
 
@@ -121,48 +156,11 @@ set_content(call_operation&&  cal) noexcept
 }
 
 
-bool
-operation::
-is_constant(const function&  fn) const noexcept
-{
-    if(m_result->m_status.test(result::test_flag))
-    {
-      return m_result->m_status.test(result::constant_flag);
-    }
-
-
-  bool  flag = false;
-
-    switch(m_kind)
-    {
-  case(kind::unary ): flag = m_data.un.is_constant( fn);break;
-  case(kind::binary): flag = m_data.bin.is_constant(fn);break;
-    }
-
-
-  m_result->m_status.set(result::test_flag);
-
-    if(flag)
-    {
-      m_result->m_status.set(result::constant_flag);
-    }
-
-
-  return flag;
-}
-
-
-const value&
+value
 operation::
 evaluate(execution_frame&  frm) const noexcept
 {
-    if(!m_result->m_value.is_undefined() && is_constant(frm.get_function()))
-    {
-      return m_result->m_value;
-    }
-
-
-  auto&  v = m_result->m_value;
+  value  v;
 
     switch(m_kind)
     {
@@ -172,7 +170,9 @@ evaluate(execution_frame&  frm) const noexcept
     }
 
 
-  return m_result->m_value;
+  auto&  var = frm.push_variable(m_label,std::move(v));
+
+  return var.get_value();
 }
 
 
@@ -180,6 +180,14 @@ void
 operation::
 print() const noexcept
 {
+  printf("%%%s = ",m_label.data());
+
+    switch(m_kind)
+    {
+  case(kind::unary ): m_data.un.print(); break;
+  case(kind::binary): m_data.bin.print();break;
+  case(kind::call  ): m_data.cal.print();break;
+    }
 }
 
 

@@ -81,6 +81,13 @@ set(SOURCES
   vms/vm_binary_operation.cpp
   vms/vm_call_operation.cpp
   vms/vm_codeline.cpp
+  typesystems/struct_type_info.cpp
+  typesystems/union_type_info.cpp
+  typesystems/enum_type_info.cpp
+  typesystems/type_info.cpp
+  typesystems/type_entry.cpp
+  typesystems/type_collection.cpp
+  typesystems/parameter_list.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

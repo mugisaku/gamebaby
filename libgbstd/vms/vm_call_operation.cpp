@@ -16,13 +16,28 @@ evaluate(execution_frame&  frm) const noexcept
 
     if(target)
     {
-      execution_frame  cofrm(*target,&frm);
+      auto  cofrm = std::make_unique<execution_frame>(*target,&frm,m_arguments.size(),m_arguments.data());
 
-      return cofrm.run();
+      return cofrm->run();
     }
 
 
   return value::make_null();
+}
+
+
+void
+call_operation::
+print() const noexcept
+{
+  printf("cal %s ",m_function_name.data());
+
+    for(auto&  v: m_arguments)
+    {
+      v.print();
+
+      printf(" ");
+    }
 }
 
 
