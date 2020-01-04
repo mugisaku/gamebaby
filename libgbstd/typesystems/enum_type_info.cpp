@@ -32,6 +32,23 @@ push(std::string_view  name, int  value) noexcept
 }
 
 
+const int*
+enum_type_info::
+find(std::string_view  name) const noexcept
+{
+    for(auto&  en: m_enumerator_list)
+    {
+        if(en.get_name() == name)
+        {
+          return &en.get_value();
+        }
+    }
+
+
+  return nullptr;
+}
+
+
 std::string
 enum_type_info::
 get_id() const noexcept

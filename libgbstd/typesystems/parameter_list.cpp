@@ -30,6 +30,23 @@ push(type_info&  ti, std::string_view  name) noexcept
 }
 
 
+const type_info*
+parameter_list::
+find(std::string_view  name) const noexcept
+{
+    for(auto&  para: m_container)
+    {
+        if(para.get_name() == name)
+        {
+          return &para.get_type_info();
+        }
+    }
+
+
+  return nullptr;
+}
+
+
 
 
 }}

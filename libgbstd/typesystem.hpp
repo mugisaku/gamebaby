@@ -79,6 +79,8 @@ public:
 
   parameter_list&  push(type_info&  ti, std::string_view  name) noexcept;
 
+  const type_info*  find(std::string_view  name) const noexcept;
+
   const std::string&  get_id() const noexcept{return m_id;}
 
   const parameter*  begin() const noexcept{return m_container.data();}
@@ -120,6 +122,8 @@ public:
 
   void  push(type_info&  ti, std::string_view  name) noexcept;
 
+  const type_info*  find(std::string_view  name) const noexcept;
+
   int   get_size() const noexcept{return m_size;}
   int  get_align() const noexcept{return m_align;}
 
@@ -155,6 +159,8 @@ public:
 
   void  push(type_info&  ti, std::string_view  name) noexcept;
 
+  const type_info*  find(std::string_view  name) const noexcept;
+
   int   get_size() const noexcept{return m_size;}
   int  get_align() const noexcept{return m_align;}
 
@@ -178,7 +184,7 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
 
-  int  get_value() const noexcept{return m_value;}
+  const int&  get_value() const noexcept{return m_value;}
 
   void  print() const noexcept{printf("%s = %d",m_name.data(),m_value);}
 
@@ -201,6 +207,8 @@ public:
 
   void  push(std::string_view  name            ) noexcept;
   void  push(std::string_view  name, int  value) noexcept;
+
+  const int*  find(std::string_view  name) const noexcept;
 
   int   get_size() const noexcept{return 4;}
   int  get_align() const noexcept{return 4;}
