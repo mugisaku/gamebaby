@@ -188,14 +188,22 @@ get_size() const noexcept
     switch(m_kind)
     {
   case(kind::pointer):
+  case(kind::reference):
+  case(kind::function):
+  case(kind::enum_):
+      return get_pointer_size();
       break;
   case(kind::integer):
-      break;
-  case(kind::reference):
+      return m_data.int_ti.get_bitwidth()/8;
       break;
   case(kind::array):
+      return m_base_type_info->get_size()*m_number_of_elements;
       break;
-  case(kind::function):
+  case(kind::struct_):
+      return m_data.str_ti.get_size();
+      break;
+  case(kind::union_):
+      return m_data.uni_ti.get_size();
       break;
     }
 
@@ -211,14 +219,20 @@ get_align() const noexcept
     switch(m_kind)
     {
   case(kind::pointer):
-      break;
-  case(kind::integer):
-      break;
   case(kind::reference):
+  case(kind::function):
+  case(kind::enum_):
+  case(kind::integer):
+      return get_size();
       break;
   case(kind::array):
+      return m_base_type_info->get_align();
       break;
-  case(kind::function):
+  case(kind::struct_):
+      return m_data.str_ti.get_align();
+      break;
+  case(kind::union_):
+      return m_data.uni_ti.get_align();
       break;
     }
 
@@ -268,10 +282,13 @@ print() const noexcept
           printf("[%d]",tip->get_number_of_elements());
           break;
       case(kind::struct_):
+          tip->m_data.str_ti.print();
           break;
       case(kind::union_):
+          tip->m_data.uni_ti.print();
           break;
       case(kind::enum_):
+          tip->m_data.enu_ti.print();
           break;
       case(kind::function):
           {
@@ -290,6 +307,9 @@ print() const noexcept
           break;
         }
     }
+
+
+  printf(" id: \"%s\", size: %d, align: %d, ",get_id().data(),get_size(),get_align());
 }
 
 

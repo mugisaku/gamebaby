@@ -7,6 +7,13 @@ namespace gbstd{
 namespace typesystem{
 
 
+
+
+uint32_t
+union_type_info::
+m_id_source;
+
+
 void
 union_type_info::
 push(type_info&  ti, std::string_view  name) noexcept
@@ -22,12 +29,17 @@ void
 union_type_info::
 print() const noexcept
 {
+  printf("union{\n");
+
     for(auto&  m: m_member_list)
     {
       m.m_type_info.print();
 
       printf("  %s;\n",m.m_name.data());
     }
+
+
+  printf("}\n");
 }
 
 

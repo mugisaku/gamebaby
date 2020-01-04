@@ -41,7 +41,7 @@ push(std::string_view  name, type_info*  ti) noexcept
 }
 
 
-type_entry*
+type_info*
 type_collection::
 find(std::string_view  name) const noexcept
 {
@@ -49,7 +49,7 @@ find(std::string_view  name) const noexcept
     {
         if(ent->get_name() == name)
         {
-          return ent.get();
+          return ent->get_info();
         }
     }
 
@@ -67,13 +67,51 @@ make_alias(std::string_view  target_name, std::string_view  new_name) noexcept
 
     if(target && !exist)
     {
-      push(new_name,target->get_info());
+      push(new_name,target);
 
       return true;
     }
 
 
   return false;
+}
+
+
+
+
+type_info&
+type_collection::
+create_struct(std::string_view  name) noexcept
+{
+  auto  ti = new type_info(struct_type_info());
+
+  push(name,ti);
+
+  return *ti;
+}
+
+
+type_info&
+type_collection::
+create_union(std::string_view  name) noexcept
+{
+  auto  ti = new type_info(union_type_info());
+
+  push(name,ti);
+
+  return *ti;
+}
+
+
+type_info&
+type_collection::
+create_enum(std::string_view  name) noexcept
+{
+  auto  ti = new type_info(enum_type_info());
+
+  push(name,ti);
+
+  return *ti;
 }
 
 

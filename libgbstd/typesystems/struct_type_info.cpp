@@ -9,13 +9,22 @@ namespace typesystem{
 
 
 
-bool
+uint32_t
 struct_type_info::
-member::
-test_align(size_t  offset_base) const noexcept
+m_id_source;
+
+
+constexpr
+int
+get_aligned_offset(int  offset, int  align) noexcept
 {
-return 0;
-//  return m_type_info.test_align(offset_base+m_offset);
+    if(align)
+    {
+      offset = (offset+(align-1))/align*align;
+    }
+
+
+  return offset;
 }
 
 
@@ -37,35 +46,21 @@ push(type_info&  ti, std::string_view  name) noexcept
 }
 
 
-bool
-struct_type_info::
-test_align(size_t  offset_base) const noexcept
-{
-    for(auto&  m: m_member_list)
-    {
-        if(!m.test_align(offset_base))
-        {
-//          printf("[test align failed] %s\n",m.get_name().data());
-
-          return false;
-        }
-    }
-
-
-  return true;
-}
-
-
 void
 struct_type_info::
 print() const noexcept
 {
+  printf("struct{\n");
+
     for(auto&  m: m_member_list)
     {
       m.m_type_info.print();
 
-      printf("  %s;\n",m.m_name.data());
+      printf("  %s(offset:%d);\n",m.m_name.data(),m.m_offset);
     }
+
+
+  printf("}\n");
 }
 
 

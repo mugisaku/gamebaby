@@ -91,22 +91,6 @@ public:
 
 
 
-constexpr
-size_t
-get_aligned_offset(size_t  offset, size_t  align) noexcept
-{
-    if(align)
-    {
-      offset = (offset+(align-1))/align*align;
-    }
-
-
-  return offset;
-}
-
-
-
-
 class
 struct_type_info
 {
@@ -115,17 +99,10 @@ struct_type_info
 
     std::string  m_name;
 
-    size_t  m_offset;
+    int  m_offset;
 
-    member(type_info&  ti, std::string_view  name, size_t  offset) noexcept:
+    member(type_info&  ti, std::string_view  name, int  offset) noexcept:
     m_type_info(ti), m_name(name), m_offset(offset){}
-
-    bool  test_align(size_t  offset_base) const noexcept;
-
-    void  print(FILE*  f=stdout, size_t  offset_base=0) const noexcept
-    {
-      fprintf(f,"(offset %zu) align is %s",offset_base+m_offset,test_align(offset_base)? "right":"wrong");
-    }
   };
 
 
@@ -134,7 +111,9 @@ struct_type_info
   int  m_size =0;
   int  m_align=0;
 
-  std::string  m_id;
+  static uint32_t  m_id_source;
+
+  std::string  m_id=std::string("st")+std::to_string(m_id_source++);
 
 public:
   struct_type_info() noexcept{}
@@ -143,8 +122,6 @@ public:
 
   int   get_size() const noexcept{return m_size;}
   int  get_align() const noexcept{return m_align;}
-
-  bool  test_align(size_t  offset_base) const noexcept;
 
   const std::string&  get_id() const noexcept{return m_id;}
 
@@ -169,7 +146,9 @@ union_type_info
   int  m_size =0;
   int  m_align=0;
 
-  std::string  m_id;
+  static uint32_t  m_id_source;
+
+  std::string  m_id=std::string("un")+std::to_string(m_id_source++);
 
 public:
   union_type_info() noexcept{}
@@ -212,6 +191,10 @@ enum_type_info
   std::vector<enumerator>  m_enumerator_list;
 
   int  m_last_value=0;
+
+  static uint32_t  m_id_source;
+
+  std::string  m_id=std::string("en")+std::to_string(m_id_source++);
 
 public:
   enum_type_info() noexcept{}
@@ -386,9 +369,13 @@ public:
 
   void  push(std::string_view  name, type_info*  ti=nullptr) noexcept;
 
-  type_entry*  find(std::string_view  name) const noexcept;
+  type_info*  find(std::string_view  name) const noexcept;
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
+
+  type_info&  create_struct(std::string_view  name) noexcept;
+  type_info&  create_union( std::string_view  name) noexcept;
+  type_info&  create_enum(  std::string_view  name) noexcept;
 
   void  print() const noexcept;
 

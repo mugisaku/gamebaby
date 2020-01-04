@@ -24,8 +24,6 @@ print() const noexcept
     if(m_type_info)
     {
       m_type_info->print();
-
-      printf(" id: \"%s\", ",m_type_info->get_id().data());
     }
 
 

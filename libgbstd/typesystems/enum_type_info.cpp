@@ -7,6 +7,13 @@ namespace gbstd{
 namespace typesystem{
 
 
+
+
+uint32_t
+enum_type_info::
+m_id_source;
+
+
 void
 enum_type_info::
 push(std::string_view  name) noexcept
@@ -41,12 +48,17 @@ void
 enum_type_info::
 print() const noexcept
 {
+  printf("enum{\n");
+
     for(auto&  en: m_enumerator_list)
     {
       en.print();
 
       printf("\n");
     }
+
+
+  printf("}\n");
 }
 
 
