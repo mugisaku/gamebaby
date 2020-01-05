@@ -84,11 +84,11 @@ assign(int64_t  i) noexcept
 
 operand&
 operand::
-assign(value  v) noexcept
+assign(value&&  v) noexcept
 {
   clear();
 
-  new(&m_data) value(v);
+  new(&m_data) value(std::move(v));
 
   m_kind = kind::value;
 
@@ -125,7 +125,7 @@ evaluate(execution_frame&  frm) const noexcept
   else
     if(is_integer_literal())
     {
-      return value::make_data(m_data.i);
+//      return value::make_data(m_data.i);
     }
 
   else
@@ -143,7 +143,7 @@ evaluate(execution_frame&  frm) const noexcept
     }
 
 
-  return value::make_null();
+  return value();
 }
 
 

@@ -22,7 +22,7 @@ evaluate(execution_frame&  frm) const noexcept
     }
 
 
-  return value::make_null();
+  return value();
 }
 
 

@@ -15,6 +15,7 @@ evaluate(execution_frame&  frm) const noexcept
   auto  lv = m_left.evaluate( frm);
   auto  rv = m_right.evaluate(frm);
 
+/*
     if(lv.is_u8_pointer() && rv.is_data())
     {
       auto  l = lv.get_data();
@@ -97,6 +98,7 @@ evaluate(execution_frame&  frm) const noexcept
 
       lv = value::make_data(l);
     }
+*/
 
 
   return lv;

@@ -19,6 +19,7 @@ m_u32_type_info(integer_type_info(false,32)),
 m_s64_type_info(integer_type_info( true,64)),
 m_u64_type_info(integer_type_info(false,64))
 {
+  push("nullptr_t",&m_null_type_info);
   push("int8_t",&m_s8_type_info);
   push("uint8_t",&m_u8_type_info);
   push("int16_t",&m_s16_type_info);

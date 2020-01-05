@@ -14,6 +14,7 @@ evaluate(execution_frame&  frm) const noexcept
 {
   auto  v = m_operand.evaluate(frm);
 
+/*
     if(m_kind == kind::dereference)
     {
       auto&  mem = frm.get_function().get_space().get_memory();
@@ -50,7 +51,7 @@ evaluate(execution_frame&  frm) const noexcept
             }
         }
     }
-
+*/
 
 
   return v;

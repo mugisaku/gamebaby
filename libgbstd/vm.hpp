@@ -12,6 +12,7 @@
 #include<vector>
 #include"libgbstd/misc.hpp"
 #include"libgbstd/utility.hpp"
+#include"libgbstd/typesystem.hpp"
 
 
 namespace gbstd{
@@ -30,79 +31,22 @@ class space;
 class
 value
 {
-  enum class kind{
-    null,
-    undefined,
-    data,
-    null_pointer,
-    s8_pointer,
-    u8_pointer,
-    s16_pointer,
-    u16_pointer,
-    s32_pointer,
-    u32_pointer,
-    s64_pointer,
-    u64_pointer,
-    pointer,
+  const typesystem::type_info*  m_type_info=nullptr;
 
-  } m_kind=kind::null;
-
-  int64_t  m_data=0;
-
-  constexpr value(kind  k, int64_t  d) noexcept: m_kind(k), m_data(d){}
+  std::vector<uint8_t>  m_memory;
 
 public:
-  constexpr value() noexcept{}
+  value() noexcept{}
+  value(const typesystem::type_info&  ti) noexcept: m_type_info(&ti){m_memory.resize(ti.get_size());}
 
-  constexpr bool  is_null()         const noexcept{return m_kind == kind::null;}
-  constexpr bool  is_undefined()    const noexcept{return m_kind == kind::undefined;}
-  constexpr bool  is_null_pointer() const noexcept{return m_kind == kind::null_pointer;}
-  constexpr bool  is_data()         const noexcept{return m_kind == kind::data;}
-  constexpr bool  is_s8_pointer()   const noexcept{return m_kind == kind::s8_pointer;}
-  constexpr bool  is_u8_pointer()   const noexcept{return m_kind == kind::u8_pointer;}
-  constexpr bool  is_s16_pointer()  const noexcept{return m_kind == kind::s16_pointer;}
-  constexpr bool  is_u16_pointer()  const noexcept{return m_kind == kind::u16_pointer;}
-  constexpr bool  is_s32_pointer()  const noexcept{return m_kind == kind::s32_pointer;}
-  constexpr bool  is_u32_pointer()  const noexcept{return m_kind == kind::u32_pointer;}
-  constexpr bool  is_s64_pointer()  const noexcept{return m_kind == kind::s64_pointer;}
-  constexpr bool  is_u64_pointer()  const noexcept{return m_kind == kind::u64_pointer;}
-  constexpr bool  is_pointer()      const noexcept{return m_kind == kind::pointer;}
+  const typesystem::type_info&  get_type_info() const noexcept{return *m_type_info;}
 
-  constexpr int64_t  get_data() const noexcept{return m_data;}
+  uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(&m_memory[address   ]);}
+  uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(&m_memory[address&~1]);}
+  uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(&m_memory[address&~3]);}
+  uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(&m_memory[address&~7]);}
 
-  static constexpr value  make_null() noexcept{return {kind::null,0};}
-  static constexpr value  make_undefined() noexcept{return {kind::undefined,0};}
-  static constexpr value  make_data(int64_t  i) noexcept{return {kind::data,i};}
-  static constexpr value  make_null_pointer() noexcept{return {kind::null_pointer,0};}
-  static constexpr value  make_s8_pointer( int64_t  addr) noexcept{return {kind::s8_pointer,addr};}
-  static constexpr value  make_u8_pointer( int64_t  addr) noexcept{return {kind::u8_pointer,addr};}
-  static constexpr value  make_s16_pointer(int64_t  addr) noexcept{return {kind::s16_pointer,addr};}
-  static constexpr value  make_u16_pointer(int64_t  addr) noexcept{return {kind::u16_pointer,addr};}
-  static constexpr value  make_s32_pointer(int64_t  addr) noexcept{return {kind::s32_pointer,addr};}
-  static constexpr value  make_u32_pointer(int64_t  addr) noexcept{return {kind::u32_pointer,addr};}
-  static constexpr value  make_s64_pointer(int64_t  addr) noexcept{return {kind::s64_pointer,addr};}
-  static constexpr value  make_u64_pointer(int64_t  addr) noexcept{return {kind::u64_pointer,addr};}
-  static constexpr value  make_pointer(int64_t  addr) noexcept{return {kind::pointer,addr};}
-
-  void  print() const noexcept
-  {
-      switch(m_kind)
-      {
-    case(kind::null        ): printf("null");break;
-    case(kind::undefined   ): printf("undefined");break;
-    case(kind::data        ): printf("%lld(data)",m_data);break;
-    case(kind::null_pointer): printf("null_pointer");break;
-    case(kind::s8_pointer  ): printf("%lld(s8ptr)",m_data);break;
-    case(kind::u8_pointer  ): printf("%lld(u8ptr)",m_data);break;
-    case(kind::s16_pointer ): printf("%lld(s16ptr)",m_data);break;
-    case(kind::u16_pointer ): printf("%lld(u16ptr)",m_data);break;
-    case(kind::s32_pointer ): printf("%lld(s32ptr)",m_data);break;
-    case(kind::u32_pointer ): printf("%lld(u32ptr)",m_data);break;
-    case(kind::s64_pointer ): printf("%lld(s64ptr)",m_data);break;
-    case(kind::u64_pointer ): printf("%lld(u64ptr)",m_data);break;
-    case(kind::pointer     ): printf("%lld(ptr)",m_data);break;
-      }
-  }
+  void  print() const noexcept;
 
 };
 
@@ -133,20 +77,20 @@ public:
   operand(      operand&&  rhs) noexcept{assign(std::move(rhs));}
   operand(std::string_view  sv) noexcept{assign(sv);}
   operand(int64_t  i) noexcept{assign(i);}
-  operand(value  v) noexcept{assign(v);}
+  operand(value&&  v) noexcept{assign(std::move(v));}
  ~operand(){clear();}
 
   operand&  operator=(const operand&   rhs) noexcept{return assign(rhs);}
   operand&  operator=(      operand&&  rhs) noexcept{return assign(std::move(rhs));}
   operand&  operator=(std::string_view  sv) noexcept{return assign(sv);}
   operand&  operator=(int64_t  i) noexcept{return assign(i);}
-  operand&  operator=(value  v) noexcept{return assign(v);}
+  operand&  operator=(value&&  v) noexcept{return assign(std::move(v));}
 
   operand&  assign(const operand&   rhs) noexcept;
   operand&  assign(      operand&&  rhs) noexcept;
   operand&  assign(std::string_view  sv) noexcept;
   operand&  assign(int64_t  i) noexcept;
-  operand&  assign(value  v) noexcept;
+  operand&  assign(value&&  v) noexcept;
 
   void  clear() noexcept;
 
@@ -164,32 +108,12 @@ public:
 
 
 class
-memory
-{
-  std::vector<uint8_t>  m_content;
-
-public:
-  void  resize(int  size) noexcept{m_content.resize(size);}
-
-  uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(&m_content[address   ]);}
-  uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(&m_content[address&~1]);}
-  uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(&m_content[address&~3]);}
-  uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(&m_content[address&~7]);}
-
-};
-
-
-class
 space
 {
-  memory&  m_memory;
-
   std::vector<std::unique_ptr<function>>  m_function_table;
 
 public:
-  space(memory&  mem) noexcept: m_memory(mem){}
-
-  memory&  get_memory() const noexcept{return m_memory;}
+  space() noexcept{}
 
   function&  create_function(std::string_view  name) noexcept;
 
@@ -210,14 +134,13 @@ variable
   uint32_t  m_count=0;
 
 public:
-  variable() noexcept{}
-  variable(std::string_view  lb, value  v=value::make_null()) noexcept: m_label(lb), m_value(v){}
+  variable(std::string_view  lb, value&&  v) noexcept: m_label(lb), m_value(std::move(v)){}
 
   const std::string&  get_label() const noexcept{return m_label;}
 
   const value&  get_value() const noexcept{return m_value;}
 
-  const value&  update_value(value  v) noexcept{  m_value = v;  ++m_count;  return m_value;}
+  const value&  update_value(value&&  v) noexcept{  m_value = std::move(v);  ++m_count;  return m_value;}
 
   uint32_t  get_count() const noexcept{return m_count;}
 
@@ -635,13 +558,13 @@ function
 {
   space*  m_space=nullptr;
 
+  const typesystem::type_info*  m_type_info=nullptr;
+
   std::string  m_name;
 
   variable_initializer_list  m_variable_initializer_list;
 
   std::vector<codeline>   m_codelines;
-
-  std::vector<std::string>   m_parameter_list;
 
   std::vector<entry_point>   m_entry_point_list;
 
@@ -654,7 +577,8 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
 
-  const std::vector<std::string>&  get_parameter_list() const noexcept{return m_parameter_list;}
+  const typesystem::type_info&  get_signature() const noexcept{return *m_type_info;}
+
   const variable_initializer_list&  get_variable_initializer_list() const noexcept{return m_variable_initializer_list;}
 
   function&  append_store_instruction(operand  dst, operand  src) noexcept;
@@ -662,7 +586,6 @@ public:
   function&  append_return_instruction(operand  o) noexcept;
   function&  append_operation(operation  op) noexcept;
 
-  function&  append_parameter(std::string_view  lb) noexcept;
   function&  append_variable_initializer(std::string_view  lb, operand&&  o) noexcept;
   function&  append_entry_point(std::string_view  lb) noexcept;
 

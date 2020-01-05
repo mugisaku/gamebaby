@@ -58,7 +58,7 @@ make_id(const type_info&  ret, const parameter_list&  parals) noexcept
     {
       char  buf[256];
 
-      snprintf(buf,sizeof(buf),"%s",para.get_type_info().get_id().data());
+      snprintf(buf,sizeof(buf),"%s",para->get_id().data());
 
       s += buf;
     }
@@ -296,7 +296,7 @@ print() const noexcept
 
               for(auto&  para: m_data.parals)
               {
-                para.get_type_info().print();
+                para->print();
 
                 printf(",");
               }

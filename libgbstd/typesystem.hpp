@@ -50,41 +50,24 @@ public:
 
 
 class
-parameter
-{
-  type_info&  m_type_info;
-
-  std::string  m_name;
-
-public:
-  parameter(type_info&  ti, std::string_view  name) noexcept:
-  m_type_info(ti), m_name(name){}
-
-  type_info&  get_type_info() const noexcept{return m_type_info;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-};
-
-
-class
 parameter_list
 {
-  std::vector<parameter>  m_container;
+  std::vector<type_info*>  m_container;
 
   std::string  m_id;
 
 public:
-  parameter_list(std::initializer_list<std::pair<type_info&,std::string_view>>  ls={}) noexcept;
+  parameter_list(std::initializer_list<type_info*>  ls={}) noexcept;
 
-  parameter_list&  push(type_info&  ti, std::string_view  name) noexcept;
-
-  const type_info*  find(std::string_view  name) const noexcept;
+  parameter_list&  push(type_info&  ti) noexcept;
 
   const std::string&  get_id() const noexcept{return m_id;}
 
-  const parameter*  begin() const noexcept{return m_container.data();}
-  const parameter*    end() const noexcept{return m_container.data()+m_container.size();}
+  type_info**  begin() noexcept{return m_container.data();}
+  type_info**    end() noexcept{return m_container.data()+m_container.size();}
+
+  type_info* const*  begin() const noexcept{return m_container.data();}
+  type_info* const*    end() const noexcept{return m_container.data()+m_container.size();}
 
   int  get_number_of_elements() const noexcept{return m_container.size();}
 
@@ -271,6 +254,7 @@ type_info
 public:
   static constexpr int  get_pointer_size() noexcept{return 4;}
 
+  type_info()  noexcept: m_kind(kind::null), m_id("null"){}
   type_info(integer_type_info  ti)  noexcept: m_kind(kind::integer), m_id(make_id(ti)){new(&m_data) integer_type_info(ti);}
   type_info(struct_type_info&&  ti) noexcept: m_kind(kind::struct_), m_id(ti.get_id()){new(&m_data) struct_type_info(std::move(ti));}
   type_info(union_type_info&&  ti)  noexcept: m_kind(kind::union_), m_id(ti.get_id()){new(&m_data) union_type_info(std::move(ti));}
@@ -361,6 +345,7 @@ public:
 class
 type_collection
 {
+  type_info  m_null_type_info;
   type_info  m_s8_type_info;
   type_info  m_u8_type_info;
   type_info  m_s16_type_info;

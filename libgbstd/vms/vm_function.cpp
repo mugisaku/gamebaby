@@ -62,16 +62,6 @@ append_variable_initializer(std::string_view  lb, operand&&  o) noexcept
 
 function&
 function::
-append_parameter(std::string_view  lb) noexcept
-{
-  m_parameter_list.emplace_back(lb);
-
-  return *this;
-}
-
-
-function&
-function::
 append_entry_point(std::string_view  lb) noexcept
 {
   m_entry_point_list.emplace_back(lb,m_codelines.size());
@@ -123,15 +113,9 @@ void
 function::
 print() const noexcept
 {
-  printf("function %s(",m_name.data());
+  m_type_info->print();  
 
-    for(auto&  p: m_parameter_list)
-    {
-      printf("%s, ",p.data());
-    }
-
-
-  printf(")\n{\n");
+  printf("{\n");
 
     for(auto&  cl: m_codelines)
     {

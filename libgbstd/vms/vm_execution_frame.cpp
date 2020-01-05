@@ -14,17 +14,12 @@ m_function(fn)
 {
   auto  frm = parent? *parent:*this;
 
+/*
     for(auto&  p: m_function.get_parameter_list())
     {
         if(argc--)
         {
           m_variable_list.emplace_back(p,args++->evaluate(frm));
-/*
-
-          m_variable_list.back().print();
-
-          printf(" ");
-*/
         }
 
       else
@@ -32,7 +27,7 @@ m_function(fn)
           break;
         }
     }
-
+*/
 
     for(auto&  vinit: m_function.get_variable_initializer_list())
     {
@@ -51,7 +46,7 @@ push_variable(std::string_view  lb, value  v) noexcept
 
     if(!var)
     {
-      var = &m_variable_list.emplace_back(lb);
+//      var = &m_variable_list.emplace_back(lb);
     }
 
 
@@ -99,6 +94,7 @@ void
 execution_frame::
 store(value  dst, value  src) noexcept
 {
+/*
     if(src.is_data())
     {
       auto&  mem = m_function.get_space().get_memory();
@@ -153,6 +149,7 @@ store(value  dst, value  src) noexcept
           *mem.get_ptr64(dst_p) = src_d;
         }
     }
+*/
 }
 
 
@@ -174,7 +171,7 @@ step(const codeline&  codeln) noexcept
       auto&  br = codeln.get_branch_instruction();
 
       auto  v = br.get_condition().evaluate(*this);
-
+/*
       auto&  lb = v.get_data()? br.get_nonzero_label():br.get_zero_label();
 
       auto  ep = m_function.find_entry_point(lb);
@@ -183,6 +180,7 @@ step(const codeline&  codeln) noexcept
         {
           m_pc = ep->get_value();
         }
+*/
     }
 
   else
