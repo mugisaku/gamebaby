@@ -8,6 +8,7 @@ namespace gbstd{
 
 
 
+/*
 operation&
 operation::
 assign(const operation&   rhs) noexcept
@@ -16,8 +17,8 @@ assign(const operation&   rhs) noexcept
     {
       clear();
 
-      m_kind  = rhs.m_kind;
-      m_label = rhs.m_label;
+      m_kind     = rhs.m_kind;
+      m_variable = rhs.m_variable;
 
         switch(m_kind)
         {
@@ -30,6 +31,7 @@ assign(const operation&   rhs) noexcept
 
   return *this;
 }
+*/
 
 
 operation&
@@ -38,10 +40,11 @@ assign(operation&&  rhs) noexcept
 {
     if(this != &rhs)
     {
-      clear();
+      unset_content();
 
-      std::swap(m_kind ,rhs.m_kind );
-      std::swap(m_label,rhs.m_label);
+      std::swap(m_kind     ,rhs.m_kind     );
+      std::swap(m_type_info,rhs.m_type_info);
+      std::swap(m_label    ,rhs.m_label    );
 
         switch(m_kind)
         {
@@ -58,44 +61,28 @@ assign(operation&&  rhs) noexcept
 
 operation&
 operation::
-assign(std::string_view  lb, unary_operation&&  un) noexcept
+assign(unary_operation&&  un) noexcept
 {
-  set_label(lb);
-
   return set_content(std::move(un));
 }
 
 
 operation&
 operation::
-assign(std::string_view  lb, binary_operation&&  bin) noexcept
+assign(binary_operation&&  bin) noexcept
 {
-  set_label(lb);
-
   return set_content(std::move(bin));
 }
 
 
 operation&
 operation::
-assign(std::string_view  lb, call_operation&&  cal) noexcept
+assign(call_operation&&  cal) noexcept
 {
-  set_label(lb);
-
   return set_content(std::move(cal));
 }
 
 
-
-
-void
-operation::
-clear() noexcept
-{
-  m_label.clear();
-
-  unset_content();
-}
 
 
 void
@@ -158,21 +145,17 @@ set_content(call_operation&&  cal) noexcept
 
 value
 operation::
-evaluate(execution_frame&  frm) const noexcept
+operator()(execution_frame&  frm) const noexcept
 {
-  value  v;
-
     switch(m_kind)
     {
-  case(kind::unary ): v = m_data.un.evaluate(frm); break;
-  case(kind::binary): v = m_data.bin.evaluate(frm);break;
-  case(kind::call  ): v = m_data.cal.evaluate(frm);break;
+  case(kind::unary ): return m_data.un( frm);break;
+  case(kind::binary): return m_data.bin(frm);break;
+  case(kind::call  ): return m_data.cal(frm);break;
     }
 
 
-  auto&  var = frm.push_variable(m_label,std::move(v));
-
-  return var.get_value();
+  return value();
 }
 
 
@@ -180,7 +163,9 @@ void
 operation::
 print() const noexcept
 {
-  printf("%%%s = ",m_label.data());
+  m_type_info->print();
+
+  printf("  %%%s = ",m_label.data());
 
     switch(m_kind)
     {

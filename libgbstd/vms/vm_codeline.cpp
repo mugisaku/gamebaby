@@ -8,6 +8,7 @@ namespace gbstd{
 
 
 
+/*
 codeline&
 codeline::
 assign(const codeline&   rhs) noexcept
@@ -32,6 +33,7 @@ assign(const codeline&   rhs) noexcept
 
   return *this;
 }
+*/
 
 
 codeline&

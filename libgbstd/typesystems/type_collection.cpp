@@ -8,30 +8,22 @@ namespace typesystem{
 
 
 
+type_info&
 type_collection::
-type_collection() noexcept:
-m_s8_type_info(integer_type_info( true,8)),
-m_u8_type_info(integer_type_info(false,8)),
-m_s16_type_info(integer_type_info( true,16)),
-m_u16_type_info(integer_type_info(false,16)),
-m_s32_type_info(integer_type_info( true,32)),
-m_u32_type_info(integer_type_info(false,32)),
-m_s64_type_info(integer_type_info( true,64)),
-m_u64_type_info(integer_type_info(false,64))
+operator[](std::string_view  name) noexcept
 {
-  push("nullptr_t",&m_null_type_info);
-  push("int8_t",&m_s8_type_info);
-  push("uint8_t",&m_u8_type_info);
-  push("int16_t",&m_s16_type_info);
-  push("uint16_t",&m_u16_type_info);
-  push("int32_t",&m_s32_type_info);
-  push("uint32_t",&m_u32_type_info);
-  push("int64_t",&m_s64_type_info);
-  push("uint64_t",&m_u64_type_info);
+  auto  ti = find(name);
 
-  push("int",&m_s32_type_info);
-  push("uint",&m_u32_type_info);
+    if(ti)
+    {
+      push(name,new type_info(*this));
+    }
+
+
+  return *ti;
 }
+
+
 
 
 void
@@ -56,6 +48,29 @@ find(std::string_view  name) const noexcept
 
 
   return nullptr;
+}
+
+
+void
+type_collection::
+push_c_like_types() noexcept
+{
+  push(     "void",new type_info(*this,void_type_info{}));
+  push("nullptr_t",new type_info(*this,null_pointer_type_info{}));
+  push("geneptr_t",new type_info(*this,generic_pointer_type_info{}));
+  push(     "bool",new type_info(*this,boolean_type_info{}));
+
+  push(  "int8_t",new type_info(*this,integer_type_info( true, 8)));
+  push( "uint8_t",new type_info(*this,integer_type_info(false, 8)));
+  push( "int16_t",new type_info(*this,integer_type_info( true,16)));
+  push("uint16_t",new type_info(*this,integer_type_info(false,16)));
+  push( "int32_t",new type_info(*this,integer_type_info( true,32)));
+  push("uint32_t",new type_info(*this,integer_type_info(false,32)));
+  push( "int64_t",new type_info(*this,integer_type_info( true,64)));
+  push("uint64_t",new type_info(*this,integer_type_info(false,64)));
+
+  make_alias("int32_t","int");
+  make_alias("uint32_t","uint");
 }
 
 
@@ -84,7 +99,7 @@ type_info&
 type_collection::
 create_struct(std::string_view  name) noexcept
 {
-  auto  ti = new type_info(struct_type_info());
+  auto  ti = new type_info(*this,struct_type_info());
 
   push(name,ti);
 
@@ -96,7 +111,7 @@ type_info&
 type_collection::
 create_union(std::string_view  name) noexcept
 {
-  auto  ti = new type_info(union_type_info());
+  auto  ti = new type_info(*this,union_type_info());
 
   push(name,ti);
 
@@ -108,7 +123,7 @@ type_info&
 type_collection::
 create_enum(std::string_view  name) noexcept
 {
-  auto  ti = new type_info(enum_type_info());
+  auto  ti = new type_info(*this,enum_type_info());
 
   push(name,ti);
 

@@ -22,7 +22,6 @@ assign(const operand&   rhs) noexcept
         {
       case(kind::operation_label): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
-      case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
 
@@ -45,7 +44,6 @@ assign(operand&&  rhs) noexcept
         {
       case(kind::operation_label): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
-      case(kind::value          ): new(&m_data) value(rhs.m_data.v);break;
         }
     }
 
@@ -82,20 +80,6 @@ assign(int64_t  i) noexcept
 }
 
 
-operand&
-operand::
-assign(value&&  v) noexcept
-{
-  clear();
-
-  new(&m_data) value(std::move(v));
-
-  m_kind = kind::value;
-
-  return *this;
-}
-
-
 void
 operand::
 clear() noexcept
@@ -105,7 +89,6 @@ clear() noexcept
   case(kind::null): break;
   case(kind::operation_label): m_data.s.~basic_string();break;
   case(kind::integer_literal): /*m_data.i.~int()*/;break;
-  case(kind::value): m_data.v.~value();break;
     }
 
 
@@ -117,15 +100,11 @@ value
 operand::
 evaluate(execution_frame&  frm) const noexcept
 {
-    if(is_value())
-    {
-      return m_data.v;
-    }
+  auto&  tc = frm.get_function().get_space().get_type_collection();
 
-  else
     if(is_integer_literal())
     {
-//      return value::make_data(m_data.i);
+      return value(tc["int"],m_data.i);
     }
 
   else
@@ -135,7 +114,7 @@ evaluate(execution_frame&  frm) const noexcept
 
         if(var)
         {
-          return var->get_value();
+          return value(var->get_value());
         }
 
 
@@ -155,8 +134,7 @@ print() const noexcept
     {
   case(kind::null): break;
   case(kind::operation_label): printf("%s",m_data.s.data());break;
-  case(kind::integer_literal): printf("%lld",m_data.i);break;
-  case(kind::value): m_data.v.print();break;
+  case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
     }
 }
 

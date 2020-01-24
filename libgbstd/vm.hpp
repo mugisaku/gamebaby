@@ -4,6 +4,7 @@
 
 #include<cstdio>
 #include<cstdint>
+#include<cinttypes>
 #include<cstdlib>
 #include<memory>
 #include<string>
@@ -29,22 +30,71 @@ class space;
 
 
 class
-value
+memory_frame
 {
-  const typesystem::type_info*  m_type_info=nullptr;
+  uint8_t*  m_pointer=nullptr;
 
-  std::vector<uint8_t>  m_memory;
+  int  m_length=0;
 
 public:
-  value() noexcept{}
-  value(const typesystem::type_info&  ti) noexcept: m_type_info(&ti){m_memory.resize(ti.get_size());}
+  constexpr memory_frame(uint8_t*  ptr=nullptr, int  len=0) noexcept:
+  m_pointer(ptr), m_length(len){}
 
-  const typesystem::type_info&  get_type_info() const noexcept{return *m_type_info;}
+  constexpr memory_frame(const memory_frame&  base, int  offset) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
 
-  uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(&m_memory[address   ]);}
-  uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(&m_memory[address&~1]);}
-  uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(&m_memory[address&~3]);}
-  uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(&m_memory[address&~7]);}
+  constexpr memory_frame(const memory_frame&  base, int  offset, int  length) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(length){}
+
+  constexpr uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
+
+  constexpr int  get_length() const noexcept{return m_length;}
+
+  constexpr void*  get_pointer() const noexcept{return m_pointer;}
+
+  constexpr uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
+  constexpr uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
+  constexpr uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
+  constexpr uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
+
+};
+
+
+class
+value
+{
+  struct data;
+
+  data*  m_data=nullptr;
+
+  void  unrefer() noexcept;
+
+public:
+  value() noexcept;
+  value(const value&   rhs) noexcept{assign(rhs);}
+  value(      value&&  rhs) noexcept{assign(std::move(rhs));}
+  value(const typesystem::type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
+  value(const typesystem::type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
+ ~value(){unrefer();}
+
+  value&  operator=(const value&   rhs) noexcept{return assign(rhs);}
+  value&  operator=(      value&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  value&  assign(const value&   rhs) noexcept;
+  value&  assign(      value&&  rhs) noexcept;
+  value&  assign(const typesystem::type_info&  ti,  int64_t  i) noexcept;
+  value&  assign(const typesystem::type_info&  ti, uint64_t  u) noexcept;
+
+  const typesystem::type_info&  get_type_info() const noexcept;
+
+  int64_t&   get_si() const noexcept;
+  uint64_t&  get_ui() const noexcept;
+
+  memory_frame  get_memory_frame() const noexcept;
+
+  bool  is_integer() const noexcept;
+  bool  is_boolean() const noexcept;
+  bool  is_function() const noexcept;
 
   void  print() const noexcept;
 
@@ -57,13 +107,11 @@ operand
   enum class kind{
     null,
     operation_label,
-    value,
     integer_literal,
   } m_kind=kind::null;
 
   union data{
     std::string  s;
-    value        v;
     int64_t      i;
 
    data() noexcept{}
@@ -77,26 +125,22 @@ public:
   operand(      operand&&  rhs) noexcept{assign(std::move(rhs));}
   operand(std::string_view  sv) noexcept{assign(sv);}
   operand(int64_t  i) noexcept{assign(i);}
-  operand(value&&  v) noexcept{assign(std::move(v));}
  ~operand(){clear();}
 
   operand&  operator=(const operand&   rhs) noexcept{return assign(rhs);}
   operand&  operator=(      operand&&  rhs) noexcept{return assign(std::move(rhs));}
   operand&  operator=(std::string_view  sv) noexcept{return assign(sv);}
   operand&  operator=(int64_t  i) noexcept{return assign(i);}
-  operand&  operator=(value&&  v) noexcept{return assign(std::move(v));}
 
   operand&  assign(const operand&   rhs) noexcept;
   operand&  assign(      operand&&  rhs) noexcept;
   operand&  assign(std::string_view  sv) noexcept;
   operand&  assign(int64_t  i) noexcept;
-  operand&  assign(value&&  v) noexcept;
 
   void  clear() noexcept;
 
   bool  is_operation_label() const noexcept{return m_kind == kind::operation_label;}
   bool  is_integer_literal() const noexcept{return m_kind == kind::integer_literal;}
-  bool  is_value()           const noexcept{return m_kind == kind::value;}
 
   value  evaluate(execution_frame&  frm) const noexcept;
 
@@ -110,10 +154,14 @@ public:
 class
 space
 {
+  typesystem::type_collection  m_type_collection;
+
   std::vector<std::unique_ptr<function>>  m_function_table;
 
 public:
   space() noexcept{}
+
+  typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
 
   function&  create_function(std::string_view  name) noexcept;
 
@@ -131,18 +179,12 @@ variable
 
   value  m_value;
 
-  uint32_t  m_count=0;
-
 public:
-  variable(std::string_view  lb, value&&  v) noexcept: m_label(lb), m_value(std::move(v)){}
+  variable(std::string_view  lb="") noexcept: m_label(lb){}
 
   const std::string&  get_label() const noexcept{return m_label;}
 
-  const value&  get_value() const noexcept{return m_value;}
-
-  const value&  update_value(value&&  v) noexcept{  m_value = std::move(v);  ++m_count;  return m_value;}
-
-  uint32_t  get_count() const noexcept{return m_count;}
+  value&  get_value() noexcept{return m_value;}
 
   void  print() const noexcept{  printf("%s ",m_label.data());  m_value.print();}
 
@@ -154,7 +196,7 @@ execution_frame
 {
   const function&  m_function;
 
-  std::vector<variable>  m_variable_list;
+  std::vector<std::unique_ptr<variable>>  m_variable_list;
 
   uint32_t  m_pc=0;
 
@@ -166,11 +208,11 @@ execution_frame
   void  step(const codeline&  codeln) noexcept;
 
 public:
-  execution_frame(const function&  fn, execution_frame*  parent=nullptr, int  argc=0, const operand*  args=nullptr) noexcept;
+  execution_frame(const function&  fn, execution_frame*  parent=nullptr, int  argc=0, const variable*  args=nullptr) noexcept;
 
   const function&  get_function() const noexcept{return m_function;}
 
-  const variable&  push_variable(std::string_view  lb, value  v) noexcept;
+  variable&  create_variable(std::string_view  lb) noexcept;
 
         variable*  find_variable(std::string_view  lb)       noexcept;
   const variable*  find_variable(std::string_view  lb) const noexcept;
@@ -216,15 +258,13 @@ branch_instruction
 {
   operand  m_condition;
 
-  std::string  m_zero_label;
-  std::string  m_nonzero_label;
+  std::string  m_label;
 
 public:
-  branch_instruction(operand&&  cond, std::string_view  z, std::string_view  nz) noexcept:
-  m_condition(std::move(cond)), m_zero_label(z), m_nonzero_label(nz){}
+  branch_instruction(operand&&  cond, std::string_view  lb) noexcept:
+  m_condition(std::move(cond)), m_label(lb){}
 
-  const std::string&  get_zero_label()    const noexcept{return m_zero_label;}
-  const std::string&  get_nonzero_label() const noexcept{return m_nonzero_label;}
+  const std::string&  get_label() const noexcept{return m_label;}
 
   const operand&  get_condition() const noexcept{return m_condition;}
 
@@ -235,7 +275,7 @@ public:
 
     m_condition.print();
 
-    printf(" %s %s",m_nonzero_label.data(),m_zero_label.data());
+    printf(" %s",m_label.data());
   }
 
 };
@@ -268,7 +308,6 @@ unary_operation
 {
   enum class kind{
     null,
-    neg,
     bit_not,
     logical_not,
     get_size,
@@ -283,11 +322,10 @@ unary_operation
   m_kind(k), m_operand(std::move(o)){}
 
 public:
-  value  evaluate(execution_frame&  frm) const noexcept;
+  value  operator()(execution_frame&  frm) const noexcept;
 
   void  print() const noexcept;
 
-  static unary_operation  make_neg(        operand  o) noexcept{return {kind::neg        ,std::move(o)};}
   static unary_operation  make_bit_not(    operand  o) noexcept{return {kind::bit_not    ,std::move(o)};}
   static unary_operation  make_logical_not(operand  o) noexcept{return {kind::logical_not,std::move(o)};}
 
@@ -327,7 +365,7 @@ binary_operation
   m_kind(k), m_left(std::move(l)), m_right(std::move(r)){}
 
 public:
-  value  evaluate(execution_frame&  frm) const noexcept;
+  value  operator()(execution_frame&  frm) const noexcept;
 
   void  print() const noexcept;
 
@@ -366,7 +404,7 @@ public:
   call_operation(std::string_view  fn_name, std::initializer_list<operand>  args) noexcept:
   m_function_name(fn_name), m_arguments(args){}
 
-  value  evaluate(execution_frame&  frm) const noexcept;
+  value  operator()(execution_frame&  frm) const noexcept;
 
   void  print() const noexcept;
 
@@ -395,35 +433,37 @@ operation
   } m_data;
 
 
+  const typesystem::type_info*  m_type_info=nullptr;
+
   std::string  m_label;
 
 public:
-  operation() noexcept{}
-  operation(std::string_view  lb, unary_operation&&     un) noexcept{assign(lb,std::move( un));}
-  operation(std::string_view  lb, binary_operation&&   bin) noexcept{assign(lb,std::move(bin));}
-  operation(std::string_view  lb, call_operation&&     cal) noexcept{assign(lb,std::move(cal));}
-  operation(const operation&   rhs) noexcept{assign(rhs);}
+  operation(const typesystem::type_info&  ti, std::string_view  lb) noexcept: m_type_info(&ti), m_label(lb){}
+  operation(const typesystem::type_info&  ti, std::string_view  lb, unary_operation&&     un) noexcept: m_type_info(&ti), m_label(lb){assign(std::move( un));}
+  operation(const typesystem::type_info&  ti, std::string_view  lb, binary_operation&&   bin) noexcept: m_type_info(&ti), m_label(lb){assign(std::move(bin));}
+  operation(const typesystem::type_info&  ti, std::string_view  lb, call_operation&&     cal) noexcept: m_type_info(&ti), m_label(lb){assign(std::move(cal));}
+  operation(const operation&   rhs) noexcept=delete;
   operation(      operation&&  rhs) noexcept{assign(std::move(rhs));}
- ~operation(){clear();}
+ ~operation(){unset_content();}
 
-  operation&  operator=(const operation&   rhs) noexcept{return assign(rhs);}
+  operation&  operator=(const operation&   rhs) noexcept=delete;
   operation&  operator=(      operation&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  operation&  assign(const operation&   rhs) noexcept;
+  operation&  assign(const operation&   rhs) noexcept=delete;
   operation&  assign(      operation&&  rhs) noexcept;
-  operation&  assign(std::string_view  lb, unary_operation&&     un) noexcept;
-  operation&  assign(std::string_view  lb, binary_operation&&   bin) noexcept;
-  operation&  assign(std::string_view  lb, call_operation&&     cal) noexcept;
+  operation&  assign(unary_operation&&     un) noexcept;
+  operation&  assign(binary_operation&&   bin) noexcept;
+  operation&  assign(call_operation&&     cal) noexcept;
 
-  void  clear() noexcept;
   void  unset_content() noexcept;
 
   operation&  set_content(unary_operation&&     un) noexcept;
   operation&  set_content(binary_operation&&   bin) noexcept;
   operation&  set_content(call_operation&&     cal) noexcept;
 
-  operation&          set_label(std::string_view  lb)       noexcept{       m_label = lb;  return *this;}
-  const std::string&  get_label(                    ) const noexcept{return m_label                    ;}
+  const typesystem::type_info&  get_type_info() const noexcept{return *m_type_info;}
+
+  const std::string&  get_label() const noexcept{return m_label;}
 
   const unary_operation&   get_unary()  const noexcept{return m_data.un;}
   const binary_operation&  get_binary() const noexcept{return m_data.bin;}
@@ -433,7 +473,7 @@ public:
   bool  is_binary() const noexcept{return m_kind == kind::binary;}
   bool  is_call()   const noexcept{return m_kind == kind::call;}
 
-  value  evaluate(execution_frame&  frm) const noexcept;
+  value  operator()(execution_frame&  frm) const noexcept;
 
   void  print() const noexcept;
 
@@ -467,7 +507,7 @@ codeline
 public:
   codeline() noexcept{}
   codeline(function&  fn) noexcept: m_function(&fn){}
-  codeline(const codeline&   rhs) noexcept{assign(rhs);}
+  codeline(const codeline&   rhs) noexcept=delete;
   codeline(      codeline&&  rhs) noexcept{assign(std::move(rhs));}
   codeline(function&  fn, store_instruction&&   st) noexcept: m_function(&fn){assign(std::move(st));}
   codeline(function&  fn, branch_instruction&&  br) noexcept: m_function(&fn){assign(std::move(br));}
@@ -475,14 +515,14 @@ public:
   codeline(function&  fn, operation&&            op) noexcept: m_function(&fn){assign(std::move(op));}
  ~codeline(){clear();}
 
-  codeline&  operator=(const codeline&   rhs) noexcept{return assign(rhs);}
+  codeline&  operator=(const codeline&   rhs) noexcept=delete;
   codeline&  operator=(      codeline&&  rhs) noexcept{return assign(std::move(rhs));}
   codeline&  operator=(store_instruction&&   st) noexcept{return assign(std::move(st));}
   codeline&  operator=(branch_instruction&&  br) noexcept{return assign(std::move(br));}
   codeline&  operator=(return_instruction&&  ret) noexcept{return assign(std::move(ret));}
   codeline&  operator=(operation&&            op) noexcept{return assign(std::move(op));}
 
-  codeline&  assign(const codeline&   rhs) noexcept;
+//  codeline&  assign(const codeline&   rhs) noexcept;
   codeline&  assign(      codeline&&  rhs) noexcept;
   codeline&  assign(store_instruction&&   st) noexcept;
   codeline&  assign(branch_instruction&&  br) noexcept;
@@ -545,7 +585,7 @@ public:
 
   const std::string&  get_label() const noexcept{return m_label;}
 
-  value  get_value(execution_frame&  frm) const noexcept{return m_operand.evaluate(frm);}
+  const operand&  get_operand() const noexcept{return m_operand;}
 
 };
 
@@ -582,7 +622,7 @@ public:
   const variable_initializer_list&  get_variable_initializer_list() const noexcept{return m_variable_initializer_list;}
 
   function&  append_store_instruction(operand  dst, operand  src) noexcept;
-  function&  append_branch_instruction(operand  cond, std::string_view  nz, std::string_view  z) noexcept;
+  function&  append_branch_instruction(operand  cond, std::string_view  lb) noexcept;
   function&  append_return_instruction(operand  o) noexcept;
   function&  append_operation(operation  op) noexcept;
 

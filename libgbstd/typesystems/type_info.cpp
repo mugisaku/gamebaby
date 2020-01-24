@@ -187,11 +187,15 @@ get_size() const noexcept
 {
     switch(m_kind)
     {
+  case(kind::boolean):
+      return m_collection.get_boolean_size();
+      break;
+  case(kind::null_pointer):
+  case(kind::generic_pointer):
   case(kind::pointer):
   case(kind::reference):
   case(kind::function):
-  case(kind::enum_):
-      return get_pointer_size();
+      return m_collection.get_pointer_size();
       break;
   case(kind::integer):
       return m_data.int_ti.get_bitwidth()/8;
@@ -199,12 +203,17 @@ get_size() const noexcept
   case(kind::array):
       return m_base_type_info->get_size()*m_number_of_elements;
       break;
+  case(kind::enum_):
+      return m_collection.get_enum_size();
+      break;
   case(kind::struct_):
       return m_data.str_ti.get_size();
       break;
   case(kind::union_):
       return m_data.uni_ti.get_size();
       break;
+  default:
+      return 0;
     }
 
 
@@ -218,13 +227,6 @@ get_align() const noexcept
 {
     switch(m_kind)
     {
-  case(kind::pointer):
-  case(kind::reference):
-  case(kind::function):
-  case(kind::enum_):
-  case(kind::integer):
-      return get_size();
-      break;
   case(kind::array):
       return m_base_type_info->get_align();
       break;
@@ -234,6 +236,8 @@ get_align() const noexcept
   case(kind::union_):
       return m_data.uni_ti.get_align();
       break;
+  default:
+      return get_size();
     }
 
 
@@ -273,7 +277,7 @@ print() const noexcept
           printf("*");
           break;
       case(kind::integer):
-          printf("%s",tip->m_id.data(),this);
+          printf("%s",tip->m_id.data());
           break;
       case(kind::reference):
           printf("&");
@@ -305,6 +309,7 @@ print() const noexcept
             printf(")");
           }
           break;
+      default:;
         }
     }
 

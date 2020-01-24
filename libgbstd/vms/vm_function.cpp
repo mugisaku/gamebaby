@@ -20,9 +20,9 @@ append_store_instruction(operand  dst, operand  src) noexcept
 
 function&
 function::
-append_branch_instruction(operand  cond, std::string_view  nz, std::string_view  z) noexcept
+append_branch_instruction(operand  cond, std::string_view  lb) noexcept
 {
-  m_codelines.emplace_back(*this,branch_instruction(std::move(cond),nz,z));
+  m_codelines.emplace_back(*this,branch_instruction(std::move(cond),lb));
 
   return *this;
 }

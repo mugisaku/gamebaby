@@ -75,6 +75,7 @@ set(SOURCES
   vms/vm_execution_frame.cpp
   vms/vm_function.cpp
   vms/vm_space.cpp
+  vms/vm_value.cpp
   vms/vm_operand.cpp
   vms/vm_operation.cpp
   vms/vm_unary_operation.cpp

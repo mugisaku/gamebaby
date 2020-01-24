@@ -10,7 +10,7 @@ namespace gbstd{
 
 value
 binary_operation::
-evaluate(execution_frame&  frm) const noexcept
+operator()(execution_frame&  frm) const noexcept
 {
   auto  lv = m_left.evaluate( frm);
   auto  rv = m_right.evaluate(frm);

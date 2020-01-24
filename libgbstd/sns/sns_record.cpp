@@ -40,7 +40,7 @@ void
 record::
 print() const noexcept
 {
-  printf("date = %lld(",m_timestamp.get_value());
+  printf("date = %" PRIu64 "(",m_timestamp.get_value());
 
   auto  s = to_string(m_timestamp);
 

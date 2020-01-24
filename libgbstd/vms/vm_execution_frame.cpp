@@ -9,48 +9,31 @@ namespace gbstd{
 
 
 execution_frame::
-execution_frame(const function&  fn, execution_frame*  parent, int  argc, const operand*  args) noexcept:
+execution_frame(const function&  fn, execution_frame*  parent, int  argc, const variable*  args) noexcept:
 m_function(fn)
 {
-  auto  frm = parent? *parent:*this;
-
-/*
-    for(auto&  p: m_function.get_parameter_list())
+    while(argc--)
     {
-        if(argc--)
-        {
-          m_variable_list.emplace_back(p,args++->evaluate(frm));
-        }
-
-      else
-        {
-          break;
-        }
-    }
-*/
-
-    for(auto&  vinit: m_function.get_variable_initializer_list())
-    {
-      m_variable_list.emplace_back(vinit.get_label(),vinit.get_value(*this));
+//      m_variable_list.emplace_back(args++);
     }
 }
 
 
 
 
-const variable&
+variable&
 execution_frame::
-push_variable(std::string_view  lb, value  v) noexcept
+create_variable(std::string_view  lb) noexcept
 {
   auto  var = find_variable(lb);
 
     if(!var)
     {
-//      var = &m_variable_list.emplace_back(lb);
+      m_variable_list.emplace_back(std::make_unique<variable>(lb));
+
+      var = m_variable_list.back().get();
     }
 
-
-  var->update_value(std::move(v));
 
   return *var;
 }
@@ -62,9 +45,9 @@ find_variable(std::string_view  lb) noexcept
 {
     for(auto&  v: m_variable_list)
     {
-        if(v.get_label() == lb)
+        if(v->get_label() == lb)
         {
-          return &v;
+          return v.get();
         }
     }
 
@@ -79,9 +62,9 @@ find_variable(std::string_view  lb) const noexcept
 {
     for(auto&  v: m_variable_list)
     {
-        if(v.get_label() == lb)
+        if(v->get_label() == lb)
         {
-          return &v;
+          return v.get();
         }
     }
 
@@ -161,8 +144,10 @@ step(const codeline&  codeln) noexcept
     {
       auto&  st = codeln.get_store_instruction();
 
-      store(st.get_destination().evaluate(*this),
-                 st.get_source().evaluate(*this));
+      value  dst_v = st.get_destination().evaluate(*this);
+      value  src_v = st.get_source().evaluate(*this);
+
+      store(dst_v,src_v);
     }
 
   else
@@ -170,17 +155,14 @@ step(const codeline&  codeln) noexcept
     {
       auto&  br = codeln.get_branch_instruction();
 
-      auto  v = br.get_condition().evaluate(*this);
-/*
-      auto&  lb = v.get_data()? br.get_nonzero_label():br.get_zero_label();
+      value  v = br.get_condition().evaluate(*this);
 
-      auto  ep = m_function.find_entry_point(lb);
+      auto  ep = m_function.find_entry_point(br.get_label());
 
         if(ep)
         {
           m_pc = ep->get_value();
         }
-*/
     }
 
   else
@@ -196,7 +178,14 @@ step(const codeline&  codeln) noexcept
   else
     if(codeln.is_operation())
     {
-      codeln.get_operation().evaluate(*this);
+      auto&  op = codeln.get_operation();
+
+      auto  var = find_variable(op.get_label());
+
+        if(var)
+        {
+          var->get_value() = op(*this);
+        }
     }
 }
 

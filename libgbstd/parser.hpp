@@ -4,6 +4,7 @@
 
 #include<cstddef>
 #include<cstdint>
+#include<cinttypes>
 #include<string>
 #include<vector>
 #include"libgbstd/utility.hpp"
