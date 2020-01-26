@@ -14,7 +14,19 @@ make_id(integer_type_info  ti) noexcept
 {
   char  buf[16];
 
-  snprintf(buf,sizeof(buf),"%c%d",ti.is_signed()? 's':'u',ti.get_bitwidth());
+  snprintf(buf,sizeof(buf),"s%d",ti.get_bitwidth());
+
+  return buf;
+}
+
+
+std::string
+type_info::
+make_id(unsigned_integer_type_info  ti) noexcept
+{
+  char  buf[16];
+
+  snprintf(buf,sizeof(buf),"u%d",ti.get_bitwidth());
 
   return buf;
 }
@@ -200,6 +212,9 @@ get_size() const noexcept
   case(kind::integer):
       return m_data.int_ti.get_bitwidth()/8;
       break;
+  case(kind::unsigned_integer):
+      return m_data.uint_ti.get_bitwidth()/8;
+      break;
   case(kind::array):
       return m_base_type_info->get_size()*m_number_of_elements;
       break;
@@ -277,6 +292,7 @@ print() const noexcept
           printf("*");
           break;
       case(kind::integer):
+      case(kind::unsigned_integer):
           printf("%s",tip->m_id.data());
           break;
       case(kind::reference):

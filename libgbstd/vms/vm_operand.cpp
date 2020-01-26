@@ -104,17 +104,19 @@ evaluate(execution_frame&  frm) const noexcept
 
     if(is_integer_literal())
     {
-      return value(tc["int"],m_data.i);
+      value  v(tc["int"]);
+
+      return v.update(m_data.i,unmute);
     }
 
   else
     if(is_operation_label())
     {
-      auto  var = frm.find_variable(m_data.s);
+      auto  var = frm.get_variable_table().find(m_data.s);
 
         if(var)
         {
-          return value(var->get_value());
+          return var->get_value();
         }
 
 

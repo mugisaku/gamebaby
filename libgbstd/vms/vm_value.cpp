@@ -16,13 +16,13 @@ data
 
   const typesystem::type_info*  m_type_info=nullptr;
 
+  mutability  m_mutability;
+
   union{
      int64_t  si;
     uint64_t  ui;
 
     uint8_t*  ptr;
-
-    const value*  val;
 
   } m_data;
 
@@ -95,7 +95,7 @@ assign(value&&  rhs) noexcept
 
 value&
 value::
-assign(const typesystem::type_info&  ti,  int64_t  i) noexcept
+assign(const typesystem::type_info&  ti) noexcept
 {
   unrefer();
 
@@ -103,23 +103,13 @@ assign(const typesystem::type_info&  ti,  int64_t  i) noexcept
 
   m_data->m_type_info = &ti;
 
-  m_data->m_data.si = i;
+  auto  sz = ti.get_size();
 
-  return *this;
-}
+    if(sz > sizeof(int64_t))
+    {
+      m_data->m_data.ptr = (uint8_t*)malloc(sz);
+    }
 
-
-value&
-value::
-assign(const typesystem::type_info&  ti, uint64_t  u) noexcept
-{
-  unrefer();
-
-  m_data = new data;
-
-  m_data->m_type_info = &ti;
-
-  m_data->m_data.ui = u;
 
   return *this;
 }
@@ -135,19 +125,159 @@ get_type_info() const noexcept
 }
 
 
-int64_t&
+int64_t
 value::
 get_si() const noexcept
 {
+  auto&  ti = get_type_info();
+
+    if(ti.is_integer())
+    {
+      return m_data->m_data.si;
+    }
+
+    if(ti.is_integer())
+    {
+      return m_data->m_data.si;
+    }
+
+
   return m_data->m_data.si;
 }
 
 
-uint64_t&
+uint64_t
 value::
 get_ui() const noexcept
 {
   return m_data->m_data.ui;
+}
+
+
+value
+value::
+update(int64_t  i, mutability  m) const noexcept
+{
+    if(m_data)
+    {
+        if(m)
+        {
+          m_data->m_mutability = mute;
+        }
+
+
+        if(m_data->m_reference_count == 1)
+        {
+          m_data->m_data.si = i;
+
+          return *this;
+        }
+
+      else
+        {
+          value  new_value(get_type_info());
+
+          new_value.m_data->m_data.si = i;
+
+          return std::move(new_value);
+        }
+    }
+
+
+  return value();
+}
+
+
+value
+value::
+update(uint64_t  u, mutability  m) const noexcept
+{
+    if(m_data)
+    {
+        if(m)
+        {
+          m_data->m_mutability = mute;
+        }
+
+
+        if(m_data->m_reference_count == 1)
+        {
+          m_data->m_data.ui = u;
+
+          return *this;
+        }
+
+      else
+        {
+          value  new_value(get_type_info());
+
+          new_value.m_data->m_data.ui = u;
+
+          return std::move(new_value);
+        }
+    }
+
+
+  return value();
+}
+
+
+value
+value::
+update(memory_view  mv, mutability  m) const noexcept
+{
+    if(m_data)
+    {
+        if(m)
+        {
+          m_data->m_mutability = mute;
+        }
+
+
+        if(m_data->m_reference_count == 1)
+        {
+          std::memcpy(m_data->m_data.ptr,mv.get_pointer(),mv.get_length());
+
+          return *this;
+        }
+
+      else
+        {
+          value  new_value(get_type_info());
+
+          std::memcpy(new_value.m_data->m_data.ptr,mv.get_pointer(),mv.get_length());
+
+          return std::move(new_value);
+        }
+    }
+
+
+  return value();
+}
+
+
+value
+value::
+clone() const noexcept
+{
+  auto&  ti = get_type_info();
+
+  value  v(ti);
+
+  auto  sz = ti.get_size();
+
+    if(sz > sizeof(int64_t))
+    {
+      std::memcpy(v.m_data->m_data.ptr,m_data->m_data.ptr,sz);
+    }
+
+  else
+    {
+      v.m_data->m_data.si = m_data->m_data.si;
+    }
+
+
+  return std::move(v);
 }
 
 
@@ -156,6 +286,14 @@ value::
 get_memory_frame() const noexcept
 {
   return {m_data->m_data.ptr,m_data->m_type_info->get_size()};
+}
+
+
+bool
+value::
+is_mutable() const noexcept
+{
+  return m_data->m_mutability;
 }
 
 

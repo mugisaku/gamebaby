@@ -35,14 +35,23 @@ class            void_type_info{};
 class
 integer_type_info
 {
-  bool  m_signed=false;
-
   int  m_bitwidth=0;
 
 public:
-  integer_type_info(bool  s, int  w) noexcept: m_signed(s), m_bitwidth(w){}
+  integer_type_info(int  w) noexcept: m_bitwidth(w){}
 
-  bool  is_signed() const noexcept{return m_signed;}
+  int  get_bitwidth() const noexcept{return m_bitwidth;}
+
+};
+
+
+class
+unsigned_integer_type_info
+{
+  int  m_bitwidth=0;
+
+public:
+  unsigned_integer_type_info(int  w) noexcept: m_bitwidth(w){}
 
   int  get_bitwidth() const noexcept{return m_bitwidth;}
 
@@ -227,6 +236,7 @@ type_info
     pointer,
     reference,
     integer,
+    unsigned_integer,
     function,
     struct_,
     union_,
@@ -234,7 +244,9 @@ type_info
   } m_kind=kind::null;
 
   union data{
-    integer_type_info  int_ti;
+             integer_type_info   int_ti;
+    unsigned_integer_type_info  uint_ti;
+
     struct_type_info   str_ti;
     union_type_info    uni_ti;
     enum_type_info     enu_ti;
@@ -256,7 +268,8 @@ type_info
   std::unique_ptr<type_info>    m_pointer_type_info;
   std::unique_ptr<type_info>  m_reference_type_info;
 
-  static std::string  make_id(integer_type_info  ti) noexcept;
+  static std::string  make_id(         integer_type_info  ti) noexcept;
+  static std::string  make_id(unsigned_integer_type_info  ti) noexcept;
   static std::string  make_id(const type_info&  base, pointer_type_info    ti) noexcept;
   static std::string  make_id(const type_info&  base, reference_type_info    ti) noexcept;
   static std::string  make_id(const type_info&  base, int  n) noexcept;
@@ -268,7 +281,8 @@ public:
   type_info(type_collection&  tc, boolean_type_info)         noexcept: m_collection(tc), m_kind(kind::boolean), m_id("bool"){}
   type_info(type_collection&  tc, null_pointer_type_info)    noexcept: m_collection(tc), m_kind(kind::null_pointer), m_id("nullptr"){}
   type_info(type_collection&  tc, generic_pointer_type_info) noexcept: m_collection(tc), m_kind(kind::generic_pointer), m_id("geneptr"){}
-  type_info(type_collection&  tc, integer_type_info  ti)  noexcept: m_collection(tc), m_kind(kind::integer), m_id(make_id(ti)){new(&m_data) integer_type_info(ti);}
+  type_info(type_collection&  tc,          integer_type_info  ti)  noexcept: m_collection(tc), m_kind(kind::integer), m_id(make_id(ti)){new(&m_data) integer_type_info(ti);}
+  type_info(type_collection&  tc, unsigned_integer_type_info  ti)  noexcept: m_collection(tc), m_kind(kind::unsigned_integer), m_id(make_id(ti)){new(&m_data) unsigned_integer_type_info(ti);}
   type_info(type_collection&  tc, struct_type_info&&  ti) noexcept: m_collection(tc), m_kind(kind::struct_), m_id(ti.get_id()){new(&m_data) struct_type_info(std::move(ti));}
   type_info(type_collection&  tc, union_type_info&&  ti)  noexcept: m_collection(tc), m_kind(kind::union_), m_id(ti.get_id()){new(&m_data) union_type_info(std::move(ti));}
   type_info(type_collection&  tc, enum_type_info&&  ti)   noexcept: m_collection(tc), m_kind(kind::enum_), m_id(ti.get_id()){new(&m_data) enum_type_info(std::move(ti));}
@@ -301,8 +315,8 @@ public:
   int  get_size() const noexcept;
   int  get_align() const noexcept;
 
-  integer_type_info&        get_integer_type() noexcept{return m_data.int_ti;}
-  integer_type_info const&  get_integer_type() const noexcept{return m_data.int_ti;}
+           integer_type_info const&           get_integer_type() const noexcept{return m_data.int_ti;}
+  unsigned_integer_type_info const&  get_unsigned_integer_type() const noexcept{return m_data.uint_ti;}
 
   struct_type_info&        get_struct_type() noexcept{return m_data.str_ti;}
   struct_type_info const&  get_struct_type() const noexcept{return m_data.str_ti;}
@@ -316,19 +330,20 @@ public:
   parameter_list&         get_parameter_list()       noexcept{return m_data.parals;}
   parameter_list const&   get_parameter_list() const noexcept{return m_data.parals;}
 
-  bool  is_null()            const noexcept{return m_kind == kind::null;}
-  bool  is_void()            const noexcept{return m_kind == kind::void_;}
-  bool  is_boolean()         const noexcept{return m_kind == kind::boolean;}
-  bool  is_null_pointer()    const noexcept{return m_kind == kind::null_pointer;}
-  bool  is_generic_pointer() const noexcept{return m_kind == kind::generic_pointer;}
-  bool  is_integer()         const noexcept{return m_kind == kind::integer;}
-  bool  is_pointer()         const noexcept{return m_kind == kind::pointer;}
-  bool  is_reference()       const noexcept{return m_kind == kind::reference;}
-  bool  is_array()           const noexcept{return m_kind == kind::array;}
-  bool  is_function()        const noexcept{return m_kind == kind::function;}
-  bool  is_struct()          const noexcept{return m_kind == kind::struct_;}
-  bool  is_enum()            const noexcept{return m_kind == kind::enum_;}
-  bool  is_union()           const noexcept{return m_kind == kind::union_;}
+  bool  is_null()             const noexcept{return m_kind == kind::null;}
+  bool  is_void()             const noexcept{return m_kind == kind::void_;}
+  bool  is_boolean()          const noexcept{return m_kind == kind::boolean;}
+  bool  is_null_pointer()     const noexcept{return m_kind == kind::null_pointer;}
+  bool  is_generic_pointer()  const noexcept{return m_kind == kind::generic_pointer;}
+  bool  is_integer()          const noexcept{return m_kind == kind::integer;}
+  bool  is_unsigned_integer() const noexcept{return m_kind == kind::unsigned_integer;}
+  bool  is_pointer()          const noexcept{return m_kind == kind::pointer;}
+  bool  is_reference()        const noexcept{return m_kind == kind::reference;}
+  bool  is_array()            const noexcept{return m_kind == kind::array;}
+  bool  is_function()         const noexcept{return m_kind == kind::function;}
+  bool  is_struct()           const noexcept{return m_kind == kind::struct_;}
+  bool  is_enum()             const noexcept{return m_kind == kind::enum_;}
+  bool  is_union()            const noexcept{return m_kind == kind::union_;}
 
   type_info&      make_array_type(int  n) noexcept;
   type_info&  make_reference_type() noexcept;

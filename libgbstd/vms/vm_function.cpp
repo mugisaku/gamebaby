@@ -52,9 +52,19 @@ append_operation(operation  op) noexcept
 
 function&
 function::
-append_variable_initializer(std::string_view  lb, operand&&  o) noexcept
+append_declaration(std::string_view  lb) noexcept
 {
-  m_variable_initializer_list.emplace_back(lb,std::move(o));
+  m_declaration_list.emplace_back(lb);
+
+  return *this;
+}
+
+
+function&
+function::
+append_declaration(const typesystem::type_info&  ti, std::string_view  lb) noexcept
+{
+  m_declaration_list.emplace_back(ti,lb);
 
   return *this;
 }

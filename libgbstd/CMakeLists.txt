@@ -72,6 +72,7 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
+  vms/vm_variable_table.cpp
   vms/vm_execution_frame.cpp
   vms/vm_function.cpp
   vms/vm_space.cpp

@@ -42,9 +42,8 @@ assign(operation&&  rhs) noexcept
     {
       unset_content();
 
-      std::swap(m_kind     ,rhs.m_kind     );
-      std::swap(m_type_info,rhs.m_type_info);
-      std::swap(m_label    ,rhs.m_label    );
+      std::swap(m_kind ,rhs.m_kind );
+      std::swap(m_label,rhs.m_label);
 
         switch(m_kind)
         {
@@ -163,8 +162,6 @@ void
 operation::
 print() const noexcept
 {
-  m_type_info->print();
-
   printf("  %%%s = ",m_label.data());
 
     switch(m_kind)

@@ -50,7 +50,7 @@ public:
 
   constexpr int  get_length() const noexcept{return m_length;}
 
-  constexpr void*  get_pointer() const noexcept{return m_pointer;}
+  constexpr uint8_t*  get_pointer() const noexcept{return m_pointer;}
 
   constexpr uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
   constexpr uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
@@ -58,6 +58,66 @@ public:
   constexpr uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
 
 };
+
+
+class
+memory_view
+{
+  const uint8_t*  m_pointer=nullptr;
+
+  int  m_length=0;
+
+public:
+  constexpr memory_view(const uint8_t*  ptr=nullptr, int  len=0) noexcept:
+  m_pointer(ptr), m_length(len){}
+
+  constexpr memory_view(const memory_frame&  base, int  offset) noexcept:
+  m_pointer(base.get_pointer()+offset), m_length(base.get_length()){}
+
+  constexpr memory_view(const memory_view&  base, int  offset) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
+
+  constexpr memory_view(const memory_frame&  base, int  offset, int  length) noexcept:
+  m_pointer(base.get_pointer()+offset), m_length(length){}
+
+  constexpr memory_view(const memory_view&  base, int  offset, int  length) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(length){}
+
+  constexpr const uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
+
+  constexpr int  get_length() const noexcept{return m_length;}
+
+  constexpr const uint8_t*  get_pointer() const noexcept{return m_pointer;}
+
+  constexpr const uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
+  constexpr const uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
+  constexpr const uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
+  constexpr const uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
+
+};
+
+
+class
+mutability
+{
+  bool  m_value;
+
+public:
+  explicit constexpr mutability(bool  v=false) noexcept: m_value(v){}
+
+  operator bool() const noexcept{return m_value;}
+
+};
+
+
+namespace mutabilities{
+constexpr auto   mute = mutability( true);
+constexpr auto  unmute = mutability(false);
+}
+
+
+using mutabilities::mute;
+using mutabilities::unmute;
 
 
 class
@@ -71,26 +131,34 @@ value
 
 public:
   value() noexcept;
+  value(const typesystem::type_info&  ti) noexcept{assign(ti);}
   value(const value&   rhs) noexcept{assign(rhs);}
   value(      value&&  rhs) noexcept{assign(std::move(rhs));}
-  value(const typesystem::type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
-  value(const typesystem::type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
  ~value(){unrefer();}
+
+  operator bool() const noexcept{return m_data;}
 
   value&  operator=(const value&   rhs) noexcept{return assign(rhs);}
   value&  operator=(      value&&  rhs) noexcept{return assign(std::move(rhs));}
+  value&  operator=(const typesystem::type_info&  ti) noexcept{return assign(ti);}
 
   value&  assign(const value&   rhs) noexcept;
   value&  assign(      value&&  rhs) noexcept;
-  value&  assign(const typesystem::type_info&  ti,  int64_t  i) noexcept;
-  value&  assign(const typesystem::type_info&  ti, uint64_t  u) noexcept;
+  value&  assign(const typesystem::type_info&  ti) noexcept;
 
   const typesystem::type_info&  get_type_info() const noexcept;
 
-  int64_t&   get_si() const noexcept;
-  uint64_t&  get_ui() const noexcept;
+  int64_t   get_si() const noexcept;
+  uint64_t  get_ui() const noexcept;
+  value  update( int64_t  i, mutability  m) const noexcept;
+  value  update(uint64_t  u, mutability  m) const noexcept;
+  value  update(memory_view  mv, mutability  m) const noexcept;
+
+  value  clone() const noexcept;
 
   memory_frame  get_memory_frame() const noexcept;
+
+  bool  is_mutable() const noexcept;
 
   bool  is_integer() const noexcept;
   bool  is_boolean() const noexcept;
@@ -152,41 +220,36 @@ public:
 
 
 class
-space
+variable
 {
-  typesystem::type_collection  m_type_collection;
+  value  m_value;
 
-  std::vector<std::unique_ptr<function>>  m_function_table;
+  std::string  m_label;
 
 public:
-  space() noexcept{}
+  variable(const typesystem::type_info&  ti, std::string_view  lb) noexcept: m_value(ti), m_label(lb){}
 
-  typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
+  const std::string&  get_label() const noexcept{return m_label;}
 
-  function&  create_function(std::string_view  name) noexcept;
+        value&  get_value()       noexcept{return m_value;}
+  const value&  get_value() const noexcept{return m_value;}
 
-  function*  find_function(std::string_view  name) const noexcept;
-
-  void  print() const noexcept;
+  void  print() const noexcept{  printf("%s ",m_label.data());  m_value.print();}
 
 };
 
 
 class
-variable
+variable_table
 {
-  std::string  m_label;
-
-  value  m_value;
+  std::vector<variable>  m_container;
 
 public:
-  variable(std::string_view  lb="") noexcept: m_label(lb){}
+  variable&  append(const variable&  v) noexcept;
+  variable&  append(const typesystem::type_info&  ti, std::string_view  lb) noexcept;
 
-  const std::string&  get_label() const noexcept{return m_label;}
-
-  value&  get_value() noexcept{return m_value;}
-
-  void  print() const noexcept{  printf("%s ",m_label.data());  m_value.print();}
+        variable*  find(std::string_view  lb)       noexcept;
+  const variable*  find(std::string_view  lb) const noexcept;
 
 };
 
@@ -196,7 +259,7 @@ execution_frame
 {
   const function&  m_function;
 
-  std::vector<std::unique_ptr<variable>>  m_variable_list;
+  variable_table  m_variable_table;
 
   uint32_t  m_pc=0;
 
@@ -208,18 +271,49 @@ execution_frame
   void  step(const codeline&  codeln) noexcept;
 
 public:
-  execution_frame(const function&  fn, execution_frame*  parent=nullptr, int  argc=0, const variable*  args=nullptr) noexcept;
+  execution_frame(const function&  fn, execution_frame*  parent=nullptr, int  argc=0, variable*  args=nullptr) noexcept;
 
   const function&  get_function() const noexcept{return m_function;}
 
-  variable&  create_variable(std::string_view  lb) noexcept;
-
-        variable*  find_variable(std::string_view  lb)       noexcept;
-  const variable*  find_variable(std::string_view  lb) const noexcept;
+  const variable_table&  get_variable_table() const noexcept{return m_variable_table;}
 
   value  get_returned_value() const noexcept{return m_returned_value;}
 
   value  run() noexcept;
+
+};
+
+
+class
+space
+{
+  typesystem::type_collection  m_type_collection;
+
+  std::vector<std::unique_ptr<function>>  m_function_table;
+
+  struct frame_wrapper{
+    execution_frame  m_frame;
+
+    frame_wrapper*  m_previous;
+
+  };
+
+  frame_wrapper*  m_current_frame;
+
+  variable_table  m_variable_table;
+
+public:
+  space() noexcept{}
+
+  typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
+
+  const variable_table&  get_variable_table() const noexcept{return m_variable_table;}
+
+  function&  create_function(std::string_view  name) noexcept;
+
+  function*  find_function(std::string_view  name) const noexcept;
+
+  void  print() const noexcept;
 
 };
 
@@ -433,15 +527,13 @@ operation
   } m_data;
 
 
-  const typesystem::type_info*  m_type_info=nullptr;
-
   std::string  m_label;
 
 public:
-  operation(const typesystem::type_info&  ti, std::string_view  lb) noexcept: m_type_info(&ti), m_label(lb){}
-  operation(const typesystem::type_info&  ti, std::string_view  lb, unary_operation&&     un) noexcept: m_type_info(&ti), m_label(lb){assign(std::move( un));}
-  operation(const typesystem::type_info&  ti, std::string_view  lb, binary_operation&&   bin) noexcept: m_type_info(&ti), m_label(lb){assign(std::move(bin));}
-  operation(const typesystem::type_info&  ti, std::string_view  lb, call_operation&&     cal) noexcept: m_type_info(&ti), m_label(lb){assign(std::move(cal));}
+  operation(std::string_view  lb) noexcept: m_label(lb){}
+  operation(std::string_view  lb, unary_operation&&     un) noexcept: m_label(lb){assign(std::move( un));}
+  operation(std::string_view  lb, binary_operation&&   bin) noexcept: m_label(lb){assign(std::move(bin));}
+  operation(std::string_view  lb, call_operation&&     cal) noexcept: m_label(lb){assign(std::move(cal));}
   operation(const operation&   rhs) noexcept=delete;
   operation(      operation&&  rhs) noexcept{assign(std::move(rhs));}
  ~operation(){unset_content();}
@@ -460,8 +552,6 @@ public:
   operation&  set_content(unary_operation&&     un) noexcept;
   operation&  set_content(binary_operation&&   bin) noexcept;
   operation&  set_content(call_operation&&     cal) noexcept;
-
-  const typesystem::type_info&  get_type_info() const noexcept{return *m_type_info;}
 
   const std::string&  get_label() const noexcept{return m_label;}
 
@@ -573,24 +663,24 @@ public:
 
 
 class
-variable_initializer
+declaration
 {
-  std::string  m_label;
+  const typesystem::type_info*  m_type_info=nullptr;
 
-  operand  m_operand;
+  std::string  m_name;
 
 public:
-  variable_initializer() noexcept{}
-  variable_initializer(std::string_view  lb, operand&&  o) noexcept: m_label(lb), m_operand(std::move(o)){}
+  declaration(                                  std::string_view  nam="") noexcept:                   m_name(nam){}
+  declaration(const typesystem::type_info&  ti, std::string_view  nam   ) noexcept: m_type_info(&ti), m_name(nam){}
 
-  const std::string&  get_label() const noexcept{return m_label;}
+  const typesystem::type_info*  get_type_info() const noexcept{return m_type_info;}
 
-  const operand&  get_operand() const noexcept{return m_operand;}
+  const std::string&  get_name() const noexcept{return m_name;}
 
 };
 
 
-using variable_initializer_list = std::vector<variable_initializer>;
+using declaration_list = std::vector<declaration>;
 
 
 class
@@ -602,7 +692,9 @@ function
 
   std::string  m_name;
 
-  variable_initializer_list  m_variable_initializer_list;
+  std::vector<declaration>  m_declaration_list;
+
+  std::vector<std::string>  m_argument_name_list;
 
   std::vector<codeline>   m_codelines;
 
@@ -619,14 +711,16 @@ public:
 
   const typesystem::type_info&  get_signature() const noexcept{return *m_type_info;}
 
-  const variable_initializer_list&  get_variable_initializer_list() const noexcept{return m_variable_initializer_list;}
+  const declaration_list&  get_declaration_list() const noexcept{return m_declaration_list;}
+  const std::vector<std::string>&  get_argument_name_list() const noexcept{return m_argument_name_list;}
 
   function&  append_store_instruction(operand  dst, operand  src) noexcept;
   function&  append_branch_instruction(operand  cond, std::string_view  lb) noexcept;
   function&  append_return_instruction(operand  o) noexcept;
   function&  append_operation(operation  op) noexcept;
 
-  function&  append_variable_initializer(std::string_view  lb, operand&&  o) noexcept;
+  function&  append_declaration(                                  std::string_view  lb) noexcept;
+  function&  append_declaration(const typesystem::type_info&  ti, std::string_view  lb) noexcept;
   function&  append_entry_point(std::string_view  lb) noexcept;
 
   space&  get_space() const noexcept{return *m_space;}

@@ -16,9 +16,22 @@ operator()(execution_frame&  frm) const noexcept
 
     if(target)
     {
-//      auto  cofrm = std::make_unique<execution_frame>(*target,&frm,m_arguments.size(),m_arguments.data());
+      auto  argtypes = target->get_signature().get_parameter_list().begin();
+      auto  argnames = target->get_argument_name_list().begin();
 
-//      return cofrm->run();
+      std::vector<variable>  args;
+
+        for(auto&  o: m_arguments)
+        {
+          args.emplace_back(**argtypes++,*argnames++);
+
+          args.back().get_value() = o.evaluate(frm);
+        }
+
+
+      auto  cofrm = std::make_unique<execution_frame>(*target,&frm,args.size(),args.data());
+
+      return cofrm->run();
     }
 
 

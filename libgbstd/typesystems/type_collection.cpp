@@ -60,14 +60,15 @@ push_c_like_types() noexcept
   push("geneptr_t",new type_info(*this,generic_pointer_type_info{}));
   push(     "bool",new type_info(*this,boolean_type_info{}));
 
-  push(  "int8_t",new type_info(*this,integer_type_info( true, 8)));
-  push( "uint8_t",new type_info(*this,integer_type_info(false, 8)));
-  push( "int16_t",new type_info(*this,integer_type_info( true,16)));
-  push("uint16_t",new type_info(*this,integer_type_info(false,16)));
-  push( "int32_t",new type_info(*this,integer_type_info( true,32)));
-  push("uint32_t",new type_info(*this,integer_type_info(false,32)));
-  push( "int64_t",new type_info(*this,integer_type_info( true,64)));
-  push("uint64_t",new type_info(*this,integer_type_info(false,64)));
+  push( "int8_t",new type_info(*this,integer_type_info( 8)));
+  push("int16_t",new type_info(*this,integer_type_info(16)));
+  push("int32_t",new type_info(*this,integer_type_info(32)));
+  push("int64_t",new type_info(*this,integer_type_info(64)));
+
+  push( "uint8_t",new type_info(*this,unsigned_integer_type_info( 8)));
+  push("uint16_t",new type_info(*this,unsigned_integer_type_info(16)));
+  push("uint32_t",new type_info(*this,unsigned_integer_type_info(32)));
+  push("uint64_t",new type_info(*this,unsigned_integer_type_info(64)));
 
   make_alias("int32_t","int");
   make_alias("uint32_t","uint");

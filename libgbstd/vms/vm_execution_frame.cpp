@@ -9,68 +9,22 @@ namespace gbstd{
 
 
 execution_frame::
-execution_frame(const function&  fn, execution_frame*  parent, int  argc, const variable*  args) noexcept:
+execution_frame(const function&  fn, execution_frame*  parent, int  argc, variable*  args) noexcept:
 m_function(fn)
 {
+    for(auto&  decl: fn.get_declaration_list())
+    {
+      m_variable_table.append(*decl.get_type_info(),decl.get_name());
+    }
+
+
     while(argc--)
     {
-//      m_variable_list.emplace_back(args++);
+      m_variable_table.append(std::move(*args++));
     }
 }
 
 
-
-
-variable&
-execution_frame::
-create_variable(std::string_view  lb) noexcept
-{
-  auto  var = find_variable(lb);
-
-    if(!var)
-    {
-      m_variable_list.emplace_back(std::make_unique<variable>(lb));
-
-      var = m_variable_list.back().get();
-    }
-
-
-  return *var;
-}
-
-
-variable*
-execution_frame::
-find_variable(std::string_view  lb) noexcept
-{
-    for(auto&  v: m_variable_list)
-    {
-        if(v->get_label() == lb)
-        {
-          return v.get();
-        }
-    }
-
-
-  return nullptr;
-}
-
-
-const variable*
-execution_frame::
-find_variable(std::string_view  lb) const noexcept
-{
-    for(auto&  v: m_variable_list)
-    {
-        if(v->get_label() == lb)
-        {
-          return v.get();
-        }
-    }
-
-
-  return nullptr;
-}
 
 
 void
@@ -180,7 +134,7 @@ step(const codeline&  codeln) noexcept
     {
       auto&  op = codeln.get_operation();
 
-      auto  var = find_variable(op.get_label());
+      auto  var = m_variable_table.find(op.get_label());
 
         if(var)
         {
