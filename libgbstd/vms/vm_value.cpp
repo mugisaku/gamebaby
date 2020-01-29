@@ -12,19 +12,26 @@ struct
 value::
 data
 {
-  uint32_t  m_reference_count=0;
+  uint32_t  m_reference_count=1;
 
   const typesystem::type_info*  m_type_info=nullptr;
 
   mutability  m_mutability;
 
-  union{
+  union datadata{
      int64_t  si;
     uint64_t  ui;
 
     uint8_t*  ptr;
 
+    virtual_pointer  vptr;
+
+    datadata() noexcept{}
+   ~datadata()         {}
+
   } m_data;
+
+  data() noexcept{}
 
 };
 
@@ -151,6 +158,14 @@ value::
 get_ui() const noexcept
 {
   return m_data->m_data.ui;
+}
+
+
+virtual_pointer
+value::
+get_pointer() const noexcept
+{
+  return m_data->m_data.vptr;
 }
 
 
@@ -308,6 +323,17 @@ void
 value::
 print() const noexcept
 {
+    if(m_data && m_data->m_type_info)
+    {
+      m_data->m_type_info->print();
+
+      printf("%" PRIi64 "(ref: %d)",m_data->m_data.si,m_data->m_reference_count);
+    }
+
+  else
+    {
+      printf("no data&type");
+    }
 }
 
 

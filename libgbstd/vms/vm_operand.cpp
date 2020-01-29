@@ -20,8 +20,11 @@ assign(const operand&   rhs) noexcept
 
         switch(m_kind)
         {
-      case(kind::operation_label): new(&m_data) std::string(rhs.m_data.s);break;
+      case(kind::identifier     ): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
+      case(kind::pointer_literal): new(&m_data) virtual_pointer(rhs.m_data.p);break;
+      case(kind::variable_pointer_literal): new(&m_data) variable_pointer(rhs.m_data.vp);break;
+      case(kind::function_pointer_literal): new(&m_data) function_pointer(rhs.m_data.fp);break;
         }
     }
 
@@ -42,8 +45,11 @@ assign(operand&&  rhs) noexcept
 
         switch(m_kind)
         {
-      case(kind::operation_label): new(&m_data) std::string(std::move(rhs.m_data.s));break;
+      case(kind::identifier     ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
+      case(kind::pointer_literal): new(&m_data) virtual_pointer(std::move(rhs.m_data.p));break;
+      case(kind::variable_pointer_literal): new(&m_data) variable_pointer(std::move(rhs.m_data.vp));break;
+      case(kind::function_pointer_literal): new(&m_data) function_pointer(std::move(rhs.m_data.fp));break;
         }
     }
 
@@ -60,7 +66,7 @@ assign(std::string_view  sv) noexcept
 
   new(&m_data) std::string(sv);
 
-  m_kind = kind::operation_label;
+  m_kind = kind::identifier;
 
   return *this;
 }
@@ -80,6 +86,48 @@ assign(int64_t  i) noexcept
 }
 
 
+operand&
+operand::
+assign(virtual_pointer  p) noexcept
+{
+  clear();
+
+  new(&m_data) virtual_pointer(p);
+
+  m_kind = kind::pointer_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(variable_pointer  p) noexcept
+{
+  clear();
+
+  new(&m_data) variable_pointer(p);
+
+  m_kind = kind::variable_pointer_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(function_pointer  p) noexcept
+{
+  clear();
+
+  new(&m_data) function_pointer(p);
+
+  m_kind = kind::function_pointer_literal;
+
+  return *this;
+}
+
+
 void
 operand::
 clear() noexcept
@@ -87,8 +135,12 @@ clear() noexcept
     switch(m_kind)
     {
   case(kind::null): break;
-  case(kind::operation_label): m_data.s.~basic_string();break;
+  case(kind::identifier     ): m_data.s.~basic_string();break;
   case(kind::integer_literal): /*m_data.i.~int()*/;break;
+  case(kind::null_pointer_literal): /*m_data.i.~int()*/;break;
+  case(kind::pointer_literal): m_data.p.~virtual_pointer();break;
+  case(kind::variable_pointer_literal): m_data.vp.~variable_pointer();break;
+  case(kind::function_pointer_literal): m_data.fp.~function_pointer();break;
     }
 
 
@@ -98,9 +150,9 @@ clear() noexcept
 
 value
 operand::
-evaluate(execution_frame&  frm) const noexcept
+evaluate(context&  ctx) const noexcept
 {
-  auto&  tc = frm.get_function().get_space().get_type_collection();
+  auto&  tc = ctx.get_type_collection();
 
     if(is_integer_literal())
     {
@@ -110,19 +162,43 @@ evaluate(execution_frame&  frm) const noexcept
     }
 
   else
-    if(is_operation_label())
+    if(is_identifier())
     {
-      auto  var = frm.get_variable_table().find(m_data.s);
-
-        if(var)
-        {
-          return var->get_value();
-        }
-
-
-      printf("%s not found",m_data.s.data());
+      printf("%s is not resolved",m_data.s.data());
     }
 
+  else
+    if(is_null_pointer_literal())
+    {
+      return value(tc["nullptr_t"]);
+    }
+
+  else
+    if(is_pointer_literal())
+    {
+      return value(tc["geneptr_t"]);
+    }
+
+  else
+    if(is_variable_pointer_literal())
+    {
+      return ctx[get_variable_pointer()].get_value();
+    }
+
+  else
+    if(is_function_pointer_literal())
+    {
+      auto  p = get_function_pointer();
+
+      auto&  fn = ctx[p];
+
+      value  v(fn.get_signature());
+
+      return v.update((int64_t)p.get(),unmute);
+    }
+
+
+report;
 
   return value();
 }
@@ -135,8 +211,10 @@ print() const noexcept
     switch(m_kind)
     {
   case(kind::null): break;
-  case(kind::operation_label): printf("%s",m_data.s.data());break;
+  case(kind::identifier     ): printf("%s",m_data.s.data());break;
   case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
+  case(kind::null_pointer_literal): printf("nullptr");break;
+  case(kind::pointer_literal): printf("{%d,%d}",m_data.p.get_variable_index(),m_data.p.get_byte_offset());break;
     }
 }
 

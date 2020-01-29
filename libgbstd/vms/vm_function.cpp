@@ -52,19 +52,9 @@ append_operation(operation  op) noexcept
 
 function&
 function::
-append_declaration(std::string_view  lb) noexcept
+append_declaration(std::string_view  type_name, std::string_view  var_name) noexcept
 {
-  m_declaration_list.emplace_back(lb);
-
-  return *this;
-}
-
-
-function&
-function::
-append_declaration(const typesystem::type_info&  ti, std::string_view  lb) noexcept
-{
-  m_declaration_list.emplace_back(ti,lb);
+  m_declaration_list.emplace_back(m_context.get_type_collection()[type_name],var_name);
 
   return *this;
 }
@@ -90,7 +80,7 @@ find_operation(std::string_view  label) const noexcept
         {
           auto&  op = cl.get_operation();
 
-            if(op.get_label() == label)
+            if(op.get_operand_list()[0].get_identifier() == label)
             {
               return &op;
             }
@@ -121,9 +111,119 @@ find_entry_point(std::string_view  label) const noexcept
 
 void
 function::
+resolve(const context&  ctx, operand&  o) const noexcept
+{
+    if(!o.is_identifier())
+    {
+      return;
+    }
+
+
+  auto&  name = o.get_identifier();
+
+  auto  fn = ctx.find_function(name);
+
+    if(fn)
+    {
+      o = function_pointer(fn->get_address());
+
+      return;
+    }
+
+
+  uint32_t  i = 0;
+
+    for(auto&  id: m_argument_name_list)
+    {
+        if(id == name)
+        {
+          o = variable_pointer(i,true);
+
+          return;
+        }
+
+
+      ++i;
+    }
+
+
+    for(auto&  decl: m_declaration_list)
+    {
+        if(decl.get_name() == name)
+        {
+          o = variable_pointer(i,true);
+
+          return;
+        }
+
+
+      ++i;
+    }
+
+
+  auto  var = ctx.find_variable(name);
+
+    if(var)
+    {
+      o = variable_pointer(var->get_address());
+
+      return;
+    }
+}
+
+
+void
+function::
+finalize(const context&  ctx) noexcept
+{
+    if(m_finalized)
+    {
+      return;
+    }
+
+
+    for(auto&  codeln: m_codelines)
+    {
+        if(codeln.is_return_instruction())
+        {
+          resolve(ctx,codeln.get_return_instruction().get_operand());
+        }
+
+      else
+        if(codeln.is_store_instruction())
+        {
+          resolve(ctx,codeln.get_store_instruction().get_destination());
+          resolve(ctx,codeln.get_store_instruction().get_source()     );
+        }
+
+      else
+        if(codeln.is_branch_instruction())
+        {
+          resolve(ctx,codeln.get_branch_instruction().get_condition());
+        }
+
+      else
+        if(codeln.is_operation())
+        {
+          auto&  op = codeln.get_operation();
+
+            for(auto&  o: op.get_operand_list())
+            {
+              resolve(ctx,o);
+            }
+        }
+    }
+
+
+  m_finalized = true;
+}
+
+
+void
+function::
 print() const noexcept
 {
-  m_type_info->print();  
+  m_signature->print();  
 
   printf("{\n");
 

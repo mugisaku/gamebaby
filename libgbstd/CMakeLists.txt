@@ -72,16 +72,12 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
-  vms/vm_variable_table.cpp
-  vms/vm_execution_frame.cpp
   vms/vm_function.cpp
-  vms/vm_space.cpp
+  vms/vm_context.cpp
+  vms/vm_context__operate.cpp
   vms/vm_value.cpp
   vms/vm_operand.cpp
   vms/vm_operation.cpp
-  vms/vm_unary_operation.cpp
-  vms/vm_binary_operation.cpp
-  vms/vm_call_operation.cpp
   vms/vm_codeline.cpp
   typesystems/struct_type_info.cpp
   typesystems/union_type_info.cpp

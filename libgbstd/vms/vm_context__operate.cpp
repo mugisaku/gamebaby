@@ -9,11 +9,60 @@ namespace gbstd{
 
 
 value
-binary_operation::
-operator()(execution_frame&  frm) const noexcept
+context::
+operate(unary_opcodes  op, const operand&  o) noexcept
 {
-  auto  lv = m_left.evaluate( frm);
-  auto  rv = m_right.evaluate(frm);
+/*
+  auto  v = m_operand.evaluate(ctx);
+
+  auto&  ti = v.get_type_info();
+
+    if(m_kind == kind::dereference)
+    {
+    }
+
+  else
+    if(m_kind == kind::bit_not)
+    {
+    }
+
+  else
+    if(m_kind == kind::logical_not)
+    {
+    }
+
+  else
+    {
+        if(v.is_data())
+        {
+          auto  i = v.get_data();
+
+            switch(m_kind)
+            {
+          case(kind::bit_not    ): v = value::make_data(~i);break;
+          case(kind::logical_not): v = value::make_data(!i);break;
+            }
+        }
+    }
+*/
+
+
+  return value();
+}
+
+
+value
+context::
+operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
+{
+  auto  lv = l.evaluate(*this);
+  auto  rv = r.evaluate(*this);
+
+  value  retval(m_type_collection["int"]);
+
+  retval.update(lv.get_si()+rv.get_si(),mute);
+
+  return retval;
 
 /*
     if(lv.is_u8_pointer() && rv.is_data())
@@ -101,14 +150,22 @@ operator()(execution_frame&  frm) const noexcept
 */
 
 
-  return lv;
+  return value();
 }
 
 
-void
+/*void
 binary_operation::
 print() const noexcept
 {
+    switch(m_kind)
+    {
+  case(kind::bit_not    ): printf("bit_not");break;
+  case(kind::logical_not): printf("logical_not");break;
+  case(kind::get_size   ): printf("get_size");break;
+  case(kind::get_address): printf("get_address");break;
+  case(kind::dereference): printf("dereference");break;
+    }
         switch(m_kind)
         {
       case(kind::add        ): printf("add");break;
@@ -140,7 +197,7 @@ print() const noexcept
 
   m_right.print();
 }
-
+*/
 
 
 
