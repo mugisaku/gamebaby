@@ -165,6 +165,14 @@ get_type_info() const noexcept
 }
 
 
+type_derivation&
+value::
+get_type_derivation() const noexcept
+{
+  return m_data->m_type_info->get_derivation();
+}
+
+
 int64_t
 value::
 get_integer() const noexcept

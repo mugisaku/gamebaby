@@ -155,64 +155,16 @@ get_base_index() const noexcept
 
 void
 context::
-store(value  dst, value  src) noexcept
+store(const value&  dst, const value&  src) noexcept
 {
-/*
-    if(src.is_data())
+    if(!dst.get_type_info().is_pointer())
     {
-      auto&  mem = get_memory();
-
-      auto  dst_p = dst.get_data();
-      auto  src_d = src.get_data();
-
-        if(dst.is_s8_pointer())
-        {
-          *reinterpret_cast<int8_t*>(mem.get_ptr8(dst_p)) = src_d;
-        }
-
-      else
-        if(dst.is_u8_pointer())
-        {
-          *mem.get_ptr8(dst_p) = src_d;
-        }
-
-      else
-        if(dst.is_s16_pointer())
-        {
-          *reinterpret_cast<int16_t*>(mem.get_ptr16(dst_p)) = src_d;
-        }
-
-      else
-        if(dst.is_u16_pointer())
-        {
-          *mem.get_ptr16(dst_p) = src_d;
-        }
-
-      else
-        if(dst.is_s32_pointer())
-        {
-          *reinterpret_cast<int32_t*>(mem.get_ptr32(dst_p)) = src_d;
-        }
-
-      else
-        if(dst.is_u32_pointer())
-        {
-          *mem.get_ptr32(dst_p) = src_d;
-        }
-
-      else
-        if(dst.is_s64_pointer())
-        {
-          *reinterpret_cast<int64_t*>(mem.get_ptr64(dst_p)) = src_d;
-        }
-
-      else
-        if(dst.is_u64_pointer())
-        {
-          *mem.get_ptr64(dst_p) = src_d;
-        }
+      report;
+      return;
     }
-*/
+
+
+  auto&  var = (*this)[variable_pointer(dst.get_unsigned_integer())];
 }
 
 
@@ -302,13 +254,13 @@ step() noexcept
     {
       auto&  br = codeln.get_branch_instruction();
 
-      value  v = br.get_condition().evaluate(*this);
+      value  condv = br.get_condition().evaluate(*this);
 
-      auto  ep = m_current_frame->m_function.find_entry_point(br.get_label());
-
-        if(ep)
+        if(condv.get_integer())
         {
-          m_current_frame->m_pc = ep->get_value();
+          value  destv = br.get_destination().evaluate(*this);
+
+          m_current_frame->m_pc = destv.get_integer();
         }
     }
 

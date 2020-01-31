@@ -9,7 +9,7 @@ namespace typesystem{
 
 
 type_entry::
-type_entry(std::string_view  name, type_info*  ti) noexcept:
+type_entry(std::string_view  name, const type_info*  ti) noexcept:
 m_name(name), m_type_info(ti)
 {
 }

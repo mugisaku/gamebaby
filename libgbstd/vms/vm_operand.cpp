@@ -180,7 +180,13 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_variable_pointer_literal())
     {
-      return ctx[get_variable_pointer()].get_value();
+      auto  vp = get_variable_pointer();
+
+      auto&  var = ctx[vp];
+
+      auto&  t = var.get_value().get_type_derivation().get_pointer_type();
+
+      return value(t,vp.get_packed());
     }
 
   else
@@ -190,9 +196,7 @@ evaluate(context&  ctx) const noexcept
 
       auto&  fn = ctx[p];
 
-      value  v(fn.get_signature());
-
-      return ctx.make_value(int64_t(0));
+      return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
     }
 
 

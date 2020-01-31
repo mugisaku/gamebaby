@@ -169,6 +169,19 @@ resolve(const context&  ctx, operand&  o) const noexcept
 
       return;
     }
+
+
+  auto  ep = find_entry_point(name);
+
+    if(ep)
+    {
+      o = ep->get_value();
+
+      return;
+    }
+
+
+  report;
 }
 
 
@@ -192,14 +205,19 @@ finalize(const context&  ctx) noexcept
       else
         if(codeln.is_store_instruction())
         {
-          resolve(ctx,codeln.get_store_instruction().get_destination());
-          resolve(ctx,codeln.get_store_instruction().get_source()     );
+          auto&  st = codeln.get_store_instruction();
+
+          resolve(ctx,st.get_destination());
+          resolve(ctx,st.get_source()     );
         }
 
       else
         if(codeln.is_branch_instruction())
         {
-          resolve(ctx,codeln.get_branch_instruction().get_condition());
+          auto&  br = codeln.get_branch_instruction();
+
+          resolve(ctx,br.get_condition()  );
+          resolve(ctx,br.get_destination());
         }
 
       else

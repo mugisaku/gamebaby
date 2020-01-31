@@ -8,7 +8,7 @@ namespace typesystem{
 
 
 
-type_info&
+const type_info&
 type_collection::
 operator[](std::string_view  name) noexcept
 {
@@ -28,13 +28,13 @@ operator[](std::string_view  name) noexcept
 
 void
 type_collection::
-push(std::string_view  name, type_info*  ti) noexcept
+push(std::string_view  name, const type_info*  ti) noexcept
 {
   m_entry_table.emplace_back(std::make_unique<type_entry>(name,ti));
 }
 
 
-type_info*
+const type_info*
 type_collection::
 find(std::string_view  name) noexcept
 {

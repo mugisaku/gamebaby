@@ -12,39 +12,62 @@ value
 context::
 operate(unary_opcodes  op, const operand&  o) noexcept
 {
-/*
-  auto  v = m_operand.evaluate(ctx);
+  auto  v = o.evaluate(*this);
 
-  auto&  ti = v.get_type_info();
+  auto&  t = v.get_type_info();
 
-    if(m_kind == kind::dereference)
+    if(op == unary_opcodes::ld)
     {
-    }
-
-  else
-    if(m_kind == kind::bit_not)
-    {
-    }
-
-  else
-    if(m_kind == kind::logical_not)
-    {
-    }
-
-  else
-    {
-        if(v.is_data())
+        if(t.is_pointer())
         {
-          auto  i = v.get_data();
+          auto  tt = t.get_base_type_info();
 
-            switch(m_kind)
+            if(tt->is_integer())
             {
-          case(kind::bit_not    ): v = value::make_data(~i);break;
-          case(kind::logical_not): v = value::make_data(!i);break;
+              auto  inf = tt->get_integer_type_info();
+
+              return make_value(~v.get_integer());
+            }
+
+          else
+            if(tt->is_unsigned_integer())
+            {
             }
         }
     }
-*/
+
+  else
+    if(op == unary_opcodes::bit_not)
+    {
+        if(t.is_kind_of_integer())
+        {
+          return make_value(~v.get_integer());
+        }
+    }
+
+  else
+    if(op == unary_opcodes::logical_not)
+    {
+        if(t.is_like_boolean())
+        {
+          return make_value(!v.get_integer());
+        }
+    }
+
+  else
+    if(op == unary_opcodes::get_size)
+    {
+      return make_value(static_cast<uint64_t>(t.get_size()));
+    }
+
+  else
+    if(op == unary_opcodes::get_address)
+    {
+        if(t.is_reference())
+        {
+          return make_value(v.get_unsigned_integer());
+        }
+    }
 
 
   return value();
@@ -63,7 +86,6 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
 
     if(op == binary_opcodes::add)
     {
-report;
         if(lt.is_integer())
         {
           auto  li = lv.get_integer();

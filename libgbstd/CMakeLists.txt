@@ -82,6 +82,7 @@ set(SOURCES
   typesystems/union_type_info.cpp
   typesystems/enum_type_info.cpp
   typesystems/type_info.cpp
+  typesystems/type_derivation.cpp
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
   typesystems/parameter_list.cpp

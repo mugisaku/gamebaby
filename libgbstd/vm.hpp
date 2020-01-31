@@ -105,13 +105,16 @@ variable_pointer
   bool  m_local=false;
 
 public:
-  constexpr variable_pointer(uint32_t  v=0, bool  loc=false) noexcept: m_value(v), m_local(loc){}
+  constexpr variable_pointer(uint64_t  v=0) noexcept: m_value(v>>1), m_local(v&1){}
+  constexpr variable_pointer(uint32_t  v, bool  loc) noexcept: m_value(v), m_local(loc){}
 
   constexpr operator bool() const noexcept{return m_value;}
 
   constexpr bool  is_local() const noexcept{return m_local;}
 
   constexpr uint32_t  get() const noexcept{return m_value;}
+
+  constexpr uint64_t  get_packed() const noexcept{return (m_value<<1)|(m_local? 1:0);}
 
 };
 
@@ -211,11 +214,11 @@ public:
 enum class
 unary_opcodes
 {
+  ld,
   bit_not,
   logical_not,
   get_size,
   get_address,
-  dereference,
 
 };
 
@@ -291,7 +294,7 @@ context
   void  push_frame(variable_pointer  p, const function&  fn, int  argc, const variable*  args) noexcept;
   void  pop_frame() noexcept;
 
-  void  store(value  dst, value  src) noexcept;
+  void  store(const value&  dst, const value&  src) noexcept;
 
   value  operate( unary_opcodes  op, const operand&  o) noexcept;
   value  operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept;
@@ -369,17 +372,17 @@ class
 branch_instruction
 {
   operand  m_condition;
-
-  std::string  m_label;
+  operand  m_destination;
 
 public:
-  branch_instruction(operand&&  cond, std::string_view  lb) noexcept:
-  m_condition(std::move(cond)), m_label(lb){}
-
-  const std::string&  get_label() const noexcept{return m_label;}
+  branch_instruction(operand&&  cond, operand&&  dest) noexcept:
+  m_condition(std::move(cond)), m_destination(dest){}
 
         operand&  get_condition()       noexcept{return m_condition;}
   const operand&  get_condition() const noexcept{return m_condition;}
+
+        operand&  get_destination()       noexcept{return m_destination;}
+  const operand&  get_destination() const noexcept{return m_destination;}
 
 
   void  print() const noexcept
@@ -388,7 +391,9 @@ public:
 
     m_condition.print();
 
-    printf(" %s",m_label.data());
+    printf(" ");
+
+    m_destination.print();
   }
 
 };
