@@ -36,6 +36,23 @@ push(std::string_view  name, type_info*  ti) noexcept
 
 type_info*
 type_collection::
+find(std::string_view  name) noexcept
+{
+    for(auto&  ent: m_entry_table)
+    {
+        if(ent->get_name() == name)
+        {
+          return ent->get_info();
+        }
+    }
+
+
+  return nullptr;
+}
+
+
+const type_info*
+type_collection::
 find(std::string_view  name) const noexcept
 {
     for(auto&  ent: m_entry_table)

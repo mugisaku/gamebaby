@@ -1,9 +1,10 @@
-#include"libgbstd/vm.hpp"
+#include"libgbstd/typesystem.hpp"
 
 
 
 
 namespace gbstd{
+namespace typesystem{
 
 
 
@@ -14,17 +15,13 @@ data
 {
   uint32_t  m_reference_count=1;
 
-  const typesystem::type_info*  m_type_info=nullptr;
-
-  mutability  m_mutability;
+  const type_info*  m_type_info=nullptr;
 
   union datadata{
      int64_t  si;
     uint64_t  ui;
 
     uint8_t*  ptr;
-
-    virtual_pointer  vptr;
 
     datadata() noexcept{}
    ~datadata()         {}
@@ -102,7 +99,7 @@ assign(value&&  rhs) noexcept
 
 value&
 value::
-assign(const typesystem::type_info&  ti) noexcept
+assign(const type_info&  ti) noexcept
 {
   unrefer();
 
@@ -110,11 +107,47 @@ assign(const typesystem::type_info&  ti) noexcept
 
   m_data->m_type_info = &ti;
 
-  auto  sz = ti.get_size();
+  m_data->m_data.si = 0;
 
-    if(sz > sizeof(int64_t))
+
+  return *this;
+}
+
+
+value&
+value::
+assign(const type_info&  ti,  int64_t  i) noexcept
+{
+  unrefer();
+
+  m_data = new data;
+
+  m_data->m_type_info = &ti;
+
+  m_data->m_data.si = i;
+
+
+  return *this;
+}
+
+
+value&
+value::
+assign(const type_info&  ti, memory_view  mv) noexcept
+{
+  unrefer();
+
+  auto  l = mv.get_length();
+
+    if(l > sizeof(int64_t))
     {
-      m_data->m_data.ptr = (uint8_t*)malloc(sz);
+      m_data = new data;
+
+      m_data->m_type_info = &ti;
+
+      m_data->m_data.ptr = (uint8_t*)malloc(l);
+
+      std::memcpy(m_data->m_data.ptr,mv.get_pointer(),l);
     }
 
 
@@ -124,7 +157,7 @@ assign(const typesystem::type_info&  ti) noexcept
 
 
 
-const typesystem::type_info&
+const type_info&
 value::
 get_type_info() const noexcept
 {
@@ -134,53 +167,26 @@ get_type_info() const noexcept
 
 int64_t
 value::
-get_si() const noexcept
+get_integer() const noexcept
 {
-  auto&  ti = get_type_info();
-
-    if(ti.is_integer())
-    {
-      return m_data->m_data.si;
-    }
-
-    if(ti.is_integer())
-    {
-      return m_data->m_data.si;
-    }
-
-
   return m_data->m_data.si;
 }
 
 
 uint64_t
 value::
-get_ui() const noexcept
+get_unsigned_integer() const noexcept
 {
   return m_data->m_data.ui;
 }
 
 
-virtual_pointer
-value::
-get_pointer() const noexcept
-{
-  return m_data->m_data.vptr;
-}
-
-
 value
 value::
-update(int64_t  i, mutability  m) const noexcept
+update(int64_t  i) const noexcept
 {
-    if(m_data)
+    if(m_data && (m_data->m_type_info->get_size() <= sizeof(int64_t)))
     {
-        if(m)
-        {
-          m_data->m_mutability = mute;
-        }
-
-
         if(m_data->m_reference_count == 1)
         {
           m_data->m_data.si = i;
@@ -205,50 +211,18 @@ update(int64_t  i, mutability  m) const noexcept
 
 value
 value::
-update(uint64_t  u, mutability  m) const noexcept
+update(uint64_t  u) const noexcept
 {
-    if(m_data)
-    {
-        if(m)
-        {
-          m_data->m_mutability = mute;
-        }
-
-
-        if(m_data->m_reference_count == 1)
-        {
-          m_data->m_data.ui = u;
-
-          return *this;
-        }
-
-      else
-        {
-          value  new_value(get_type_info());
-
-          new_value.m_data->m_data.ui = u;
-
-          return std::move(new_value);
-        }
-    }
-
-
-  return value();
+  return update(static_cast<int64_t>(u));
 }
 
 
 value
 value::
-update(memory_view  mv, mutability  m) const noexcept
+update(memory_view  mv) const noexcept
 {
-    if(m_data)
+    if(m_data && (m_data->m_type_info->get_size() > sizeof(int64_t)))
     {
-        if(m)
-        {
-          m_data->m_mutability = mute;
-        }
-
-
         if(m_data->m_reference_count == 1)
         {
           std::memcpy(m_data->m_data.ptr,mv.get_pointer(),mv.get_length());
@@ -304,19 +278,6 @@ get_memory_frame() const noexcept
 }
 
 
-bool
-value::
-is_mutable() const noexcept
-{
-  return m_data->m_mutability;
-}
-
-
-bool  value::is_integer() const noexcept{return m_data->m_type_info->is_integer();}
-bool  value::is_boolean() const noexcept{return m_data->m_type_info->is_integer();}
-bool  value::is_function() const noexcept{return m_data->m_type_info->is_integer();}
-
-
 
 
 void
@@ -339,7 +300,7 @@ print() const noexcept
 
 
 
-}
+}}
 
 
 

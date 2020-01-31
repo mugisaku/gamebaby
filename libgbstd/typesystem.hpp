@@ -4,6 +4,8 @@
 
 #include<cstddef>
 #include<cstdint>
+#include<cstring>
+#include<cinttypes>
 #include<cstdio>
 #include<string>
 #include<string_view>
@@ -379,6 +381,76 @@ public:
 
 
 
+
+
+class
+memory_frame
+{
+  uint8_t*  m_pointer=nullptr;
+
+  int  m_length=0;
+
+public:
+  constexpr memory_frame(uint8_t*  ptr=nullptr, int  len=0) noexcept:
+  m_pointer(ptr), m_length(len){}
+
+  constexpr memory_frame(const memory_frame&  base, int  offset) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
+
+  constexpr memory_frame(const memory_frame&  base, int  offset, int  length) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(length){}
+
+  constexpr uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
+
+  constexpr int  get_length() const noexcept{return m_length;}
+
+  constexpr uint8_t*  get_pointer() const noexcept{return m_pointer;}
+
+  constexpr uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
+  constexpr uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
+  constexpr uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
+  constexpr uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
+
+};
+
+
+class
+memory_view
+{
+  const uint8_t*  m_pointer=nullptr;
+
+  int  m_length=0;
+
+public:
+  constexpr memory_view(const uint8_t*  ptr=nullptr, int  len=0) noexcept:
+  m_pointer(ptr), m_length(len){}
+
+  constexpr memory_view(const memory_frame&  base, int  offset) noexcept:
+  m_pointer(base.get_pointer()+offset), m_length(base.get_length()){}
+
+  constexpr memory_view(const memory_view&  base, int  offset) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
+
+  constexpr memory_view(const memory_frame&  base, int  offset, int  length) noexcept:
+  m_pointer(base.get_pointer()+offset), m_length(length){}
+
+  constexpr memory_view(const memory_view&  base, int  offset, int  length) noexcept:
+  m_pointer(base.m_pointer+offset), m_length(length){}
+
+  constexpr const uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
+
+  constexpr int  get_length() const noexcept{return m_length;}
+
+  constexpr const uint8_t*  get_pointer() const noexcept{return m_pointer;}
+
+  constexpr const uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
+  constexpr const uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
+  constexpr const uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
+  constexpr const uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
+
+};
+
+
 class
 value
 {
@@ -390,11 +462,10 @@ value
 
 public:
   value() noexcept{}
-  value(bool  b) noexcept{assign(i);}
-  value(int64_t  i) noexcept{}
-  value(uint64_t  u) noexcept{}
-  value(nullptr_t  p) noexcept{}
-  value(const typesystem::type_info&  ti) noexcept{assign(ti);}
+  value(const type_info&  ti) noexcept{assign(ti);}
+  value(const type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
+  value(const type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
+  value(const type_info&  ti, memory_view  mv) noexcept{assign(ti,mv);}
   value(const value&   rhs) noexcept{assign(rhs);}
   value(      value&&  rhs) noexcept{assign(std::move(rhs));}
  ~value(){unrefer();}
@@ -403,32 +474,26 @@ public:
 
   value&  operator=(const value&   rhs) noexcept{return assign(rhs);}
   value&  operator=(      value&&  rhs) noexcept{return assign(std::move(rhs));}
-  value&  operator=(const typesystem::type_info&  ti) noexcept{return assign(ti);}
 
   value&  assign(const value&   rhs) noexcept;
   value&  assign(      value&&  rhs) noexcept;
-  value&  assign(const typesystem::type_info&  ti) noexcept;
+  value&  assign(const type_info&  ti             ) noexcept;
+  value&  assign(const type_info&  ti,  int64_t  i) noexcept;
+  value&  assign(const type_info&  ti, uint64_t  u) noexcept{return assign(ti,static_cast<int64_t>(u));}
+  value&  assign(const type_info&  ti, memory_view  mv) noexcept;
 
-  const typesystem::type_info&  get_type_info() const noexcept;
+  const type_info&  get_type_info() const noexcept;
 
-  int64_t   get_si() const noexcept;
-  uint64_t  get_ui() const noexcept;
-  virtual_pointer  get_pointer() const noexcept;
-
-  value  update( int64_t  i, mutability  m) const noexcept;
-  value  update(uint64_t  u, mutability  m) const noexcept;
-  value  update(virtual_pointer  ptr, mutability  m) const noexcept;
-  value  update(memory_view  mv, mutability  m) const noexcept;
-
-  value  clone() const noexcept;
+  int64_t   get_integer()          const noexcept;
+  uint64_t  get_unsigned_integer() const noexcept;
 
   memory_frame  get_memory_frame() const noexcept;
 
-  bool  is_mutable() const noexcept;
+  value  update( int64_t  i) const noexcept;
+  value  update(uint64_t  u) const noexcept;
+  value  update(memory_view  mv) const noexcept;
 
-  bool  is_integer() const noexcept;
-  bool  is_boolean() const noexcept;
-  bool  is_function() const noexcept;
+  value  clone() const noexcept;
 
   void  print() const noexcept;
 
@@ -462,7 +527,9 @@ public:
   void  push(std::string_view  name, type_info*  ti=nullptr) noexcept;
 
   type_info&  operator[](std::string_view  name) noexcept;
-  type_info*  find(std::string_view  name) const noexcept;
+
+        type_info*  find(std::string_view  name)       noexcept;
+  const type_info*  find(std::string_view  name) const noexcept;
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
 

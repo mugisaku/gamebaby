@@ -21,80 +21,14 @@ namespace gbstd{
 
 
 
-class execution_frame;
+using typesystem::value;
+
+
 class codeline;
 class operand;
 class operation;
 class function;
 class context;
-
-
-class
-memory_frame
-{
-  uint8_t*  m_pointer=nullptr;
-
-  int  m_length=0;
-
-public:
-  constexpr memory_frame(uint8_t*  ptr=nullptr, int  len=0) noexcept:
-  m_pointer(ptr), m_length(len){}
-
-  constexpr memory_frame(const memory_frame&  base, int  offset) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
-
-  constexpr memory_frame(const memory_frame&  base, int  offset, int  length) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(length){}
-
-  constexpr uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
-
-  constexpr int  get_length() const noexcept{return m_length;}
-
-  constexpr uint8_t*  get_pointer() const noexcept{return m_pointer;}
-
-  constexpr uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
-  constexpr uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
-  constexpr uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
-  constexpr uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
-
-};
-
-
-class
-memory_view
-{
-  const uint8_t*  m_pointer=nullptr;
-
-  int  m_length=0;
-
-public:
-  constexpr memory_view(const uint8_t*  ptr=nullptr, int  len=0) noexcept:
-  m_pointer(ptr), m_length(len){}
-
-  constexpr memory_view(const memory_frame&  base, int  offset) noexcept:
-  m_pointer(base.get_pointer()+offset), m_length(base.get_length()){}
-
-  constexpr memory_view(const memory_view&  base, int  offset) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
-
-  constexpr memory_view(const memory_frame&  base, int  offset, int  length) noexcept:
-  m_pointer(base.get_pointer()+offset), m_length(length){}
-
-  constexpr memory_view(const memory_view&  base, int  offset, int  length) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(length){}
-
-  constexpr const uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
-
-  constexpr int  get_length() const noexcept{return m_length;}
-
-  constexpr const uint8_t*  get_pointer() const noexcept{return m_pointer;}
-
-  constexpr const uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
-  constexpr const uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
-  constexpr const uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
-  constexpr const uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
-
-};
 
 
 class
@@ -368,6 +302,11 @@ public:
   context() noexcept{}
 
   typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
+
+  value  make_value(int64_t    i) noexcept{return value(*m_type_collection.find("int"),i);}
+  value  make_value(uint64_t   u) noexcept{return value(*m_type_collection.find("uint"),u);}
+  value  make_value(bool       b) noexcept{return value(*m_type_collection.find("bool"),static_cast<int64_t>(b));}
+  value  make_value(nullptr_t  p) noexcept{return value(*m_type_collection.find("nullptr_t"));}
 
   function&  create_function(std::string_view  name) noexcept;
 

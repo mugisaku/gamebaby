@@ -156,9 +156,7 @@ evaluate(context&  ctx) const noexcept
 
     if(is_integer_literal())
     {
-      value  v(tc["int"]);
-
-      return v.update(m_data.i,unmute);
+      return ctx.make_value(m_data.i);
     }
 
   else
@@ -170,13 +168,13 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_null_pointer_literal())
     {
-      return value(tc["nullptr_t"]);
+      return ctx.make_value(nullptr);
     }
 
   else
     if(is_pointer_literal())
     {
-      return value(tc["geneptr_t"]);
+//      return value(tc["geneptr_t"]);
     }
 
   else
@@ -194,11 +192,9 @@ evaluate(context&  ctx) const noexcept
 
       value  v(fn.get_signature());
 
-      return v.update((int64_t)p.get(),unmute);
+      return ctx.make_value(int64_t(0));
     }
 
-
-report;
 
   return value();
 }

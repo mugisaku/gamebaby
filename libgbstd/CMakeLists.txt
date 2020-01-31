@@ -85,7 +85,7 @@ set(SOURCES
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
   typesystems/parameter_list.cpp
-  typesystems/vm_value.cpp
+  typesystems/value.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp
