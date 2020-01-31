@@ -165,6 +165,12 @@ store(const value&  dst, const value&  src) noexcept
 
 
   auto&  var = (*this)[variable_pointer(dst.get_unsigned_integer())];
+
+  auto&  st = src.get_type_info();
+
+    if(st.is_integer())
+    {
+    }
 }
 
 
@@ -271,6 +277,14 @@ step() noexcept
 
       auto  val = ret.get_operand().evaluate(*this);
 
+      value  xval;
+
+        if(val.get_type_info().is_reference())
+        {
+          xval = (*this)[variable_pointer(val.get_unsigned_integer())].get_value();
+        }
+
+
       pop_frame();
 
         if(m_current_frame)
@@ -282,7 +296,15 @@ step() noexcept
         {
           m_last_value = std::move(val);
 
-          m_last_value.print();
+            if(m_last_value.get_type_info().is_reference())
+            {
+              xval.print();
+            }
+
+          else
+            {
+              m_last_value.print();
+            }
         }
     }
 

@@ -131,7 +131,7 @@ get_size() const noexcept
       return m_data.uint_ti.get_bitwidth()/8;
       break;
   case(kind::array):
-      return m_base_type_info->get_size()*m_number_of_elements;
+      return m_base->get_size()*m_number_of_elements;
       break;
   case(kind::enum_):
       return m_collection.get_enum_size();
@@ -158,7 +158,7 @@ get_align() const noexcept
     switch(m_kind)
     {
   case(kind::array):
-      return m_base_type_info->get_align();
+      return m_base->get_align();
       break;
   case(kind::struct_):
       return m_data.str_ti.get_align();
@@ -185,13 +185,13 @@ print() const noexcept
 
   buf.emplace_back(this);
 
-  auto  p = m_base_type_info;
+  auto  p = m_base;
 
     while(p)
     {
       buf.emplace_back(p);
 
-      p = p->get_base_type_info();
+      p = p->get_base();
     }
 
 

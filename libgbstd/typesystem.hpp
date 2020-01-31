@@ -249,7 +249,7 @@ type_info
 {
   const type_collection&  m_collection;
 
-  const type_info*  m_base_type_info=nullptr;
+  const type_info*  m_base=nullptr;
 
   enum class kind{
     null,
@@ -310,10 +310,10 @@ public:
   type_info(type_collection&  tc, struct_type_info&&  ti) noexcept: m_collection(tc), m_kind(kind::struct_), m_id(ti.get_id()), m_derivation(mkdv()){new(&m_data) struct_type_info(std::move(ti));}
   type_info(type_collection&  tc, union_type_info&&  ti)  noexcept: m_collection(tc), m_kind(kind::union_), m_id(ti.get_id()), m_derivation(mkdv()){new(&m_data) union_type_info(std::move(ti));}
   type_info(type_collection&  tc, enum_type_info&&  ti)   noexcept: m_collection(tc), m_kind(kind::enum_), m_id(ti.get_id()), m_derivation(mkdv()){new(&m_data) enum_type_info(std::move(ti));}
-  type_info(const type_info&  base, pointer_type_info    ti) noexcept: m_collection(base.m_collection), m_base_type_info(&base), m_kind(kind::pointer  ), m_id(make_id(base,ti)), m_derivation(mkdv()){}
-  type_info(const type_info&  base, reference_type_info  ti) noexcept: m_collection(base.m_collection), m_base_type_info(&base), m_kind(kind::reference), m_id(make_id(base,ti)), m_derivation(mkdv()){}
-  type_info(const type_info&  base, int  n) noexcept: m_collection(base.m_collection), m_base_type_info(&base), m_kind(kind::array), m_number_of_elements(n), m_id(make_id(base,n)), m_derivation(mkdv()){}
-  type_info(const type_info&  ret, parameter_list&&  parals) noexcept: m_collection(ret.m_collection), m_base_type_info(&ret), m_kind(kind::function), m_derivation(mkdv()){  new(&m_data) parameter_list(std::move(parals));  m_id = make_id(ret,m_data.parals);}
+  type_info(const type_info&  base, pointer_type_info    ti) noexcept: m_collection(base.m_collection), m_base(&base), m_kind(kind::pointer  ), m_id(make_id(base,ti)), m_derivation(mkdv()){}
+  type_info(const type_info&  base, reference_type_info  ti) noexcept: m_collection(base.m_collection), m_base(&base), m_kind(kind::reference), m_id(make_id(base,ti)), m_derivation(mkdv()){}
+  type_info(const type_info&  base, int  n) noexcept: m_collection(base.m_collection), m_base(&base), m_kind(kind::array), m_number_of_elements(n), m_id(make_id(base,n)), m_derivation(mkdv()){}
+  type_info(const type_info&  ret, parameter_list&&  parals) noexcept: m_collection(ret.m_collection), m_base(&ret), m_kind(kind::function), m_derivation(mkdv()){  new(&m_data) parameter_list(std::move(parals));  m_id = make_id(ret,m_data.parals);}
   type_info(const type_info&   rhs) noexcept=delete;
   type_info(const type_info&&  rhs) noexcept=delete;
  ~type_info(){clear();}
@@ -324,14 +324,11 @@ public:
   type_info&  operator=(const type_info&   rhs) noexcept=delete;
   type_info&  operator=(const type_info&&  rhs) noexcept=delete;
 
-  type_info&  assign(const type_info&   rhs) noexcept;
-  type_info&  assign(const type_info&&  rhs) noexcept;
-
   type_info&  clear() noexcept;
 
-  const type_collection&  get_collection() const noexcept{return m_collection;}
+  const type_info*  get_base() const noexcept{return m_base;}
 
-  const type_info*  get_base_type_info() const noexcept{return m_base_type_info;}
+  const type_collection&  get_collection() const noexcept{return m_collection;}
 
   const std::string&  get_id() const noexcept{return m_id;}
 

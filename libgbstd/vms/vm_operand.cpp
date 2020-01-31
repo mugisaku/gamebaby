@@ -184,7 +184,7 @@ evaluate(context&  ctx) const noexcept
 
       auto&  var = ctx[vp];
 
-      auto&  t = var.get_value().get_type_derivation().get_pointer_type();
+      auto&  t = var.get_value().get_type_derivation().get_reference_type();
 
       return value(t,vp.get_packed());
     }
