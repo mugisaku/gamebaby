@@ -348,6 +348,10 @@ public:
   bool  is_enum()             const noexcept{return m_kind == kind::enum_;}
   bool  is_union()            const noexcept{return m_kind == kind::union_;}
 
+  bool  is_kind_of_integer() const noexcept{return is_integer() || is_unsigned_integer();}
+  bool  is_kind_of_pointer() const noexcept{return is_pointer() || is_null_pointer() || is_generic_pointer();}
+  bool  is_like_boolean()    const noexcept{return is_boolean() || is_kind_of_integer() || is_kind_of_pointer();}
+
   type_info&      make_array_type(int  n) noexcept;
   type_info&  make_reference_type() noexcept;
   type_info&    make_pointer_type() noexcept;

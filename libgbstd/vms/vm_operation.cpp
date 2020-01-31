@@ -16,6 +16,8 @@ reset(unary_opcodes  unop, operand&&  o) noexcept
 
   m_operand_list.emplace_back(std::move(o));
 
+  m_opcode = static_cast<int>(unop);
+
   m_kind = kind::unary;
 
   return *this;
@@ -30,6 +32,8 @@ reset(binary_opcodes  binop, operand&&  l, operand&&  r) noexcept
 
   m_operand_list.emplace_back(std::move(l));
   m_operand_list.emplace_back(std::move(r));
+
+  m_opcode = static_cast<int>(binop);
 
   m_kind = kind::binary;
 

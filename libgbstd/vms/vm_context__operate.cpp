@@ -61,30 +61,58 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   auto&  lt = lv.get_type_info();
   auto&  rt = rv.get_type_info();
 
-  value  v;
-
     if(op == binary_opcodes::add)
     {
+report;
         if(lt.is_integer())
         {
-            if(rt.is_integer() || rt.is_unsigned_integer())
+          auto  li = lv.get_integer();
+
+            if(rt.is_integer())
             {
-              return make_value(lv.get_integer()+rv.get_integer());
+              return make_value(li+rv.get_integer());
+            }
+
+          else
+            if(rt.is_unsigned_integer())
+            {
+              return make_value(li+rv.get_unsigned_integer());
             }
         }
 
       else
         if(lt.is_unsigned_integer())
         {
-            if(rt.is_integer() || rt.is_unsigned_integer())
+          auto  li = lv.get_unsigned_integer();
+
+            if(rt.is_integer())
             {
-              return make_value(lv.get_unsigned_integer()+rv.get_unsigned_integer());
+              return make_value(li+rv.get_integer());
+            }
+
+          else
+            if(rt.is_unsigned_integer())
+            {
+              return make_value(li+rv.get_unsigned_integer());
             }
         }
 
       else
         if(lt.is_pointer())
         {
+          auto  li = lv.get_unsigned_integer();
+          auto  sz = lt.get_base_type_info()->get_size();
+
+            if(rt.is_integer())
+            {
+              return make_value(li+(sz*rv.get_integer()));
+            }
+
+          else
+            if(rt.is_unsigned_integer())
+            {
+              return make_value(li+(sz*rv.get_unsigned_integer()));
+            }
         }
     }
 
@@ -93,9 +121,74 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
     {
         if(lt.is_integer())
         {
+          auto  li = lv.get_integer();
+
+            if(rt.is_integer())
+            {
+              return make_value(li-rv.get_integer());
+            }
+
+          else
+            if(rt.is_unsigned_integer())
+            {
+              return make_value(li-rv.get_unsigned_integer());
+            }
+        }
+
+      else
+        if(lt.is_unsigned_integer())
+        {
+          auto  li = lv.get_unsigned_integer();
+
+            if(rt.is_integer())
+            {
+              return make_value(li-rv.get_integer());
+            }
+
+          else
+            if(rt.is_unsigned_integer())
+            {
+              return make_value(li-rv.get_unsigned_integer());
+            }
+        }
+
+      else
+        if(lt.is_pointer())
+        {
+          auto  sz = lt.get_base_type_info()->get_size();
+
+            if(rt.is_pointer() && (lt == rt))
+            {
+              return make_value((lv.get_integer()-rv.get_integer())/sz);
+            }
+
+          else
+            {
+              auto  li = lv.get_unsigned_integer();
+
+                if(rt.is_integer())
+                {
+                  return make_value(li-(sz*rv.get_integer()));
+                }
+
+              else
+                if(rt.is_unsigned_integer())
+                {
+                  return make_value(li-(sz*rv.get_unsigned_integer()));
+                }
+            }
+        }
+    }
+
+  else
+    if(op == binary_opcodes::mul)
+    {
+        if(lt.is_integer())
+        {
             if(rt.is_integer() || rt.is_unsigned_integer())
             {
-              return make_value(lv.get_integer()-rv.get_integer());
+              return make_value( lv.get_integer()
+                                *rv.get_integer());
             }
         }
 
@@ -104,53 +197,278 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         {
             if(rt.is_integer() || rt.is_unsigned_integer())
             {
-              return make_value(lv.get_unsigned_integer()-rv.get_unsigned_integer());
+              return make_value( lv.get_unsigned_integer()
+                                *rv.get_unsigned_integer());
+            }
+        }
+    }
+
+  else
+    if(op == binary_opcodes::div)
+    {
+        if(lt.is_integer())
+        {
+            if(rt.is_integer() || rt.is_unsigned_integer())
+            {
+              return make_value( lv.get_integer()
+                                /rv.get_integer());
             }
         }
 
       else
-        if(lt.is_pointer())
+        if(lt.is_unsigned_integer())
         {
+            if(rt.is_integer() || rt.is_unsigned_integer())
+            {
+              return make_value( lv.get_unsigned_integer()
+                                /rv.get_unsigned_integer());
+            }
+        }
+    }
+
+  else
+    if(op == binary_opcodes::rem)
+    {
+        if(lt.is_integer())
+        {
+            if(rt.is_integer() || rt.is_unsigned_integer())
+            {
+              return make_value( lv.get_integer()
+                                %rv.get_integer());
+            }
+        }
+
+      else
+        if(lt.is_unsigned_integer())
+        {
+            if(rt.is_integer() || rt.is_unsigned_integer())
+            {
+              return make_value( lv.get_unsigned_integer()
+                                %rv.get_unsigned_integer());
+            }
+        }
+    }
+
+  else
+    if(op == binary_opcodes::shl)
+    {
+        if(lt.is_integer())
+        {
+            if(rt.is_kind_of_integer())
+            {
+              return make_value(  lv.get_integer()
+                                <<rv.get_unsigned_integer());
+            }
+        }
+
+      else
+        if(lt.is_unsigned_integer())
+        {
+            if(rt.is_kind_of_integer())
+            {
+              return make_value(  lv.get_unsigned_integer()
+                                <<rv.get_unsigned_integer());
+            }
+        }
+    }
+
+  else
+    if(op == binary_opcodes::shr)
+    {
+        if(lt.is_integer())
+        {
+            if(rt.is_kind_of_integer())
+            {
+              return make_value(  lv.get_integer()
+                                >>rv.get_unsigned_integer());
+            }
+        }
+
+      else
+        if(lt.is_unsigned_integer())
+        {
+            if(rt.is_kind_of_integer())
+            {
+              return make_value(  lv.get_unsigned_integer()
+                                >>rv.get_unsigned_integer());
+            }
         }
     }
 
   else
     if(op == binary_opcodes::eq)
     {
-    }
+      auto  li = lv.get_integer();
+      auto  ri = rv.get_integer();
+
+        if((lt.is_integer()          && rt.is_integer()         ) ||
+           (lt.is_unsigned_integer() && rt.is_unsigned_integer()))
+        {
+          return make_value(li == ri);
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(li == ri);
+        }
+   }
 
   else
     if(op == binary_opcodes::neq)
     {
+      auto  li = lv.get_integer();
+      auto  ri = rv.get_integer();
+
+        if((lt.is_integer()          && rt.is_integer()         ) ||
+           (lt.is_unsigned_integer() && rt.is_unsigned_integer()))
+        {
+          return make_value(li != ri);
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(li != ri);
+        }
     }
 
   else
     if(op == binary_opcodes::lt)
     {
+        if(lt.is_integer() && rt.is_integer())
+        {
+          return make_value(lv.get_integer() < rv.get_integer());
+        }
+
+      else
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
+        {
+          return make_value(lv.get_unsigned_integer() < rv.get_unsigned_integer());
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(lv.get_unsigned_integer() < rv.get_unsigned_integer());
+        }
     }
 
   else
     if(op == binary_opcodes::lteq)
     {
+        if(lt.is_integer() && rt.is_integer())
+        {
+          return make_value(lv.get_integer() <= rv.get_integer());
+        }
+
+      else
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
+        {
+          return make_value(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
+        }
     }
 
   else
     if(op == binary_opcodes::gt)
     {
+        if(lt.is_integer() && rt.is_integer())
+        {
+          return make_value(lv.get_integer() > rv.get_integer());
+        }
+
+      else
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
+        {
+          return make_value(lv.get_unsigned_integer() > rv.get_unsigned_integer());
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(lv.get_unsigned_integer() > rv.get_unsigned_integer());
+        }
     }
 
   else
     if(op == binary_opcodes::gteq)
     {
+        if(lt.is_integer() && rt.is_integer())
+        {
+          return make_value(lv.get_integer() >= rv.get_integer());
+        }
+
+      else
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
+        {
+          return make_value(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
+        }
+
+      else
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
+        {
+          return make_value(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
+        }
+    }
+
+  else
+    if(op == binary_opcodes::logical_or)
+    {
+        if(lt.is_like_boolean() && rt.is_like_boolean())
+        {
+          return make_value(   lv.get_integer()
+                            || rv.get_integer());
+        }
+    }
+
+  else
+    if(op == binary_opcodes::logical_and)
+    {
+        if(lt.is_like_boolean() && rt.is_like_boolean())
+        {
+          return make_value(   lv.get_integer()
+                            && rv.get_integer());
+        }
+    }
+
+  else
+    if(op == binary_opcodes::bit_or)
+    {
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
+        {
+          return make_value( lv.get_unsigned_integer()
+                            |rv.get_unsigned_integer());
+        }
+    }
+
+  else
+    if(op == binary_opcodes::bit_and)
+    {
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
+        {
+          return make_value( lv.get_unsigned_integer()
+                            &rv.get_unsigned_integer());
+        }
+    }
+
+  else
+    if(op == binary_opcodes::bit_xor)
+    {
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
+        {
+          return make_value( lv.get_unsigned_integer()
+                            ^rv.get_unsigned_integer());
+        }
     }
 
 
-/*
-  value  retval(m_type_collection["int"]);
-
-  retval.update(lv.get_si()+rv.get_si(),mute);
-*/
-
+report;
   return value();
 }
 
