@@ -295,6 +295,7 @@ public:
  ~type_info(){clear();}
 
   bool  operator==(type_info const&  rhs) const noexcept{return m_id == rhs.m_id;}
+  bool  operator!=(type_info const&  rhs) const noexcept{return m_id != rhs.m_id;}
 
   type_info&  operator=(const type_info&   rhs) noexcept=delete;
   type_info&  operator=(const type_info&&  rhs) noexcept=delete;
@@ -374,6 +375,66 @@ public:
   void  print() const noexcept;
 
 };
+
+
+
+
+class
+value
+{
+  struct data;
+
+  data*  m_data=nullptr;
+
+  void  unrefer() noexcept;
+
+public:
+  value() noexcept{}
+  value(bool  b) noexcept{assign(i);}
+  value(int64_t  i) noexcept{}
+  value(uint64_t  u) noexcept{}
+  value(nullptr_t  p) noexcept{}
+  value(const typesystem::type_info&  ti) noexcept{assign(ti);}
+  value(const value&   rhs) noexcept{assign(rhs);}
+  value(      value&&  rhs) noexcept{assign(std::move(rhs));}
+ ~value(){unrefer();}
+
+  operator bool() const noexcept{return m_data;}
+
+  value&  operator=(const value&   rhs) noexcept{return assign(rhs);}
+  value&  operator=(      value&&  rhs) noexcept{return assign(std::move(rhs));}
+  value&  operator=(const typesystem::type_info&  ti) noexcept{return assign(ti);}
+
+  value&  assign(const value&   rhs) noexcept;
+  value&  assign(      value&&  rhs) noexcept;
+  value&  assign(const typesystem::type_info&  ti) noexcept;
+
+  const typesystem::type_info&  get_type_info() const noexcept;
+
+  int64_t   get_si() const noexcept;
+  uint64_t  get_ui() const noexcept;
+  virtual_pointer  get_pointer() const noexcept;
+
+  value  update( int64_t  i, mutability  m) const noexcept;
+  value  update(uint64_t  u, mutability  m) const noexcept;
+  value  update(virtual_pointer  ptr, mutability  m) const noexcept;
+  value  update(memory_view  mv, mutability  m) const noexcept;
+
+  value  clone() const noexcept;
+
+  memory_frame  get_memory_frame() const noexcept;
+
+  bool  is_mutable() const noexcept;
+
+  bool  is_integer() const noexcept;
+  bool  is_boolean() const noexcept;
+  bool  is_function() const noexcept;
+
+  void  print() const noexcept;
+
+};
+
+
 
 
 class

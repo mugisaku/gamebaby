@@ -58,97 +58,70 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   auto  lv = l.evaluate(*this);
   auto  rv = r.evaluate(*this);
 
+  auto&  lt = lv.get_type_info();
+  auto&  rt = rv.get_type_info();
+
+    if(op == binary_opcodes::add)
+    {
+        if(lt.is_integer())
+        {
+            if(rt.is_integer())
+            {
+            }
+        }
+
+      else
+        if(lt.is_unsigned_integer())
+        {
+        }
+
+      else
+        if(lt.is_pointer())
+        {
+        }
+    }
+
+  else
+    if(op == binary_opcodes::sub)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::eq)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::neq)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::lt)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::lteq)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::gt)
+    {
+    }
+
+  else
+    if(op == binary_opcodes::gteq)
+    {
+    }
+
+
+/*
   value  retval(m_type_collection["int"]);
 
   retval.update(lv.get_si()+rv.get_si(),mute);
-
-  return retval;
-
-/*
-    if(lv.is_u8_pointer() && rv.is_data())
-    {
-      auto  l = lv.get_data();
-      auto  r = rv.get_data();
-
-        switch(m_kind)
-        {
-      case(kind::add): l += r;break;
-      case(kind::sub): l -= r;break;
-        }
-
-
-      lv = value::make_u8_pointer(l);
-    }
-
-  else
-    if(lv.is_u16_pointer() && rv.is_data())
-    {
-      auto  l = lv.get_data();
-      auto  r = rv.get_data();
-
-        switch(m_kind)
-        {
-      case(kind::add): l += 2*r;break;
-      case(kind::sub): l -= 2*r;break;
-        }
-
-
-      lv = value::make_u16_pointer(l);
-    }
-
-  else
-    if(lv.is_u32_pointer() && rv.is_data())
-    {
-      auto  l = lv.get_data();
-      auto  r = rv.get_data();
-
-        switch(m_kind)
-        {
-      case(kind::add): l += 4*r;break;
-      case(kind::sub): l -= 4*r;break;
-        }
-
-
-      lv = value::make_u32_pointer(l);
-    }
-
-  else
-    if(lv.is_data() && rv.is_data())
-    {
-      auto  l = lv.get_data();
-      auto  r = rv.get_data();
-
-        switch(m_kind)
-        {
-      case(kind::add        ): l += r;break;
-      case(kind::sub        ): l -= r;break;
-      case(kind::mul        ): l *= r;break;
-      case(kind::div        ): l /= r;break;
-      case(kind::rem        ): l %= r;break;
-
-      case(kind::shl        ): l <<= r;break;
-      case(kind::shr        ): l >>= r;break;
-
-      case(kind::eq         ): l = (l == r)? 1:0;break;
-      case(kind::neq        ): l = (l != r)? 1:0;break;
-      case(kind::lt         ): l = (l <  r)? 1:0;break;
-      case(kind::lteq       ): l = (l <= r)? 1:0;break;
-      case(kind::gt         ): l = (l >  r)? 1:0;break;
-      case(kind::gteq       ): l = (l >= r)? 1:0;break;
-
-      case(kind::logical_and): l = (l && r)? 1:0;break;
-      case(kind::logical_or ): l = (l || r)? 1:0;break;
-
-      case(kind::bit_and    ): l &= r;break;
-      case(kind::bit_or     ): l |= r;break;
-      case(kind::bit_xor    ): l ^= r;break;
-        }
-
-
-      lv = value::make_data(l);
-    }
 */
-
 
   return value();
 }

@@ -75,7 +75,6 @@ set(SOURCES
   vms/vm_function.cpp
   vms/vm_context.cpp
   vms/vm_context__operate.cpp
-  vms/vm_value.cpp
   vms/vm_operand.cpp
   vms/vm_operation.cpp
   vms/vm_codeline.cpp
@@ -86,6 +85,7 @@ set(SOURCES
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
   typesystems/parameter_list.cpp
+  typesystems/vm_value.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp
