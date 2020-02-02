@@ -12,7 +12,9 @@ value
 context::
 operate(unary_opcodes  op, const operand&  o) noexcept
 {
-  auto  v = o.evaluate(*this);
+  auto  ov = o.evaluate(*this);
+
+  auto  v = dereference(ov);
 
   auto&  t = v.get_type_info();
 
@@ -63,12 +65,14 @@ operate(unary_opcodes  op, const operand&  o) noexcept
   else
     if(op == unary_opcodes::get_address)
     {
-        if(t.is_reference())
+        if(ov.get_type_info().is_reference())
         {
-          return make_value(v.get_unsigned_integer());
+          return make_value(ov.get_unsigned_integer());
         }
     }
 
+
+report;
 
   return value();
 }
@@ -78,76 +82,64 @@ value
 context::
 operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
 {
-  auto  lv = l.evaluate(*this);
-  auto  rv = r.evaluate(*this);
+  auto  olv = l.evaluate(*this);
+  auto  orv = r.evaluate(*this);
 
-  auto  lt = &lv.get_type_info();
-  auto  rt = &rv.get_type_info();
+  auto  lv = dereference(olv);
+  auto  rv = dereference(orv);
 
-    if(lt->is_reference())
-    {
-      lt = lt->get_base();
-
-      lv = (*this)[variable_pointer(lv.get_unsigned_integer())].get_value();
-    }
-
-
-    if(rt->is_reference())
-    {
-      rt = rt->get_base();
-
-      rv = (*this)[variable_pointer(rv.get_unsigned_integer())].get_value();
-    }
+  auto&  lt = lv.get_type_info();
+  auto&  rt = rv.get_type_info();
 
 
     if(op == binary_opcodes::add)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
           auto  li = lv.get_integer();
 
-            if(rt->is_integer())
+            if(rt.is_integer())
             {
               return make_value(li+rv.get_integer());
             }
 
           else
-            if(rt->is_unsigned_integer())
+            if(rt.is_unsigned_integer())
             {
               return make_value(li+rv.get_unsigned_integer());
             }
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
           auto  li = lv.get_unsigned_integer();
 
-            if(rt->is_integer())
+            if(rt.is_integer())
             {
               return make_value(li+rv.get_integer());
             }
 
           else
-            if(rt->is_unsigned_integer())
+            if(rt.is_unsigned_integer())
             {
               return make_value(li+rv.get_unsigned_integer());
             }
         }
 
       else
-        if(lt->is_pointer())
+        if(lt.is_pointer())
         {
           auto  li = lv.get_unsigned_integer();
-          auto  sz = lt->get_base()->get_size();
+          auto  sz = lt.get_base()->get_size();
 
-            if(rt->is_integer())
+            if(rt.is_integer())
             {
               return make_value(li+(sz*rv.get_integer()));
             }
 
           else
-            if(rt->is_unsigned_integer())
+            if(rt.is_unsigned_integer())
             {
               return make_value(li+(sz*rv.get_unsigned_integer()));
             }
@@ -157,45 +149,45 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::sub)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
           auto  li = lv.get_integer();
 
-            if(rt->is_integer())
+            if(rt.is_integer())
             {
               return make_value(li-rv.get_integer());
             }
 
           else
-            if(rt->is_unsigned_integer())
+            if(rt.is_unsigned_integer())
             {
               return make_value(li-rv.get_unsigned_integer());
             }
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
           auto  li = lv.get_unsigned_integer();
 
-            if(rt->is_integer())
+            if(rt.is_integer())
             {
               return make_value(li-rv.get_integer());
             }
 
           else
-            if(rt->is_unsigned_integer())
+            if(rt.is_unsigned_integer())
             {
               return make_value(li-rv.get_unsigned_integer());
             }
         }
 
       else
-        if(lt->is_pointer())
+        if(lt.is_pointer())
         {
-          auto  sz = lt->get_base()->get_size();
+          auto  sz = lt.get_base()->get_size();
 
-            if(rt->is_pointer() && (lt == rt))
+            if(rt.is_pointer() && (lt == rt))
             {
               return make_value((lv.get_integer()-rv.get_integer())/sz);
             }
@@ -204,13 +196,13 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
             {
               auto  li = lv.get_unsigned_integer();
 
-                if(rt->is_integer())
+                if(rt.is_integer())
                 {
                   return make_value(li-(sz*rv.get_integer()));
                 }
 
               else
-                if(rt->is_unsigned_integer())
+                if(rt.is_unsigned_integer())
                 {
                   return make_value(li-(sz*rv.get_unsigned_integer()));
                 }
@@ -221,9 +213,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::mul)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_integer()
                                 *rv.get_integer());
@@ -231,9 +223,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_unsigned_integer()
                                 *rv.get_unsigned_integer());
@@ -244,9 +236,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::div)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_integer()
                                 /rv.get_integer());
@@ -254,9 +246,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_unsigned_integer()
                                 /rv.get_unsigned_integer());
@@ -267,9 +259,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::rem)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_integer()
                                 %rv.get_integer());
@@ -277,9 +269,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
-            if(rt->is_integer() || rt->is_unsigned_integer())
+            if(rt.is_integer() || rt.is_unsigned_integer())
             {
               return make_value( lv.get_unsigned_integer()
                                 %rv.get_unsigned_integer());
@@ -290,9 +282,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::shl)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
-            if(rt->is_kind_of_integer())
+            if(rt.is_kind_of_integer())
             {
               return make_value(  lv.get_integer()
                                 <<rv.get_unsigned_integer());
@@ -300,9 +292,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
-            if(rt->is_kind_of_integer())
+            if(rt.is_kind_of_integer())
             {
               return make_value(  lv.get_unsigned_integer()
                                 <<rv.get_unsigned_integer());
@@ -313,9 +305,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::shr)
     {
-        if(lt->is_integer())
+        if(lt.is_integer())
         {
-            if(rt->is_kind_of_integer())
+            if(rt.is_kind_of_integer())
             {
               return make_value(  lv.get_integer()
                                 >>rv.get_unsigned_integer());
@@ -323,9 +315,9 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         }
 
       else
-        if(lt->is_unsigned_integer())
+        if(lt.is_unsigned_integer())
         {
-            if(rt->is_kind_of_integer())
+            if(rt.is_kind_of_integer())
             {
               return make_value(  lv.get_unsigned_integer()
                                 >>rv.get_unsigned_integer());
@@ -339,14 +331,14 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
       auto  li = lv.get_integer();
       auto  ri = rv.get_integer();
 
-        if((lt->is_integer()          && rt->is_integer()         ) ||
-           (lt->is_unsigned_integer() && rt->is_unsigned_integer()))
+        if((lt.is_integer()          && rt.is_integer()         ) ||
+           (lt.is_unsigned_integer() && rt.is_unsigned_integer()))
         {
           return make_value(li == ri);
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(li == ri);
         }
@@ -358,14 +350,14 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
       auto  li = lv.get_integer();
       auto  ri = rv.get_integer();
 
-        if((lt->is_integer()          && rt->is_integer()         ) ||
-           (lt->is_unsigned_integer() && rt->is_unsigned_integer()))
+        if((lt.is_integer()          && rt.is_integer()         ) ||
+           (lt.is_unsigned_integer() && rt.is_unsigned_integer()))
         {
           return make_value(li != ri);
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(li != ri);
         }
@@ -374,19 +366,19 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::lt)
     {
-        if(lt->is_integer() && rt->is_integer())
+        if(lt.is_integer() && rt.is_integer())
         {
           return make_value(lv.get_integer() < rv.get_integer());
         }
 
       else
-        if(lt->is_unsigned_integer() && rt->is_unsigned_integer())
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
         {
           return make_value(lv.get_unsigned_integer() < rv.get_unsigned_integer());
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(lv.get_unsigned_integer() < rv.get_unsigned_integer());
         }
@@ -395,19 +387,19 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::lteq)
     {
-        if(lt->is_integer() && rt->is_integer())
+        if(lt.is_integer() && rt.is_integer())
         {
           return make_value(lv.get_integer() <= rv.get_integer());
         }
 
       else
-        if(lt->is_unsigned_integer() && rt->is_unsigned_integer())
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
         {
           return make_value(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
         }
@@ -416,19 +408,19 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::gt)
     {
-        if(lt->is_integer() && rt->is_integer())
+        if(lt.is_integer() && rt.is_integer())
         {
           return make_value(lv.get_integer() > rv.get_integer());
         }
 
       else
-        if(lt->is_unsigned_integer() && rt->is_unsigned_integer())
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
         {
           return make_value(lv.get_unsigned_integer() > rv.get_unsigned_integer());
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(lv.get_unsigned_integer() > rv.get_unsigned_integer());
         }
@@ -437,19 +429,19 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::gteq)
     {
-        if(lt->is_integer() && rt->is_integer())
+        if(lt.is_integer() && rt.is_integer())
         {
           return make_value(lv.get_integer() >= rv.get_integer());
         }
 
       else
-        if(lt->is_unsigned_integer() && rt->is_unsigned_integer())
+        if(lt.is_unsigned_integer() && rt.is_unsigned_integer())
         {
           return make_value(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
         }
 
       else
-        if(lt->is_pointer() && rt->is_pointer() && (lt == rt))
+        if(lt.is_pointer() && rt.is_pointer() && (lt == rt))
         {
           return make_value(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
         }
@@ -458,7 +450,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::logical_or)
     {
-        if(lt->is_like_boolean() && rt->is_like_boolean())
+        if(lt.is_like_boolean() && rt.is_like_boolean())
         {
           return make_value(   lv.get_integer()
                             || rv.get_integer());
@@ -468,7 +460,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::logical_and)
     {
-        if(lt->is_like_boolean() && rt->is_like_boolean())
+        if(lt.is_like_boolean() && rt.is_like_boolean())
         {
           return make_value(   lv.get_integer()
                             && rv.get_integer());
@@ -478,7 +470,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::bit_or)
     {
-        if(lt->is_kind_of_integer() && rt->is_kind_of_integer())
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
         {
           return make_value( lv.get_unsigned_integer()
                             |rv.get_unsigned_integer());
@@ -488,7 +480,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::bit_and)
     {
-        if(lt->is_kind_of_integer() && rt->is_kind_of_integer())
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
         {
           return make_value( lv.get_unsigned_integer()
                             &rv.get_unsigned_integer());
@@ -498,7 +490,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   else
     if(op == binary_opcodes::bit_xor)
     {
-        if(lt->is_kind_of_integer() && rt->is_kind_of_integer())
+        if(lt.is_kind_of_integer() && rt.is_kind_of_integer())
         {
           return make_value( lv.get_unsigned_integer()
                             ^rv.get_unsigned_integer());

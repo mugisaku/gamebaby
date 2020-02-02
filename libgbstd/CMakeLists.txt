@@ -86,6 +86,7 @@ set(SOURCES
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
   typesystems/parameter_list.cpp
+  typesystems/memory_sharer.cpp
   typesystems/value.cpp
   ilc_javascript.cpp
   utility.cpp

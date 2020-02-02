@@ -8,6 +8,17 @@ namespace gbstd{
 
 
 
+context::
+context() noexcept
+{
+  m_type_collection.push_c_like_types();
+
+  push_variable(m_type_collection["int"],"final return value");
+}
+
+
+
+
 function&
 context::
 create_function(std::string_view  name) noexcept
@@ -133,7 +144,7 @@ variable&
 context::
 operator[](variable_pointer  p) noexcept
 {
-  return m_variable_table[(p.is_local()? get_base_index():0)+p.get()];
+  return m_variable_table[(p.is_local()? get_base_index():0)+p.get_variable_index()];
 }
 
 
@@ -141,7 +152,21 @@ const variable&
 context::
 operator[](variable_pointer  p) const noexcept
 {
-  return m_variable_table[(p.is_local()? get_base_index():0)+p.get()];
+  return m_variable_table[(p.is_local()? get_base_index():0)+p.get_variable_index()];
+}
+
+
+value
+context::
+dereference(const value&  v) noexcept
+{
+    if(v.get_type_info().is_reference())
+    {
+      return (*this)[variable_pointer(v.get_unsigned_integer())].get_value();
+    }
+
+
+  return v;
 }
 
 
@@ -157,20 +182,111 @@ void
 context::
 store(const value&  dst, const value&  src) noexcept
 {
-    if(!dst.get_type_info().is_pointer())
+    if(!dst.get_type_info().is_reference())
     {
       report;
       return;
     }
 
 
-  auto&  var = (*this)[variable_pointer(dst.get_unsigned_integer())];
+  auto  srcv = dereference(src);
 
-  auto&  st = src.get_type_info();
+  auto  vp = variable_pointer(dst.get_unsigned_integer());
 
-    if(st.is_integer())
+  auto&  var = (*this)[vp];
+
+  auto&  val = var.get_value();
+
+    if(val.get_type_info().get_size() <= sizeof(int64_t))
     {
+      val.update(srcv.get_integer());
     }
+}
+
+
+void
+context::
+process(const branch_instruction&   br) noexcept
+{
+  value  condv = br.get_condition().evaluate(*this);
+
+    if(condv.get_integer())
+    {
+      value  destv = br.get_destination().evaluate(*this);
+
+      m_current_frame->m_pc = destv.get_integer();
+    }
+}
+
+
+void
+context::
+process(const return_instruction&  ret) noexcept
+{
+  auto  val = dereference(ret.get_operand().evaluate(*this));
+
+val.print();
+  pop_frame();
+
+    if(m_current_frame)
+    {
+      (*this)[m_current_frame->m_store_pointer].get_value() = std::move(val);
+    }
+
+  else
+    {
+//      m_last_value = std::move(val);
+
+/*
+        if(m_last_value.get_type_info().is_reference())
+        {
+//          xval.print();
+        }
+
+      else
+        {
+          m_last_value.print();
+        }
+*/
+    }
+}
+
+
+void
+context::
+call(variable&  var, int  n, const operand*  ops) noexcept
+{
+  auto&  target = (*this)[ops++->get_function_pointer()];
+
+  auto  argtypes = target.get_signature().get_parameter_list().begin();
+  auto  argnames = target.get_argument_name_list().begin();
+
+  std::vector<variable>  args;
+
+    while(n--)
+    {
+  //                      args.emplace_back(it++->evaluate(*this),*argnames++);
+    }
+
+
+  push_frame(var.get_address(),target,args.size(),args.data());
+}
+
+
+void
+context::
+seek(variable&  var, int  n, const operand*  ops) noexcept
+{
+}
+
+
+
+
+void
+context::
+push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept
+{
+  m_variable_table.emplace_back(m_variable_table.size(),ti,name);
 }
 
 
@@ -258,54 +374,13 @@ step() noexcept
   else
     if(codeln.is_branch_instruction())
     {
-      auto&  br = codeln.get_branch_instruction();
-
-      value  condv = br.get_condition().evaluate(*this);
-
-        if(condv.get_integer())
-        {
-          value  destv = br.get_destination().evaluate(*this);
-
-          m_current_frame->m_pc = destv.get_integer();
-        }
+      process(codeln.get_branch_instruction());
     }
 
   else
     if(codeln.is_return_instruction())
     {
-      auto&  ret = codeln.get_return_instruction();
-
-      auto  val = ret.get_operand().evaluate(*this);
-
-      value  xval;
-
-        if(val.get_type_info().is_reference())
-        {
-          xval = (*this)[variable_pointer(val.get_unsigned_integer())].get_value();
-        }
-
-
-      pop_frame();
-
-        if(m_current_frame)
-        {
-          (*this)[m_current_frame->m_store_pointer].get_value() = std::move(val);
-        }
-
-      else
-        {
-          m_last_value = std::move(val);
-
-            if(m_last_value.get_type_info().is_reference())
-            {
-              xval.print();
-            }
-
-          else
-            {
-              m_last_value.print();
-            }
-        }
+      process(codeln.get_return_instruction());
     }
 
   else
@@ -317,7 +392,7 @@ step() noexcept
 
       auto  vp = opls[0].get_variable_pointer();
 
-      auto&  var = m_variable_table[vp.get()];
+      auto&  var = (*this)[vp];
 
         if(op.is_unary())
         {
@@ -333,23 +408,11 @@ step() noexcept
       else
         if(op.is_call())
         {
-          auto&  target = (*this)[opls[1].get_function_pointer()];
+        }
 
-          auto  argtypes = target.get_signature().get_parameter_list().begin();
-          auto  argnames = target.get_argument_name_list().begin();
-
-          auto  it     = &opls[2];
-          auto  it_end = &opls.back()+1;
-
-          std::vector<variable>  args;
-
-            while(it != it_end)
-            {
-//                      args.emplace_back(it++->evaluate(*this),*argnames++);
-            }
-
-
-          push_frame(vp,target,args.size(),args.data());
+      else
+        if(op.is_seek())
+        {
         }
     }
 }

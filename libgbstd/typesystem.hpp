@@ -472,55 +472,90 @@ public:
 
 
 class
-value
+memory_sharer
 {
-  struct data;
+  uint8_t*  m_data=nullptr;
 
-  data*  m_data=nullptr;
+  uint32_t  m_offset=0;
+  uint32_t  m_length=0;
 
   void  unrefer() noexcept;
+
+  uint64_t&  get_reference_count() const noexcept;
+
+  uint8_t*  get_memory_pointer() const noexcept;
+
+public:
+  memory_sharer() noexcept{}
+  memory_sharer(uint32_t  length) noexcept{assign(length);}
+  memory_sharer(const value&   rhs) noexcept{assign(rhs);}
+  memory_sharer(      value&&  rhs) noexcept{assign(std::move(rhs));}
+  memory_sharer(const value&  rhs, int  offset) noexcept{assign(rhs,offset);}
+ ~memory_sharer(){unrefer();}
+
+  operator bool() const noexcept{return m_data;}
+
+  uint8_t&  operator[](int  i) const noexcept{return m_memory_pointer()[m_offset+i];}
+
+  memory_sharer&  operator=(const memory_sharer&   rhs) noexcept{return assign(rhs);}
+  memory_sharer&  operator=(      memory_sharer&&  rhs) noexcept{return assign(std::move(rhs));}
+  memory_sharer&  operator=(uint32_t  length) noexcept{return assign(length);}
+
+  memory_sharer&  assign(const memory_sharer&   rhs) noexcept;
+  memory_sharer&  assign(      memory_sharer&&  rhs) noexcept;
+  memory_sharer&  assign(uint32_t  length) noexcept;
+  memory_sharer&  assign(const memory_sharer&  src, int  offset) noexcept;
+
+  uint8_t  get_data(int  i) const noexcept{return (*this)[i];}
+
+  uint32_t  get_offset() const noexcept{return m_offset;}
+  uint32_t  get_length() const noexcept{return m_length;}
+
+  uint64_t  get_count() const noexcept{return m_reference_count();}
+
+  memory_sharer  clone() const noexcept;
+
+  memory_sharer  operator+(int  n) const noexcept{return {*this, n};}
+  memory_sharer  operator-(int  n) const noexcept{return {*this,-n};}
+
+};
+
+
+class
+value
+{
+  const type_info*  m_type_info;
+
+  memory_sharer  m_memory;
 
 public:
   value() noexcept{}
   value(const type_info&  ti) noexcept{assign(ti);}
   value(const type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
   value(const type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
-  value(const type_info&  ti, memory_view  mv) noexcept{assign(ti,mv);}
-  value(const value&   rhs) noexcept{assign(rhs);}
-  value(      value&&  rhs) noexcept{assign(std::move(rhs));}
- ~value(){unrefer();}
 
-  operator bool() const noexcept{return m_data;}
+  operator bool() const noexcept{return m_type_info;}
 
-  value&  operator=(const value&   rhs) noexcept{return assign(rhs);}
-  value&  operator=(      value&&  rhs) noexcept{return assign(std::move(rhs));}
+  uint8_t&  operator[](int  i) const noexcept{return m_memory[i];}
 
-  value&  assign(const value&   rhs) noexcept;
-  value&  assign(      value&&  rhs) noexcept;
   value&  assign(const type_info&  ti             ) noexcept;
   value&  assign(const type_info&  ti,  int64_t  i) noexcept;
   value&  assign(const type_info&  ti, uint64_t  u) noexcept{return assign(ti,static_cast<int64_t>(u));}
-  value&  assign(const type_info&  ti, memory_view  mv) noexcept;
 
   const type_info&  get_type_info() const noexcept;
   type_derivation&  get_type_derivation() const noexcept;
 
-  int64_t   get_integer()          const noexcept;
-  uint64_t  get_unsigned_integer() const noexcept;
+  const memory_sharer&  get_memory() const noexcept{return m_memory;}
 
-  memory_frame  get_memory_frame() const noexcept;
+  int64_t&   get_integer()          const noexcept;
+  uint64_t&  get_unsigned_integer() const noexcept;
 
   value  update( int64_t  i) const noexcept;
   value  update(uint64_t  u) const noexcept;
-  value  update(memory_view  mv) const noexcept;
-
-  value  clone() const noexcept;
 
   void  print() const noexcept;
 
 };
-
-
 
 
 class

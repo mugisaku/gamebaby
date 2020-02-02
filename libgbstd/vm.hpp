@@ -55,66 +55,51 @@ using mutabilities::unmute;
 
 
 class
-virtual_pointer
+variable_pointer
 {
   uint32_t  m_variable_index;
   uint32_t  m_byte_offset;
 
 public:
-  constexpr virtual_pointer(uint32_t  vi=0, uint32_t off=0) noexcept:
-  m_variable_index(vi), m_byte_offset(off){}
+  constexpr variable_pointer(uint64_t  packed=0) noexcept:
+  m_variable_index(packed>>32), m_byte_offset(packed&0xFFFFFFFF){}
 
-  constexpr operator bool() const noexcept{return m_variable_index;}
+  constexpr variable_pointer(uint32_t  vi, bool  loc, uint32_t  off=0) noexcept:
+  m_variable_index((vi<<1)|(loc?1:0)), m_byte_offset(off){}
 
-  constexpr bool  operator==(const virtual_pointer&  rhs) const noexcept
+  constexpr operator bool() const noexcept{return m_variable_index>>1;}
+
+  constexpr bool  operator==(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index == rhs.m_variable_index) && (m_byte_offset == rhs.m_byte_offset);}
 
-  constexpr bool  operator!=(const virtual_pointer&  rhs) const noexcept
+  constexpr bool  operator!=(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index != rhs.m_variable_index) || (m_byte_offset != rhs.m_byte_offset);}
 
-  constexpr bool  operator<(const virtual_pointer&  rhs) const noexcept
+  constexpr bool  operator<(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index <= rhs.m_variable_index) && (m_byte_offset < rhs.m_byte_offset);}
 
-  constexpr bool  operator<=(const virtual_pointer&  rhs) const noexcept
+  constexpr bool  operator<=(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index <= rhs.m_variable_index) && (m_byte_offset <= rhs.m_byte_offset);}
 
-  constexpr bool  operator>(const virtual_pointer&  rhs) const noexcept
+  constexpr bool  operator>(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index >= rhs.m_variable_index) && (m_byte_offset > rhs.m_byte_offset);}
 
-  constexpr bool  operator>=(const virtual_pointer&  rhs) const noexcept
+  constexpr bool  operator>=(const variable_pointer&  rhs) const noexcept
   {return (m_variable_index >= rhs.m_variable_index) && (m_byte_offset >= rhs.m_byte_offset);}
 
 
-  constexpr uint32_t  get_variable_index() const noexcept{return m_variable_index;}
+  constexpr uint32_t  get_variable_index() const noexcept{return m_variable_index>>1;}
   constexpr uint32_t  get_byte_offset() const noexcept{return m_byte_offset;}
 
-  constexpr virtual_pointer  operator+(int  n) const noexcept{return {m_variable_index,m_byte_offset+n};}
-  constexpr virtual_pointer  operator-(int  n) const noexcept{return {m_variable_index,m_byte_offset+n};}
+  constexpr bool  is_local() const noexcept{return m_variable_index&1;}
 
-  virtual_pointer&  operator+=(int  n) noexcept{  m_byte_offset += n;  return *this;}
-  virtual_pointer&  operator-=(int  n) noexcept{  m_byte_offset -= n;  return *this;}
+  constexpr uint64_t  get_packed() const noexcept{return (static_cast<uint64_t>(m_variable_index)<<32)|m_byte_offset;}
 
-};
+  constexpr variable_pointer  operator+(int  n) const noexcept{return {get_packed()+n};}
+  constexpr variable_pointer  operator-(int  n) const noexcept{return {get_packed()-n};}
 
-
-class
-variable_pointer
-{
-  uint32_t  m_value;
-
-  bool  m_local=false;
-
-public:
-  constexpr variable_pointer(uint64_t  v=0) noexcept: m_value(v>>1), m_local(v&1){}
-  constexpr variable_pointer(uint32_t  v, bool  loc) noexcept: m_value(v), m_local(loc){}
-
-  constexpr operator bool() const noexcept{return m_value;}
-
-  constexpr bool  is_local() const noexcept{return m_local;}
-
-  constexpr uint32_t  get() const noexcept{return m_value;}
-
-  constexpr uint64_t  get_packed() const noexcept{return (m_value<<1)|(m_local? 1:0);}
+  variable_pointer&  operator+=(int  n) noexcept{  m_byte_offset += n;  return *this;}
+  variable_pointer&  operator-=(int  n) noexcept{  m_byte_offset -= n;  return *this;}
 
 };
 
@@ -142,7 +127,6 @@ operand
     identifier,
     integer_literal,
     null_pointer_literal,
-    pointer_literal,
     variable_pointer_literal,
     function_pointer_literal,
   } m_kind=kind::null;
@@ -150,7 +134,6 @@ operand
   union data{
     std::string  s;
     int64_t      i;
-    virtual_pointer  p;
 
     variable_pointer  vp;
     function_pointer  fp;
@@ -166,7 +149,6 @@ public:
   operand(      operand&&  rhs) noexcept{assign(std::move(rhs));}
   operand(std::string_view  sv) noexcept{assign(sv);}
   operand(int64_t  i) noexcept{assign(i);}
-  operand(virtual_pointer  p) noexcept{assign(p);}
   operand(variable_pointer  vp) noexcept{assign(vp);}
   operand(function_pointer  fp) noexcept{assign(fp);}
  ~operand(){clear();}
@@ -175,7 +157,6 @@ public:
   operand&  operator=(      operand&&  rhs) noexcept{return assign(std::move(rhs));}
   operand&  operator=(std::string_view  sv) noexcept{return assign(sv);}
   operand&  operator=(int64_t  i) noexcept{return assign(i);}
-  operand&  operator=(virtual_pointer  p) noexcept{return assign(p);}
   operand&  operator=(variable_pointer  vp) noexcept{return assign(vp);}
   operand&  operator=(function_pointer  fp) noexcept{return assign(fp);}
 
@@ -183,7 +164,6 @@ public:
   operand&  assign(      operand&&  rhs) noexcept;
   operand&  assign(std::string_view  sv) noexcept;
   operand&  assign(int64_t  i) noexcept;
-  operand&  assign(virtual_pointer  p) noexcept;
   operand&  assign(variable_pointer  vp) noexcept;
   operand&  assign(function_pointer  fp) noexcept;
 
@@ -192,7 +172,6 @@ public:
   bool  is_identifier()               const noexcept{return m_kind == kind::identifier;}
   bool  is_integer_literal()          const noexcept{return m_kind == kind::integer_literal;}
   bool  is_null_pointer_literal()     const noexcept{return m_kind == kind::null_pointer_literal;}
-  bool  is_pointer_literal()          const noexcept{return m_kind == kind::pointer_literal;}
   bool  is_variable_pointer_literal() const noexcept{return m_kind == kind::variable_pointer_literal;}
   bool  is_function_pointer_literal() const noexcept{return m_kind == kind::function_pointer_literal;}
 
@@ -200,7 +179,6 @@ public:
 
   int64_t  get_integer_literal() const noexcept{return m_data.i;}
 
-  virtual_pointer    get_pointer()          const noexcept{return m_data.p;}
   variable_pointer   get_variable_pointer() const noexcept{return m_data.vp;}
   function_pointer   get_function_pointer() const noexcept{return m_data.fp;}
 
@@ -263,7 +241,7 @@ public:
   variable(uint32_t  addr, value&&  v, std::string_view  name) noexcept:
   m_address(addr), m_value(std::move(v)), m_name(name){}
 
-  int  get_address() const noexcept{return m_address;}
+  variable_pointer  get_address() const noexcept{return {m_address};}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
@@ -273,6 +251,10 @@ public:
   void  print() const noexcept{  printf("%s ",m_name.data());  m_value.print();}
 
 };
+
+
+class return_instruction;
+class branch_instruction;
 
 
 class
@@ -287,14 +269,20 @@ context
 
   frame*  m_current_frame=nullptr;
 
-  value  m_last_value;
-
   bool  m_finalized=false;
+
+  void  push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept;
 
   void  push_frame(variable_pointer  p, const function&  fn, int  argc, const variable*  args) noexcept;
   void  pop_frame() noexcept;
 
   void  store(const value&  dst, const value&  src) noexcept;
+
+  void  process(const branch_instruction&   br) noexcept;
+  void  process(const return_instruction&  ret) noexcept;
+
+  void  call(variable&  var, int  n, const operand*  ops) noexcept;
+  void  seek(variable&  var, int  n, const operand*  ops) noexcept;
 
   value  operate( unary_opcodes  op, const operand&  o) noexcept;
   value  operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept;
@@ -302,7 +290,7 @@ context
   int  get_base_index() const noexcept;
 
 public:
-  context() noexcept{}
+  context() noexcept;
 
   typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
 
@@ -323,6 +311,8 @@ public:
   function&  operator[](function_pointer  p) noexcept{return m_function_table[p.get()];}
   const variable&  operator[](variable_pointer  p) const noexcept;
   const function&  operator[](function_pointer  p) const noexcept{return m_function_table[p.get()];}
+
+  value  dereference(const value&  v) noexcept;
 
   context&  entry(std::string_view  fn_name) noexcept{  push_frame(0,*find_function(fn_name),0,nullptr);  return *this;}
 
@@ -430,6 +420,7 @@ operation
     unary,
     binary,
     call,
+    seek,
 
   } m_kind=kind::null;
 
@@ -442,12 +433,14 @@ public:
   operation(std::string_view  lb, unary_opcodes  unop, operand&&  o) noexcept: m_operand_list({lb}){reset(unop,std::move(o));}
   operation(std::string_view  lb, binary_opcodes  binop, operand&&  l, operand&&  r) noexcept: m_operand_list({lb}){reset(binop,std::move(l),std::move(r));}
   operation(std::string_view  lb, std::string_view  fn_name, std::vector<operand>&&  args) noexcept: m_operand_list({lb}){reset(fn_name,std::move(args));}
+  operation(std::string_view  lb, std::initializer_list<std::string_view>  names) noexcept: m_operand_list({lb}){reset(names);}
  ~operation(){}
 
   operation&  reset() noexcept;
   operation&  reset(unary_opcodes  unop, operand&&  o) noexcept;
   operation&  reset(binary_opcodes  binop, operand&&  l, operand&&  r) noexcept;
   operation&  reset(std::string_view  fn_name, std::vector<operand>&&  args) noexcept;
+  operation&  reset(std::initializer_list<std::string_view>  names) noexcept;
 
   unary_opcodes   get_unary_opcodes()  const noexcept{return static_cast< unary_opcodes>(m_opcode);}
   binary_opcodes  get_binary_opcodes() const noexcept{return static_cast<binary_opcodes>(m_opcode);}
@@ -458,6 +451,7 @@ public:
   bool  is_unary()  const noexcept{return m_kind == kind::unary;}
   bool  is_binary() const noexcept{return m_kind == kind::binary;}
   bool  is_call()   const noexcept{return m_kind == kind::call;}
+  bool  is_seek()   const noexcept{return m_kind == kind::seek;}
 
   void  print() const noexcept;
 

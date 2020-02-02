@@ -63,6 +63,24 @@ reset(std::string_view  fn_name, std::vector<operand>&&  args) noexcept
 }
 
 
+operation&
+operation::
+reset(std::initializer_list<std::string_view>  names) noexcept
+{
+  m_operand_list.resize(1);
+
+    for(auto  sv: names)
+    {
+      m_operand_list.emplace_back(sv);
+    }
+
+
+  m_kind = kind::seek;
+
+  return *this;
+}
+
+
 void
 operation::
 print() const noexcept
