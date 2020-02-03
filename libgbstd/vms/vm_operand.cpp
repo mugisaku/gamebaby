@@ -22,8 +22,7 @@ assign(const operand&   rhs) noexcept
         {
       case(kind::identifier     ): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
-      case(kind::variable_pointer_literal): new(&m_data) variable_pointer(rhs.m_data.vp);break;
-      case(kind::function_pointer_literal): new(&m_data) function_pointer(rhs.m_data.fp);break;
+      case(kind::pointer_literal): new(&m_data) multi_pointer(rhs.m_data.p);break;
         }
     }
 
@@ -46,8 +45,7 @@ assign(operand&&  rhs) noexcept
         {
       case(kind::identifier     ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
-      case(kind::variable_pointer_literal): new(&m_data) variable_pointer(std::move(rhs.m_data.vp));break;
-      case(kind::function_pointer_literal): new(&m_data) function_pointer(std::move(rhs.m_data.fp));break;
+      case(kind::pointer_literal): new(&m_data) multi_pointer(std::move(rhs.m_data.p));break;
         }
     }
 
@@ -86,27 +84,13 @@ assign(int64_t  i) noexcept
 
 operand&
 operand::
-assign(variable_pointer  p) noexcept
+assign(multi_pointer  p) noexcept
 {
   clear();
 
-  new(&m_data) variable_pointer(p);
+  new(&m_data) multi_pointer(p);
 
-  m_kind = kind::variable_pointer_literal;
-
-  return *this;
-}
-
-
-operand&
-operand::
-assign(function_pointer  p) noexcept
-{
-  clear();
-
-  new(&m_data) function_pointer(p);
-
-  m_kind = kind::function_pointer_literal;
+  m_kind = kind::pointer_literal;
 
   return *this;
 }
@@ -121,9 +105,7 @@ clear() noexcept
   case(kind::null): break;
   case(kind::identifier     ): m_data.s.~basic_string();break;
   case(kind::integer_literal): /*m_data.i.~int()*/;break;
-  case(kind::null_pointer_literal): /*m_data.i.~int()*/;break;
-  case(kind::variable_pointer_literal): m_data.vp.~variable_pointer();break;
-  case(kind::function_pointer_literal): m_data.fp.~function_pointer();break;
+  case(kind::pointer_literal): m_data.p.~multi_pointer();break;
     }
 
 
@@ -149,31 +131,42 @@ evaluate(context&  ctx) const noexcept
     }
 
   else
-    if(is_null_pointer_literal())
+    if(is_pointer_literal())
     {
-      return ctx.make_value(nullptr);
-    }
+      auto  p = get_pointer();
 
-  else
-    if(is_variable_pointer_literal())
-    {
-      auto  vp = get_variable_pointer();
+        if(p.is_null())
+        {
+          return ctx.make_value(nullptr);
+        }
 
-      auto&  var = ctx[vp];
+      else
+        if(p.is_global())
+        {
+          auto&  var = ctx.get_global_variable(p.get());
 
-      auto&  t = var.get_value().get_type_derivation().get_reference_type();
+          auto&  t = var.get_value().get_type_derivation().get_reference_type();
 
-      return value(t,vp.get_packed());
-    }
+          return value(t,p.get_packed());
+        }
 
-  else
-    if(is_function_pointer_literal())
-    {
-      auto  p = get_function_pointer();
+      else
+        if(p.is_local())
+        {
+          auto&  var = ctx.get_local_variable(p.get());
 
-      auto&  fn = ctx[p];
+          auto&  t = var.get_value().get_type_derivation().get_reference_type();
 
-      return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
+          return value(t,p.get_packed());
+        }
+
+      else
+        if(p.is_function())
+        {
+          auto&  fn = ctx.get_function(p.get());
+
+          return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
+        }
     }
 
 
@@ -190,7 +183,7 @@ print() const noexcept
   case(kind::null): break;
   case(kind::identifier     ): printf("%s",m_data.s.data());break;
   case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
-  case(kind::null_pointer_literal): printf("nullptr");break;
+  case(kind::pointer_literal): printf("%" PRIu32,m_data.p.get());break;
     }
 }
 

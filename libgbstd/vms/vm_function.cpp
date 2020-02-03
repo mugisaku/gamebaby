@@ -125,7 +125,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
 
     if(fn)
     {
-      o = function_pointer(fn->get_address());
+      o = multi_pointer('f',fn->get_address());
 
       return;
     }
@@ -137,7 +137,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
     {
         if(id == name)
         {
-          o = variable_pointer(i,true);
+          o = multi_pointer('l',i);
 
           return;
         }
@@ -151,7 +151,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
     {
         if(decl.get_name() == name)
         {
-          o = variable_pointer(i,true);
+          o = multi_pointer('l',i);
 
           return;
         }
@@ -165,7 +165,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
 
     if(var)
     {
-      o = variable_pointer(var->get_address());
+      o = multi_pointer('g',var->get_address());
 
       return;
     }

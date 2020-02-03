@@ -97,6 +97,29 @@ find_variable(std::string_view  name) const noexcept
 }
 
 
+variable&
+context::
+get_variable(multi_pointer  p) noexcept
+{
+  return p.is_global()? get_global_variable(p.get())
+        :p.is_local() ? get_local_variable( p.get())
+        :m_variable_table[0]
+        ;
+}
+
+
+value
+context::
+get_value(multi_pointer  p) const noexcept
+{
+  return p.is_global()  ? get_global_variable(p.get()).get_value()
+        :p.is_local()   ? get_local_variable( p.get()).get_value()
+        :p.is_function()? get_function(       p.get()).get_value()
+        :value()
+        ;
+}
+
+
 void
 context::
 print() const noexcept
@@ -122,7 +145,7 @@ frame
 
   const uint32_t  m_base_index=0;
 
-  variable_pointer  m_store_pointer;
+  uint32_t  m_store_pointer;
 
   uint32_t  m_pc=0;
 
@@ -138,31 +161,15 @@ frame
 };
 
 
-
-
-variable&
-context::
-operator[](variable_pointer  p) noexcept
-{
-  return m_variable_table[(p.is_local()? get_base_index():0)+p.get_variable_index()];
-}
-
-
-const variable&
-context::
-operator[](variable_pointer  p) const noexcept
-{
-  return m_variable_table[(p.is_local()? get_base_index():0)+p.get_variable_index()];
-}
-
-
 value
 context::
 dereference(const value&  v) noexcept
 {
     if(v.get_type_info().is_reference())
     {
-      return (*this)[variable_pointer(v.get_unsigned_integer())].get_value();
+      auto  p = multi_pointer(v.get_unsigned_integer());
+
+      return get_value(p);
     }
 
 
@@ -191,11 +198,7 @@ store(const value&  dst, const value&  src) noexcept
 
   auto  srcv = dereference(src);
 
-  auto  vp = variable_pointer(dst.get_unsigned_integer());
-
-  auto&  var = (*this)[vp];
-
-  auto&  val = var.get_value();
+  auto  val = get_value(multi_pointer(dst.get_unsigned_integer()));
 
     if(val.get_type_info().get_size() <= sizeof(int64_t))
     {
@@ -225,29 +228,55 @@ process(const return_instruction&  ret) noexcept
 {
   auto  val = dereference(ret.get_operand().evaluate(*this));
 
-val.print();
   pop_frame();
 
     if(m_current_frame)
     {
-      (*this)[m_current_frame->m_store_pointer].get_value() = std::move(val);
+      get_global_variable(m_current_frame->m_store_pointer).get_value() = std::move(val);
     }
 
   else
     {
-//      m_last_value = std::move(val);
+      auto&  val0 = m_variable_table[0].get_value();
 
-/*
-        if(m_last_value.get_type_info().is_reference())
-        {
-//          xval.print();
-        }
+      val0 = std::move(val);
 
-      else
-        {
-          m_last_value.print();
-        }
-*/
+      val0.print();
+
+      printf("%" PRIi64 "\n",val0.get_integer());
+    }
+}
+
+
+void
+context::
+process(const operation&  op) noexcept
+{
+  auto&  opls = op.get_operand_list();
+
+  auto&  dst = get_variable(opls[0].get_pointer());
+
+    if(op.is_unary())
+    {
+      dst.get_value() = operate(op.get_unary_opcodes(),opls[1]);
+    }
+
+  else
+    if(op.is_binary())
+    {
+      dst.get_value() = operate(op.get_binary_opcodes(),opls[1],opls[2]);
+    }
+
+  else
+    if(op.is_call())
+    {
+      call(dst,0,nullptr);
+    }
+
+  else
+    if(op.is_seek())
+    {
+      seek(dst,get_value(opls[1].get_pointer()),opls[2].get_identifier());
     }
 }
 
@@ -256,7 +285,7 @@ void
 context::
 call(variable&  var, int  n, const operand*  ops) noexcept
 {
-  auto&  target = (*this)[ops++->get_function_pointer()];
+  auto&  target = get_function(ops++->get_pointer());
 
   auto  argtypes = target.get_signature().get_parameter_list().begin();
   auto  argnames = target.get_argument_name_list().begin();
@@ -275,8 +304,9 @@ call(variable&  var, int  n, const operand*  ops) noexcept
 
 void
 context::
-seek(variable&  var, int  n, const operand*  ops) noexcept
+seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 {
+  
 }
 
 
@@ -292,11 +322,11 @@ push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept
 
 void
 context::
-push_frame(variable_pointer  p, const function&  fn, int  argc, const variable*  argv) noexcept
+push_frame(uint32_t  st_p, const function&  fn, int  argc, const variable*  argv) noexcept
 {
     if(m_current_frame)
     {
-      m_current_frame->m_store_pointer = p;
+      m_current_frame->m_store_pointer = st_p;
     }
 
 
@@ -386,34 +416,7 @@ step() noexcept
   else
     if(codeln.is_operation())
     {
-      auto&  op = codeln.get_operation();
-
-      auto&  opls = op.get_operand_list();
-
-      auto  vp = opls[0].get_variable_pointer();
-
-      auto&  var = (*this)[vp];
-
-        if(op.is_unary())
-        {
-          var.get_value() = operate(op.get_unary_opcodes(),opls[1]);
-        }
-
-      else
-        if(op.is_binary())
-        {
-          var.get_value() = operate(op.get_binary_opcodes(),opls[1],opls[2]);
-        }
-
-      else
-        if(op.is_call())
-        {
-        }
-
-      else
-        if(op.is_seek())
-        {
-        }
+      process(codeln.get_operation());
     }
 }
 
