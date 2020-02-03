@@ -106,12 +106,25 @@ assign(uint32_t  length) noexcept
 
 memory_sharer&
 memory_sharer::
-assign(const memory_sharer&  rhs, int  offset) noexcept
+assign(const memory_sharer&  base, int  offset) noexcept
 {
-  assign(rhs);
+  assign(base);
 
   m_offset += offset;
   m_length -= offset;
+
+  return *this;
+}
+
+
+memory_sharer&
+memory_sharer::
+assign(const memory_sharer&  base, int  offset, int  length) noexcept
+{
+  assign(base);
+
+  m_offset += offset;
+  m_length  = length;
 
   return *this;
 }

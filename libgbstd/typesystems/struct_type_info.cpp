@@ -46,15 +46,15 @@ push(type_info&  ti, std::string_view  name) noexcept
 }
 
 
-const type_info*
+const struct_member*
 struct_type_info::
 find(std::string_view  name) const noexcept
 {
     for(auto&  m: m_member_list)
     {
-        if(m.m_name == name)
+        if(m.get_name() == name)
         {
-          return &m.m_type_info;
+          return &m;
         }
     }
 
@@ -71,9 +71,9 @@ print() const noexcept
 
     for(auto&  m: m_member_list)
     {
-      m.m_type_info.print();
+      m.get_type_info().print();
 
-      printf("  %s(offset:%d);\n",m.m_name.data(),m.m_offset);
+      printf("  %s(offset:%d);\n",m.get_name().data(),m.get_offset());
     }
 
 

@@ -90,21 +90,31 @@ public:
 
 
 class
+struct_member
+{
+  type_info&  m_type_info;
+
+  std::string  m_name;
+
+  int  m_offset;
+
+public:
+  struct_member(type_info&  ti, std::string_view  name, int  offset) noexcept:
+  m_type_info(ti), m_name(name), m_offset(offset){}
+
+  const type_info&  get_type_info() const noexcept{return m_type_info;}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+  int  get_offset() const noexcept{return m_offset;}
+
+};
+
+
+class
 struct_type_info
 {
-  struct member{
-    type_info&  m_type_info;
-
-    std::string  m_name;
-
-    int  m_offset;
-
-    member(type_info&  ti, std::string_view  name, int  offset) noexcept:
-    m_type_info(ti), m_name(name), m_offset(offset){}
-  };
-
-
-  std::vector<member>  m_member_list;
+  std::vector<struct_member>  m_member_list;
 
   int  m_size =0;
   int  m_align=0;
@@ -118,7 +128,7 @@ public:
 
   void  push(type_info&  ti, std::string_view  name) noexcept;
 
-  const type_info*  find(std::string_view  name) const noexcept;
+  const struct_member*  find(std::string_view  name) const noexcept;
 
   int   get_size() const noexcept{return m_size;}
   int  get_align() const noexcept{return m_align;}
@@ -401,8 +411,7 @@ public:
 
 
 
-
-
+/*
 class
 memory_frame
 {
@@ -469,6 +478,7 @@ public:
   constexpr const uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
 
 };
+*/
 
 
 class
@@ -486,16 +496,17 @@ memory_sharer
   uint8_t*  get_memory_pointer() const noexcept;
 
 public:
-  memory_sharer() noexcept{}
+  constexpr memory_sharer() noexcept{}
   memory_sharer(uint32_t  length) noexcept{assign(length);}
-  memory_sharer(const value&   rhs) noexcept{assign(rhs);}
-  memory_sharer(      value&&  rhs) noexcept{assign(std::move(rhs));}
-  memory_sharer(const value&  rhs, int  offset) noexcept{assign(rhs,offset);}
+  memory_sharer(const memory_sharer&   rhs) noexcept{assign(rhs);}
+  memory_sharer(      memory_sharer&&  rhs) noexcept{assign(std::move(rhs));}
+  memory_sharer(const memory_sharer&  base, int  offset) noexcept{assign(base,offset);}
+  memory_sharer(const memory_sharer&  base, int  offset, int  length) noexcept{assign(base,offset,length);}
  ~memory_sharer(){unrefer();}
 
-  operator bool() const noexcept{return m_data;}
+  constexpr operator bool() const noexcept{return m_data;}
 
-  uint8_t&  operator[](int  i) const noexcept{return m_memory_pointer()[m_offset+i];}
+  uint8_t&  operator[](int  i) const noexcept{return get_memory_pointer()[m_offset+i];}
 
   memory_sharer&  operator=(const memory_sharer&   rhs) noexcept{return assign(rhs);}
   memory_sharer&  operator=(      memory_sharer&&  rhs) noexcept{return assign(std::move(rhs));}
@@ -504,14 +515,25 @@ public:
   memory_sharer&  assign(const memory_sharer&   rhs) noexcept;
   memory_sharer&  assign(      memory_sharer&&  rhs) noexcept;
   memory_sharer&  assign(uint32_t  length) noexcept;
-  memory_sharer&  assign(const memory_sharer&  src, int  offset) noexcept;
+  memory_sharer&  assign(const memory_sharer&  base, int  offset) noexcept;
+  memory_sharer&  assign(const memory_sharer&  base, int  offset, int  length) noexcept;
 
-  uint8_t  get_data(int  i) const noexcept{return (*this)[i];}
+   int8_t&  get_s8(int  i=0) const noexcept{return reinterpret_cast<int8_t&>((*this)[m_offset+i]);}
+  uint8_t&  get_u8(int  i=0) const noexcept{return                           (*this)[m_offset+i] ;}
 
-  uint32_t  get_offset() const noexcept{return m_offset;}
-  uint32_t  get_length() const noexcept{return m_length;}
+   int16_t&  get_s16(int  i=0) const noexcept{return reinterpret_cast< int16_t&>((*this)[(m_offset&~1)+(2*i)]);}
+  uint16_t&  get_u16(int  i=0) const noexcept{return reinterpret_cast<uint16_t&>((*this)[(m_offset&~1)+(2*i)]);}
 
-  uint64_t  get_count() const noexcept{return m_reference_count();}
+   int32_t&  get_s32(int  i=0) const noexcept{return reinterpret_cast< int32_t&>((*this)[(m_offset&~3)+(4*i)]);}
+  uint32_t&  get_u32(int  i=0) const noexcept{return reinterpret_cast<uint32_t&>((*this)[(m_offset&~3)+(4*i)]);}
+
+   int64_t&  get_s64(int  i=0) const noexcept{return reinterpret_cast< int64_t&>((*this)[(m_offset&~7)+(8*i)]);}
+  uint64_t&  get_u64(int  i=0) const noexcept{return reinterpret_cast<uint64_t&>((*this)[(m_offset&~7)+(8*i)]);}
+
+  constexpr uint32_t  get_offset() const noexcept{return m_offset;}
+  constexpr uint32_t  get_length() const noexcept{return m_length;}
+
+  uint64_t  get_count() const noexcept{return get_reference_count();}
 
   memory_sharer  clone() const noexcept;
 
@@ -524,34 +546,32 @@ public:
 class
 value
 {
-  const type_info*  m_type_info;
+  const type_info*  m_type_info=nullptr;
 
   memory_sharer  m_memory;
 
 public:
-  value() noexcept{}
+  constexpr value() noexcept{}
   value(const type_info&  ti) noexcept{assign(ti);}
   value(const type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
   value(const type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
 
-  operator bool() const noexcept{return m_type_info;}
-
-  uint8_t&  operator[](int  i) const noexcept{return m_memory[i];}
+  constexpr operator bool() const noexcept{return m_type_info;}
 
   value&  assign(const type_info&  ti             ) noexcept;
   value&  assign(const type_info&  ti,  int64_t  i) noexcept;
   value&  assign(const type_info&  ti, uint64_t  u) noexcept{return assign(ti,static_cast<int64_t>(u));}
 
-  const type_info&  get_type_info() const noexcept;
-  type_derivation&  get_type_derivation() const noexcept;
+  const type_info&  get_type_info() const noexcept{return *m_type_info;}
+  type_derivation&  get_type_derivation() const noexcept{return m_type_info->get_derivation();}
 
   const memory_sharer&  get_memory() const noexcept{return m_memory;}
 
-  int64_t&   get_integer()          const noexcept;
-  uint64_t&  get_unsigned_integer() const noexcept;
+  int64_t&   get_integer()          const noexcept{return m_memory.get_s64();}
+  uint64_t&  get_unsigned_integer() const noexcept{return m_memory.get_u64();}
 
-  value  update( int64_t  i) const noexcept;
-  value  update(uint64_t  u) const noexcept;
+  value  get_element(int  i) const noexcept;
+  value  get_member(std::string_view  name) const noexcept;
 
   void  print() const noexcept;
 

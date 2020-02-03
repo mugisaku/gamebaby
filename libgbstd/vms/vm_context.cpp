@@ -199,7 +199,7 @@ store(const value&  dst, const value&  src) noexcept
 
     if(val.get_type_info().get_size() <= sizeof(int64_t))
     {
-      val.update(srcv.get_integer());
+      val.get_integer() = srcv.get_integer();
     }
 }
 

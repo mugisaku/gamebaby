@@ -9,102 +9,13 @@ namespace typesystem{
 
 
 
-void
-value::
-unrefer() noexcept
-{
-    if(m_data)
-    {
-        if(!--get_reference_count())
-        {
-          free(m_data);
-        }
-
-
-      m_data = nullptr;
-    }
-}
-
-
-namespace{
-uint8_t*
-allocate(size_t  memsize) noexcept
-{
-  return (uint8_t*)calloc(1,(sizeof(intptr_t)*2)+memsize);
-}
-}
-
-
-uintptr_t&
-value::
-get_reference_count() const noexcept
-{
-  return *reinterpret_cast<uintptr_t*>(m_data);
-}
-
-
-const type_info*&
-value::
-get_type_info_pointer() const noexcept
-{
-  return *reinterpret_cast<const type_info**>(m_data+sizeof(intptr_t));
-}
-
-
-uint8_t*
-value::
-get_memory_pointer() const noexcept
-{
-  return m_data+(sizeof(intptr_t)*2);
-}
-
-
-value&
-value::
-assign(const value&  rhs) noexcept
-{
-    if(this != &rhs)
-    {
-      unrefer();
-
-      m_data = rhs.m_data;
-
-        if(m_data)
-        {
-          ++get_reference_count();
-        }
-    }
-
-
-  return *this;
-}
-
-
-value&
-value::
-assign(value&&  rhs) noexcept
-{
-    if(this != &rhs)
-    {
-      unrefer();
-
-      std::swap(m_data,rhs.m_data);
-    }
-
-
-  return *this;
-}
-
-
 value&
 value::
 assign(const type_info&  ti) noexcept
 {
-  unrefer();
+  m_memory = memory_sharer(ti.get_size());
 
-  m_data = allocate(ti.get_size());
-
-  get_type_info_pointer() = &ti;
+  m_type_info = &ti;
 
   return *this;
 }
@@ -114,14 +25,7 @@ value&
 value::
 assign(const type_info&  ti,  int64_t  i) noexcept
 {
-  unrefer();
-
-  m_data = allocate(ti.get_size());
-
-  get_type_info_pointer() = &ti;
-
-  *reinterpret_cast<int64_t*>(get_memory_pointer()) = i;
-
+  assign(ti).get_integer() = i;
 
   return *this;
 }
@@ -129,59 +33,22 @@ assign(const type_info&  ti,  int64_t  i) noexcept
 
 
 
-const type_info&
-value::
-get_type_info() const noexcept
-{
-  return *get_type_info_pointer();
-}
-
-
-type_derivation&
-value::
-get_type_derivation() const noexcept
-{
-  return get_type_info_pointer()->get_derivation();
-}
-
-
-int64_t&
-value::
-get_integer() const noexcept
-{
-  return *reinterpret_cast<int64_t*>(get_memory_pointer());
-}
-
-
-uint64_t&
-value::
-get_unsigned_integer() const noexcept
-{
-  return *reinterpret_cast<uint64_t*>(get_memory_pointer());
-}
-
-
 value
 value::
-update(int64_t  i) const noexcept
+get_element(int  i) const noexcept
 {
-    if(m_data)
+    if(m_type_info && m_type_info->is_array())
     {
-        if(get_reference_count() == 1)
-        {
-          get_integer() = i;
+      auto&  base_type = *m_type_info->get_base();
 
-          return *this;
-        }
+      auto  elsz = base_type.get_size();
 
-      else
-        {
-          value  new_value(get_type_info());
+      value  v;
 
-          new_value.get_integer() = i;
+      v.m_memory = memory_sharer(m_memory,elsz*i,elsz);
+      v.m_type_info = &base_type;
 
-          return std::move(new_value);
-        }
+      return std::move(v);
     }
 
 
@@ -191,33 +58,45 @@ update(int64_t  i) const noexcept
 
 value
 value::
-update(uint64_t  u) const noexcept
+get_member(std::string_view  name) const noexcept
 {
-  return update(static_cast<int64_t>(u));
-}
+    if(m_type_info)
+    {
+      value  v;
+
+      auto&  ti = *m_type_info;
+
+        if(ti.is_struct())
+        {
+          auto  m = ti.get_struct_type_info().find(name);
+
+            if(m)
+            {
+              auto&  member_ti = m->get_type_info();
+
+              v.m_memory    = memory_sharer(m_memory,m->get_offset(),member_ti.get_size());
+              v.m_type_info = &member_ti;
+            }
+        }
+
+      else
+        if(ti.is_union())
+        {
+          auto  member_ti = ti.get_union_type_info().find(name);
+
+            if(member_ti)
+            {
+              v.m_memory    = memory_sharer(m_memory,0,member_ti->get_size());
+              v.m_type_info = member_ti;
+            }
+        }
 
 
-value
-value::
-clone() const noexcept
-{
-  auto&  ti = get_type_info();
-
-  value  v(ti);
-
-  auto  sz = ti.get_size();
-
-  std::memcpy(v.get_memory_pointer(),get_memory_pointer(),sz);
-
-  return std::move(v);
-}
+      return std::move(v);
+    }
 
 
-memory_frame
-value::
-get_memory_frame() const noexcept
-{
-  return {get_memory_pointer(),get_type_info().get_size()};
+  return value();
 }
 
 
@@ -227,16 +106,14 @@ void
 value::
 print() const noexcept
 {
-    if(m_data && get_type_info_pointer())
+    if(m_memory && m_type_info)
     {
-      get_type_info().print();
-
-      printf("%" PRIi64 "(ref: %" PRIi64 ")",get_integer(),get_reference_count());
+      m_type_info->print();
     }
 
   else
     {
-      printf("no data&type");
+      printf("no memory or type");
     }
 }
 
