@@ -210,6 +210,9 @@ print() const noexcept
       case(kind::unsigned_integer):
           printf("%s",tip->m_id.data());
           break;
+      case(kind::boolean):
+          printf("b");
+          break;
       case(kind::reference):
           printf("&");
           break;
@@ -227,17 +230,7 @@ print() const noexcept
           break;
       case(kind::function):
           {
-            printf("function(");
-
-              for(auto&  para: m_data.parals)
-              {
-                para->print();
-
-                printf(",");
-              }
-
-
-            printf(")");
+            printf("(*)(%s)",m_data.parals.get_id().data());
           }
           break;
       default:;

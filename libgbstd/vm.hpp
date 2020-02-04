@@ -221,9 +221,9 @@ context
 
   bool  m_finalized=false;
 
-  void  push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept;
+  variable&  push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept;
 
-  void  push_frame(uint32_t  st_p, const function&  fn, int  argc, const variable*  args) noexcept;
+  void  push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  args) noexcept;
   void  pop_frame() noexcept;
 
   void  store(const value&  dst, const value&  src) noexcept;
@@ -232,7 +232,6 @@ context
   void  process(const return_instruction&  ret) noexcept;
   void  process(const operation&  op) noexcept;
 
-  void  call(variable&  dst, int  n, const operand*  ops) noexcept;
   void  seek(variable&  dst, value&&  src, std::string_view  name) noexcept;
 
   value  operate( unary_opcodes  op, const operand&  o) noexcept;
@@ -245,10 +244,10 @@ public:
 
   typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
 
-  value  make_value(int64_t    i) noexcept{return value(*m_type_collection.find("int"),i);}
-  value  make_value(uint64_t   u) noexcept{return value(*m_type_collection.find("uint"),u);}
-  value  make_value(bool       b) noexcept{return value(*m_type_collection.find("bool"),static_cast<int64_t>(b));}
-  value  make_value(nullptr_t  p) noexcept{return value(*m_type_collection.find("nullptr_t"));}
+  value  make_value(int64_t    i) noexcept{return value(*m_type_collection.find_by_name("int"),i);}
+  value  make_value(uint64_t   u) noexcept{return value(*m_type_collection.find_by_name("uint"),u);}
+  value  make_value(bool       b) noexcept{return value(*m_type_collection.find_by_name("bool"),static_cast<int64_t>(b));}
+  value  make_value(nullptr_t  p) noexcept{return value(*m_type_collection.find_by_name("nullptr_t"));}
 
   function&  create_function(std::string_view  name) noexcept;
 
@@ -569,6 +568,10 @@ public:
   const std::string&  get_name() const noexcept{return m_name;}
 
   const typesystem::type_info&  get_signature() const noexcept{return *m_signature;}
+
+  function&  set_signature(const typesystem::type_info&  sig) noexcept{  m_signature = &sig;  return *this;}
+
+  function&  set_argument_name_list(const std::vector<std::string_view>&  argnams) noexcept;
 
   const declaration_list&  get_declaration_list() const noexcept{return m_declaration_list;}
   const std::vector<std::string>&  get_argument_name_list() const noexcept{return m_argument_name_list;}

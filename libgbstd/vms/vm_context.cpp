@@ -152,8 +152,6 @@ frame
   frame(const function&  fn, uint32_t  bi) noexcept:
   m_function(fn), m_base_index(bi){}
 
-  uint32_t  get_next_base_index() const noexcept{return m_base_index+m_function.get_number_of_variables();}
-
   operator bool() const noexcept{return m_pc < m_function.get_number_of_codelines();}
 
   const codeline&  operator*() noexcept{return m_function[m_pc++];}
@@ -200,10 +198,7 @@ store(const value&  dst, const value&  src) noexcept
 
   auto  val = get_value(multi_pointer(dst.get_unsigned_integer()));
 
-    if(val.get_type_info().get_size() <= sizeof(int64_t))
-    {
-      val.get_integer() = srcv.get_integer();
-    }
+  val.get_memory().copy(srcv.get_memory());
 }
 
 
@@ -270,7 +265,7 @@ process(const operation&  op) noexcept
   else
     if(op.is_call())
     {
-      call(dst,0,nullptr);
+      push_frame(dst.get_address(),get_function(opls[1].get_pointer()),opls.size()-2,&opls[2]);
     }
 
   else
@@ -278,27 +273,6 @@ process(const operation&  op) noexcept
     {
       seek(dst,get_value(opls[1].get_pointer()),opls[2].get_identifier());
     }
-}
-
-
-void
-context::
-call(variable&  var, int  n, const operand*  ops) noexcept
-{
-  auto&  target = get_function(ops++->get_pointer());
-
-  auto  argtypes = target.get_signature().get_parameter_list().begin();
-  auto  argnames = target.get_argument_name_list().begin();
-
-  std::vector<variable>  args;
-
-    while(n--)
-    {
-  //                      args.emplace_back(it++->evaluate(*this),*argnames++);
-    }
-
-
-  push_frame(var.get_address(),target,args.size(),args.data());
 }
 
 
@@ -312,17 +286,19 @@ seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 
 
 
-void
+variable&
 context::
 push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept
 {
   m_variable_table.emplace_back(m_variable_table.size(),ti,name);
+
+  return m_variable_table.back();
 }
 
 
 void
 context::
-push_frame(uint32_t  st_p, const function&  fn, int  argc, const variable*  argv) noexcept
+push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  argv) noexcept
 {
     if(m_current_frame)
     {
@@ -330,24 +306,26 @@ push_frame(uint32_t  st_p, const function&  fn, int  argc, const variable*  argv
     }
 
 
-  auto  i = m_current_frame? m_current_frame->get_next_base_index()
-                           :                                      0;
-
-  auto  new_frame = new frame(fn,i);
+  auto  new_frame = new frame(fn,m_variable_table.size());
 
   new_frame->m_previous = m_current_frame            ;
                           m_current_frame = new_frame;
 
+  auto  paras = fn.get_signature().get_parameter_list().begin();
+  auto  names = fn.get_argument_name_list().begin();
 
     while(argc--)
     {
-//      m_variable_table.append(std::move(*args++));
+      auto&    ti = **paras++;
+      auto&  name =  *names++;
+
+      push_variable(ti,name).get_value() = argv++->evaluate(*this);
     }
 
 
     for(auto&  decl: fn.get_declaration_list())
     {
-      m_variable_table.emplace_back(i++,*decl.get_type_info(),decl.get_name());
+      push_variable(*decl.get_type_info(),decl.get_name());
     }
 }
 

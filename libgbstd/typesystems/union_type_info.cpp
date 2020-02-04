@@ -16,7 +16,7 @@ m_id_source;
 
 void
 union_type_info::
-push(type_info&  ti, std::string_view  name) noexcept
+push(const type_info&  ti, std::string_view  name) noexcept
 {
   m_member_list.emplace_back(ti,name);
 

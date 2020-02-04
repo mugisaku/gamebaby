@@ -30,7 +30,7 @@ get_aligned_offset(int  offset, int  align) noexcept
 
 void
 struct_type_info::
-push(type_info&  ti, std::string_view  name) noexcept
+push(const type_info&  ti, std::string_view  name) noexcept
 {
   int  offset = m_size;
 

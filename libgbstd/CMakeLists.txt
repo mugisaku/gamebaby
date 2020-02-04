@@ -85,6 +85,7 @@ set(SOURCES
   typesystems/type_derivation.cpp
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
+  typesystems/type_collection__create.cpp
   typesystems/parameter_list.cpp
   typesystems/memory_sharer.cpp
   typesystems/value.cpp

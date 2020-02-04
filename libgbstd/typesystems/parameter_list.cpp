@@ -9,7 +9,7 @@ namespace typesystem{
 
 
 parameter_list::
-parameter_list(std::initializer_list<type_info*>  ls) noexcept
+parameter_list(std::initializer_list<const type_info*>  ls) noexcept
 {
     for(auto  p: ls)
     {
@@ -20,7 +20,7 @@ parameter_list(std::initializer_list<type_info*>  ls) noexcept
 
 parameter_list&
 parameter_list::
-push(type_info&  ti) noexcept
+push(const type_info&  ti) noexcept
 {
   m_container.emplace_back(&ti);
 

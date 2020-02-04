@@ -9,8 +9,8 @@ namespace typesystem{
 
 
 type_entry::
-type_entry(std::string_view  name, const type_info*  ti) noexcept:
-m_name(name), m_type_info(ti)
+type_entry(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept:
+m_name(name), m_type_info(std::move(ti))
 {
 }
 

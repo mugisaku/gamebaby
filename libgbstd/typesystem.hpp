@@ -65,22 +65,22 @@ public:
 class
 parameter_list
 {
-  std::vector<type_info*>  m_container;
+  std::vector<const type_info*>  m_container;
 
   std::string  m_id;
 
 public:
-  parameter_list(std::initializer_list<type_info*>  ls={}) noexcept;
+  parameter_list(std::initializer_list<const type_info*>  ls={}) noexcept;
 
-  parameter_list&  push(type_info&  ti) noexcept;
+  parameter_list&  push(const type_info&  ti) noexcept;
 
   const std::string&  get_id() const noexcept{return m_id;}
 
-  type_info**  begin() noexcept{return m_container.data();}
-  type_info**    end() noexcept{return m_container.data()+m_container.size();}
+  const type_info**  begin() noexcept{return m_container.data();}
+  const type_info**    end() noexcept{return m_container.data()+m_container.size();}
 
-  type_info* const*  begin() const noexcept{return m_container.data();}
-  type_info* const*    end() const noexcept{return m_container.data()+m_container.size();}
+  const type_info* const*  begin() const noexcept{return m_container.data();}
+  const type_info* const*    end() const noexcept{return m_container.data()+m_container.size();}
 
   int  get_number_of_elements() const noexcept{return m_container.size();}
 
@@ -92,14 +92,14 @@ public:
 class
 struct_member
 {
-  type_info&  m_type_info;
+  const type_info&  m_type_info;
 
   std::string  m_name;
 
   int  m_offset;
 
 public:
-  struct_member(type_info&  ti, std::string_view  name, int  offset) noexcept:
+  struct_member(const type_info&  ti, std::string_view  name, int  offset) noexcept:
   m_type_info(ti), m_name(name), m_offset(offset){}
 
   const type_info&  get_type_info() const noexcept{return m_type_info;}
@@ -126,7 +126,7 @@ struct_type_info
 public:
   struct_type_info() noexcept{}
 
-  void  push(type_info&  ti, std::string_view  name) noexcept;
+  void  push(const type_info&  ti, std::string_view  name) noexcept;
 
   const struct_member*  find(std::string_view  name) const noexcept;
 
@@ -144,11 +144,11 @@ class
 union_type_info
 {
   struct member{
-    type_info&  m_type_info;
+    const type_info&  m_type_info;
 
     std::string  m_name;
 
-    member(type_info&  ti, std::string_view  name) noexcept: m_type_info(ti), m_name(name){}
+    member(const type_info&  ti, std::string_view  name) noexcept: m_type_info(ti), m_name(name){}
   };
 
   std::vector<member>  m_member_list;
@@ -163,7 +163,7 @@ union_type_info
 public:
   union_type_info() noexcept{}
 
-  void  push(type_info&  ti, std::string_view  name) noexcept;
+  void  push(const type_info&  ti, std::string_view  name) noexcept;
 
   const type_info*  find(std::string_view  name) const noexcept;
 
@@ -393,92 +393,19 @@ type_entry
 {
   std::string  m_name;
 
-  const type_info*  m_type_info=nullptr;
+  std::unique_ptr<type_info>  m_type_info;
 
 public:
-  type_entry(std::string_view  name, const type_info*  ti=nullptr) noexcept;
+  type_entry(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept;
 
   const std::string&  get_name() const noexcept{return m_name;}
-
-  type_entry&  set_info(const type_info&  ti) noexcept{  m_type_info = &ti;  return *this;}
-
-  const type_info*  get_info() const noexcept{return m_type_info;}
+  const type_info&    get_info() const noexcept{return *m_type_info;}
 
   void  print() const noexcept;
 
 };
 
 
-
-
-/*
-class
-memory_frame
-{
-  uint8_t*  m_pointer=nullptr;
-
-  int  m_length=0;
-
-public:
-  constexpr memory_frame(uint8_t*  ptr=nullptr, int  len=0) noexcept:
-  m_pointer(ptr), m_length(len){}
-
-  constexpr memory_frame(const memory_frame&  base, int  offset) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
-
-  constexpr memory_frame(const memory_frame&  base, int  offset, int  length) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(length){}
-
-  constexpr uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
-
-  constexpr int  get_length() const noexcept{return m_length;}
-
-  constexpr uint8_t*  get_pointer() const noexcept{return m_pointer;}
-
-  constexpr uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
-  constexpr uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
-  constexpr uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
-  constexpr uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
-
-};
-
-
-class
-memory_view
-{
-  const uint8_t*  m_pointer=nullptr;
-
-  int  m_length=0;
-
-public:
-  constexpr memory_view(const uint8_t*  ptr=nullptr, int  len=0) noexcept:
-  m_pointer(ptr), m_length(len){}
-
-  constexpr memory_view(const memory_frame&  base, int  offset) noexcept:
-  m_pointer(base.get_pointer()+offset), m_length(base.get_length()){}
-
-  constexpr memory_view(const memory_view&  base, int  offset) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(base.m_length){}
-
-  constexpr memory_view(const memory_frame&  base, int  offset, int  length) noexcept:
-  m_pointer(base.get_pointer()+offset), m_length(length){}
-
-  constexpr memory_view(const memory_view&  base, int  offset, int  length) noexcept:
-  m_pointer(base.m_pointer+offset), m_length(length){}
-
-  constexpr const uint8_t&  operator[](int  i) const noexcept{return m_pointer[i];}
-
-  constexpr int  get_length() const noexcept{return m_length;}
-
-  constexpr const uint8_t*  get_pointer() const noexcept{return m_pointer;}
-
-  constexpr const uint8_t*   get_ptr8( int  address) noexcept{return reinterpret_cast<uint8_t* >(m_pointer[address   ]);}
-  constexpr const uint16_t*  get_ptr16(int  address) noexcept{return reinterpret_cast<uint16_t*>(m_pointer[address&~1]);}
-  constexpr const uint32_t*  get_ptr32(int  address) noexcept{return reinterpret_cast<uint32_t*>(m_pointer[address&~3]);}
-  constexpr const uint64_t*  get_ptr64(int  address) noexcept{return reinterpret_cast<uint64_t*>(m_pointer[address&~7]);}
-
-};
-*/
 
 
 class
@@ -537,6 +464,8 @@ public:
 
   memory_sharer  clone() const noexcept;
 
+  memory_sharer&  copy(const memory_sharer&  src) noexcept;
+
   memory_sharer  operator+(int  n) const noexcept{return {*this, n};}
   memory_sharer  operator-(int  n) const noexcept{return {*this,-n};}
 
@@ -565,6 +494,7 @@ public:
   const type_info&  get_type_info() const noexcept{return *m_type_info;}
   type_derivation&  get_type_derivation() const noexcept{return m_type_info->get_derivation();}
 
+        memory_sharer&  get_memory()       noexcept{return m_memory;}
   const memory_sharer&  get_memory() const noexcept{return m_memory;}
 
   int64_t&   get_integer()          const noexcept{return m_memory.get_s64();}
@@ -581,7 +511,10 @@ public:
 class
 type_collection
 {
-  std::vector<std::unique_ptr<type_entry>>  m_entry_table;
+  using alias = std::pair<std::string,std::string>;
+
+  std::vector<type_entry>  m_entry_table;
+  std::vector<alias>       m_alias_table;
 
   int  m_pointer_size=4;
   int  m_boolean_size=1;
@@ -600,18 +533,16 @@ public:
 
   void  push_c_like_types() noexcept;
 
-  void  push(std::string_view  name, const type_info*  ti=nullptr) noexcept;
+  const type_info&  push(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept;
 
   const type_info&  operator[](std::string_view  name) noexcept;
 
-  const type_info*  find(std::string_view  name)       noexcept;
-  const type_info*  find(std::string_view  name) const noexcept;
+  const type_info*  find_by_id(  std::string_view    id) const noexcept;
+  const type_info*  find_by_name(std::string_view  name) const noexcept;
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
 
-  type_info&  create_struct(std::string_view  name) noexcept;
-  type_info&  create_union( std::string_view  name) noexcept;
-  type_info&  create_enum(  std::string_view  name) noexcept;
+  const type_info*  create_from_string(std::string_view  sv, int*  n=nullptr) const noexcept;
 
   void  print() const noexcept;
 

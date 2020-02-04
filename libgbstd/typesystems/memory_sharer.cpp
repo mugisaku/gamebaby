@@ -142,6 +142,18 @@ clone() const noexcept
 }
 
 
+memory_sharer&
+memory_sharer::
+copy(const memory_sharer&  src) noexcept
+{
+  auto  l = std::min(m_length,src.m_length);
+
+  std::memcpy(get_memory_pointer(),src.get_memory_pointer(),l);
+
+  return *this;
+}
+
+
 
 
 }}

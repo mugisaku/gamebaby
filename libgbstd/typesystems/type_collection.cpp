@@ -12,11 +12,11 @@ const type_info&
 type_collection::
 operator[](std::string_view  name) noexcept
 {
-  auto  ti = find(name);
+  auto  ti = find_by_name(name);
 
-    if(ti)
+    if(!ti)
     {
-      push(name,new type_info(*this));
+      ti = &push(name,std::make_unique<type_info>(*this));
     }
 
 
@@ -26,23 +26,25 @@ operator[](std::string_view  name) noexcept
 
 
 
-void
+const type_info&
 type_collection::
-push(std::string_view  name, const type_info*  ti) noexcept
+push(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept
 {
-  m_entry_table.emplace_back(std::make_unique<type_entry>(name,ti));
+  m_entry_table.emplace_back(name,std::move(ti));
+
+  return m_entry_table.back().get_info();
 }
 
 
 const type_info*
 type_collection::
-find(std::string_view  name) noexcept
+find_by_id(std::string_view  id) const noexcept
 {
     for(auto&  ent: m_entry_table)
     {
-        if(ent->get_name() == name)
+        if(ent.get_info().get_id() == id)
         {
-          return ent->get_info();
+          return &ent.get_info();
         }
     }
 
@@ -53,13 +55,25 @@ find(std::string_view  name) noexcept
 
 const type_info*
 type_collection::
-find(std::string_view  name) const noexcept
+find_by_name(std::string_view  name) const noexcept
 {
+ENTRY:
     for(auto&  ent: m_entry_table)
     {
-        if(ent->get_name() == name)
+        if(ent.get_name() == name)
         {
-          return ent->get_info();
+          return &ent.get_info();
+        }
+    }
+
+
+    for(auto&  a: m_alias_table)
+    {
+        if(a.first == name)
+        {
+          name = a.second;
+
+          goto ENTRY;
         }
     }
 
@@ -72,20 +86,20 @@ void
 type_collection::
 push_c_like_types() noexcept
 {
-  push(     "void",new type_info(*this,void_type_info{}));
-  push("nullptr_t",new type_info(*this,null_pointer_type_info{}));
-  push("geneptr_t",new type_info(*this,generic_pointer_type_info{}));
-  push(     "bool",new type_info(*this,boolean_type_info{}));
+  push(     "void",std::make_unique<type_info>(*this,void_type_info{}));
+  push("nullptr_t",std::make_unique<type_info>(*this,null_pointer_type_info{}));
+  push("geneptr_t",std::make_unique<type_info>(*this,generic_pointer_type_info{}));
+  push(     "bool",std::make_unique<type_info>(*this,boolean_type_info{}));
 
-  push( "int8_t",new type_info(*this,integer_type_info( 8)));
-  push("int16_t",new type_info(*this,integer_type_info(16)));
-  push("int32_t",new type_info(*this,integer_type_info(32)));
-  push("int64_t",new type_info(*this,integer_type_info(64)));
+  push( "int8_t",std::make_unique<type_info>(*this,integer_type_info( 8)));
+  push("int16_t",std::make_unique<type_info>(*this,integer_type_info(16)));
+  push("int32_t",std::make_unique<type_info>(*this,integer_type_info(32)));
+  push("int64_t",std::make_unique<type_info>(*this,integer_type_info(64)));
 
-  push( "uint8_t",new type_info(*this,unsigned_integer_type_info( 8)));
-  push("uint16_t",new type_info(*this,unsigned_integer_type_info(16)));
-  push("uint32_t",new type_info(*this,unsigned_integer_type_info(32)));
-  push("uint64_t",new type_info(*this,unsigned_integer_type_info(64)));
+  push( "uint8_t",std::make_unique<type_info>(*this,unsigned_integer_type_info( 8)));
+  push("uint16_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(16)));
+  push("uint32_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(32)));
+  push("uint64_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(64)));
 
   make_alias("int32_t","int");
   make_alias("uint32_t","uint");
@@ -96,56 +110,9 @@ bool
 type_collection::
 make_alias(std::string_view  target_name, std::string_view  new_name) noexcept
 {
-  auto  target = find(target_name);
-  auto   exist = find(   new_name);
+  m_alias_table.emplace_back(std::make_pair(new_name,target_name));
 
-    if(target && !exist)
-    {
-      push(new_name,target);
-
-      return true;
-    }
-
-
-  return false;
-}
-
-
-
-
-type_info&
-type_collection::
-create_struct(std::string_view  name) noexcept
-{
-  auto  ti = new type_info(*this,struct_type_info());
-
-  push(name,ti);
-
-  return *ti;
-}
-
-
-type_info&
-type_collection::
-create_union(std::string_view  name) noexcept
-{
-  auto  ti = new type_info(*this,union_type_info());
-
-  push(name,ti);
-
-  return *ti;
-}
-
-
-type_info&
-type_collection::
-create_enum(std::string_view  name) noexcept
-{
-  auto  ti = new type_info(*this,enum_type_info());
-
-  push(name,ti);
-
-  return *ti;
+  return true;
 }
 
 
@@ -157,9 +124,15 @@ print() const noexcept
 {
     for(auto&  ent: m_entry_table)
     {
-      ent->print();
+      ent.print();
 
       printf("\n");
+    }
+
+
+    for(auto&  a: m_alias_table)
+    {
+      printf("alias %s = %s\n",a.first.data(),a.second.data());
     }
 }
 

@@ -10,6 +10,22 @@ namespace gbstd{
 
 function&
 function::
+set_argument_name_list(const std::vector<std::string_view>&  argnams) noexcept
+{
+  m_argument_name_list.clear();
+
+    for(auto  sv: argnams)
+    {
+      m_argument_name_list.emplace_back(sv);
+    }
+
+
+  return *this;
+}
+
+
+function&
+function::
 append_store_instruction(operand  dst, operand  src) noexcept
 {
   m_codelines.emplace_back(*this,store_instruction(std::move(dst),std::move(src)));
