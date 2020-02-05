@@ -203,6 +203,15 @@ print() const noexcept
 
         switch(tip->m_kind)
         {
+      case(kind::void_):
+          printf("void");
+          break;
+      case(kind::null_pointer):
+          printf("nullptr_t");
+          break;
+      case(kind::generic_pointer):
+          printf("geneptr_t");
+          break;
       case(kind::pointer):
           printf("*");
           break;
@@ -211,7 +220,7 @@ print() const noexcept
           printf("%s",tip->m_id.data());
           break;
       case(kind::boolean):
-          printf("b");
+          printf("bool");
           break;
       case(kind::reference):
           printf("&");
@@ -230,14 +239,29 @@ print() const noexcept
           break;
       case(kind::function):
           {
-            printf("(*)(%s)",m_data.parals.get_id().data());
+            printf("(*)(");
+
+              for(auto&  para: m_data.parals)
+              {
+                para->print();
+
+                printf(", ");
+              }
+
+
+            printf(")");
           }
           break;
       default:;
         }
     }
+}
 
 
+void
+type_info::
+print_detail() const noexcept
+{
   printf(" id: \"%s\", size: %d, align: %d, ",get_id().data(),get_size(),get_align());
 }
 

@@ -176,14 +176,45 @@ evaluate(context&  ctx) const noexcept
 
 void
 operand::
-print() const noexcept
+print(const context*  ctx, const function*  fn) const noexcept
 {
     switch(m_kind)
     {
   case(kind::null): break;
   case(kind::identifier     ): printf("%s",m_data.s.data());break;
   case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
-  case(kind::pointer_literal): printf("%" PRIu32,m_data.p.get());break;
+  case(kind::pointer_literal):
+        if(ctx)
+        {
+            if(m_data.p.is_function())
+            {
+              printf("%s",ctx->get_function(m_data.p.get()).get_name().data());
+            }
+
+          else
+            if(m_data.p.is_global())
+            {
+              printf("%s",ctx->get_global_variable(m_data.p.get()).get_name().data());
+            }
+
+          else
+            if(m_data.p.is_local())
+            {
+              printf("%s",fn->get_declaration_list()[m_data.p.get()].get_name().data());
+            }
+
+          else
+            if(m_data.p.is_null())
+            {
+              printf("nullptr");
+            }
+        }
+
+      else
+        {
+          printf("%" PRIu32,m_data.p.get());
+        }
+      break;
     }
 }
 

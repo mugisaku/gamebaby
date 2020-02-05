@@ -134,7 +134,7 @@ public:
 
   value  evaluate(context&  ctx) const noexcept;
 
-  void  print() const noexcept;
+  void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
 
@@ -249,7 +249,7 @@ public:
   value  make_value(bool       b) noexcept{return value(*m_type_collection.find_by_name("bool"),static_cast<int64_t>(b));}
   value  make_value(nullptr_t  p) noexcept{return value(*m_type_collection.find_by_name("nullptr_t"));}
 
-  function&  create_function(std::string_view  name) noexcept;
+  function&  create_function(std::string_view  sig, std::string_view  name) noexcept;
 
         function*  find_function(std::string_view  name)       noexcept;
   const function*  find_function(std::string_view  name) const noexcept;
@@ -300,17 +300,6 @@ public:
         operand&  get_source()       noexcept{return m_source;}
   const operand&  get_source() const noexcept{return m_source;}
 
-  void  print() const noexcept
-  {
-    printf("st ");
-
-    m_destination.print();
-
-    printf(" ");
-
-    m_source.print();
-  }
-
 };
 
 
@@ -330,18 +319,6 @@ public:
         operand&  get_destination()       noexcept{return m_destination;}
   const operand&  get_destination() const noexcept{return m_destination;}
 
-
-  void  print() const noexcept
-  {
-    printf("br ");
-
-    m_condition.print();
-
-    printf(" ");
-
-    m_destination.print();
-  }
-
 };
 
 
@@ -356,14 +333,6 @@ public:
 
         operand&  get_operand()       noexcept{return m_operand;}
   const operand&  get_operand() const noexcept{return m_operand;}
-
-
-  void  print() const noexcept
-  {
-    printf("ret ");
-
-    m_operand.print();
-  }
 
 };
 
@@ -409,7 +378,7 @@ public:
   bool  is_call()   const noexcept{return m_kind == kind::call;}
   bool  is_seek()   const noexcept{return m_kind == kind::seek;}
 
-  void  print() const noexcept;
+  void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
 
@@ -484,7 +453,7 @@ public:
   bool  is_return_instruction() const noexcept{return m_kind == kind::return_instruction;}
   bool  is_operation()          const noexcept{return m_kind == kind::operation;}
 
-  void  print() const noexcept;
+  void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
 
@@ -539,7 +508,7 @@ function
 
   uint32_t  m_address=0;
 
-  const typesystem::type_info*  m_signature=nullptr;
+  const typesystem::type_info&  m_signature;
 
   std::string  m_name;
 
@@ -556,8 +525,8 @@ function
   void  resolve(const context&  ctx, operand&  o) const noexcept;
 
 public:
-  function(context&  ctx, uint32_t  addr, std::string_view  name) noexcept:
-  m_context(ctx), m_address(addr), m_name(name){}
+  function(context&  ctx, uint32_t  addr, const typesystem::type_info&  sig, std::string_view  name) noexcept:
+  m_context(ctx), m_address(addr), m_signature(sig), m_name(name){}
 
   const codeline&  operator[](int  i) const noexcept{return m_codelines[i];}
 
@@ -567,9 +536,7 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
 
-  const typesystem::type_info&  get_signature() const noexcept{return *m_signature;}
-
-  function&  set_signature(const typesystem::type_info&  sig) noexcept{  m_signature = &sig;  return *this;}
+  const typesystem::type_info&  get_signature() const noexcept{return m_signature;}
 
   function&  set_argument_name_list(const std::vector<std::string_view>&  argnams) noexcept;
 
@@ -592,9 +559,9 @@ public:
 
   void  finalize(const context&  ctx) noexcept;
 
-  value  get_value() const noexcept{return value(*m_signature,static_cast<uint64_t>(m_address));}
+  value  get_value() const noexcept{return value(m_signature,static_cast<uint64_t>(m_address));}
 
-  void  print() const noexcept;
+  void  print(const context*  ctx=nullptr) const noexcept;
 
 };
 

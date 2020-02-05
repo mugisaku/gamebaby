@@ -21,9 +21,11 @@ context() noexcept
 
 function&
 context::
-create_function(std::string_view  name) noexcept
+create_function(std::string_view  sig, std::string_view  name) noexcept
 {
-  m_function_table.emplace_back(*this,m_function_table.size(),name);
+  auto  ti = m_type_collection.create_from_string(sig);
+
+  m_function_table.emplace_back(*this,m_function_table.size(),*ti,name);
 
   return m_function_table.back();
 }
@@ -126,7 +128,7 @@ print() const noexcept
 {
     for(auto&  f: m_function_table)
     {
-      f.print();
+      f.print(this);
 
       printf("\n");
     }

@@ -255,15 +255,15 @@ finalize(const context&  ctx) noexcept
 
 void
 function::
-print() const noexcept
+print(const context*  ctx) const noexcept
 {
-  m_signature->print();  
+  m_signature.print();  
 
-  printf("{\n");
+  printf(" %s{\n",m_name.data());
 
     for(auto&  cl: m_codelines)
     {
-      cl.print();
+      cl.print(ctx,this);
 
       printf("\n");
     }

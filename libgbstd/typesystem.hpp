@@ -381,6 +381,7 @@ public:
   type_derivation&  get_derivation() const noexcept{return *m_derivation;}
 
   void  print() const noexcept;
+  void  print_detail() const noexcept;
 
 };
 

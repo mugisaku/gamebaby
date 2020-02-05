@@ -83,17 +83,69 @@ reset(std::initializer_list<std::string_view>  names) noexcept
 
 void
 operation::
-print() const noexcept
+print(const context*  ctx, const function*  fn) const noexcept
 {
-/*
-  printf("  %%%s = ",m_label.data());
+  static const char*  unary_names[] =
+  {
+    "ld",
+    "bit_not",
+    "logical_not",
+    "get_size",
+    "get_address",
+
+  };
+
+
+  static const char*  binary_names[] =
+  {
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "rem",
+    "shl",
+    "shr",
+    "eq",
+    "neq",
+    "lt",
+    "lteq",
+    "gt",
+    "gteq",
+    "logical_and",
+    "logical_or",
+    "bit_and",
+    "bit_or",
+    "bit_xor",
+  };
+
+
+  int  i = 0;
+
+  m_operand_list[i++].print(ctx,fn);
+
     switch(m_kind)
     {
-  case(kind::unary ): m_data.un.print(); break;
-  case(kind::binary): m_data.bin.print();break;
-  case(kind::call  ): m_data.cal.print();break;
+  case(kind::unary ):
+      printf(" %s",unary_names[m_opcode]);
+      break;
+  case(kind::binary):
+      printf(" %s",binary_names[m_opcode]);
+      break;
+  case(kind::call):
+      printf(" call");
+      break;
+  case(kind::seek):
+      printf(" seek");
+      break;
     }
-*/
+
+
+    while(i < m_operand_list.size())
+    {
+      printf(" ");
+
+      m_operand_list[i++].print(ctx,fn);
+    }
 }
 
 

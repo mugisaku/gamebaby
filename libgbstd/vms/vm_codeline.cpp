@@ -142,15 +142,29 @@ assign(operation&&  op) noexcept
 
 void
 codeline::
-print() const noexcept
+print(const context*  ctx, const function*  fn) const noexcept
 {
     switch(m_kind)
     {
-  case(kind::store_instruction ): m_data.st.print();break;
-  case(kind::branch_instruction): m_data.br.print();break;
-  case(kind::return_instruction): m_data.ret.print();break;
-
-  case(kind::operation ): m_data.op.print();break;
+  case(kind::store_instruction ):
+       printf("st ");
+       m_data.st.get_destination().print(ctx,fn);
+       printf(" ");
+       m_data.st.get_source().print(ctx,fn);
+       break;
+  case(kind::branch_instruction):
+       printf("br ");
+       m_data.br.get_condition().print(ctx,fn);
+       printf(" ");
+       m_data.br.get_destination().print(ctx,fn);
+       break;
+  case(kind::return_instruction):
+       printf("ret ");
+       m_data.ret.get_operand().print(ctx,fn);
+       break;
+  case(kind::operation ):
+       m_data.op.print(ctx,fn);
+       break;
     }
 }
 
