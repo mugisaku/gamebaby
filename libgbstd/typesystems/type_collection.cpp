@@ -10,29 +10,31 @@ namespace typesystem{
 
 const type_info&
 type_collection::
-operator[](std::string_view  name) noexcept
+push(std::string_view  name, const type_info&  ti) noexcept
 {
-  auto  ti = find_by_name(name);
+  m_entry_table.emplace_back(name,ti);
 
-    if(!ti)
-    {
-      ti = &push(name,std::make_unique<type_info>(*this));
-    }
-
-
-  return *ti;
+  return ti;
 }
-
-
 
 
 const type_info&
 type_collection::
 push(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept
 {
-  m_entry_table.emplace_back(name,std::move(ti));
+  return push(name,push(std::move(ti)));
+}
 
-  return m_entry_table.back().get_info();
+
+const type_info&
+type_collection::
+push(std::unique_ptr<type_info>&&  ti) noexcept
+{
+  auto&  ref = *ti;
+
+  m_info_table.emplace_back(std::move(ti));
+
+  return ref;
 }
 
 

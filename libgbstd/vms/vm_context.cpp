@@ -13,7 +13,7 @@ context() noexcept
 {
   m_type_collection.push_c_like_types();
 
-  push_variable(m_type_collection["int"],"final return value");
+  push_variable(*m_type_collection.find_by_name("int"),"final return value");
 }
 
 

@@ -16,19 +16,9 @@ m_id_source;
 
 void
 enum_type_info::
-push(std::string_view  name) noexcept
-{
-  m_enumerator_list.emplace_back(name,m_last_value++);
-}
-
-
-void
-enum_type_info::
 push(std::string_view  name, int  value) noexcept
 {
-  m_last_value = value;
-
-  push(name);
+  m_enumerator_list.emplace_back(name,value);
 }
 
 
@@ -46,18 +36,6 @@ find(std::string_view  name) const noexcept
 
 
   return nullptr;
-}
-
-
-std::string
-enum_type_info::
-get_id() const noexcept
-{
-  char  buf[48];
-
-  snprintf(buf,sizeof(buf),"en%d",m_last_value);
-
-  return buf;
 }
 
 

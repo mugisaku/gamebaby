@@ -70,7 +70,7 @@ function&
 function::
 append_declaration(std::string_view  type_name, std::string_view  var_name) noexcept
 {
-  m_declaration_list.emplace_back(m_context.get_type_collection()[type_name],var_name);
+  m_declaration_list.emplace_back(*m_context.get_type_collection().find_by_name(type_name),var_name);
 
   return *this;
 }
