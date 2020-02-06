@@ -11,6 +11,8 @@ namespace gbstd{
 context::
 context() noexcept
 {
+  m_type_collection.set_pointer_size(8);
+
   m_type_collection.push_c_like_types();
 
   push_variable(*m_type_collection.find_by_name("int"),"final return value");
@@ -238,9 +240,11 @@ process(const return_instruction&  ret) noexcept
 
       val0 = std::move(val);
 
+      printf("\n====\n");
+
       val0.print();
 
-      printf("%" PRIi64 "\n",val0.get_integer());
+      printf("\n====\n");
     }
 }
 
@@ -351,13 +355,14 @@ pop_frame() noexcept
 }
 
 
-void
+bool
 context::
 step() noexcept
 {
+START:
     if(!m_current_frame)
     {
-      return;
+      return false;
     }
 
 
@@ -365,12 +370,13 @@ step() noexcept
     {
       pop_frame();
 
-      return;
+      goto START;
     }
 
 
   auto&  codeln = **m_current_frame;
 
+//printf("%s pc: %4d\n",m_current_frame->m_function.get_name().data(),m_current_frame->m_pc);
     if(codeln.is_store_instruction())
     {
       auto&  st = codeln.get_store_instruction();
@@ -398,6 +404,9 @@ step() noexcept
     {
       process(codeln.get_operation());
     }
+
+
+  return true;
 }
 
 
@@ -405,15 +414,8 @@ void
 context::
 run() noexcept
 {
-    for(;;)
+    while(step())
     {
-        if(!m_current_frame || !*m_current_frame)
-        {
-          break;
-        }
-
-
-      step();
     }
 }
 

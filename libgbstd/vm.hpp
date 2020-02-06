@@ -67,6 +67,8 @@ public:
 
   constexpr operator bool() const noexcept{return m_value;}
 
+  constexpr char  get_kind() const noexcept{return m_kind;}
+
   constexpr bool  is_function() const noexcept{return m_kind == 'f';}
   constexpr bool  is_global()   const noexcept{return m_kind == 'g';}
   constexpr bool  is_local()    const noexcept{return m_kind == 'l';}
@@ -272,7 +274,7 @@ public:
 
   context&  entry(std::string_view  fn_name) noexcept{  push_frame(0,*find_function(fn_name),0,nullptr);  return *this;}
 
-  void  step() noexcept;
+  bool  step() noexcept;
   void   run() noexcept;
 
   context&  finalize() noexcept;
@@ -538,9 +540,9 @@ public:
 
   const typesystem::type_info&  get_signature() const noexcept{return m_signature;}
 
-  function&  set_argument_name_list(const std::vector<std::string_view>&  argnams) noexcept;
+  function&  set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept;
 
-  const declaration_list&  get_declaration_list() const noexcept{return m_declaration_list;}
+  const declaration_list&          get_declaration_list() const noexcept{return m_declaration_list;}
   const std::vector<std::string>&  get_argument_name_list() const noexcept{return m_argument_name_list;}
 
   function&  append_store_instruction(operand  dst, operand  src) noexcept;

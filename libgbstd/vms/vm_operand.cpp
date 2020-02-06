@@ -186,21 +186,50 @@ print(const context*  ctx, const function*  fn) const noexcept
   case(kind::pointer_literal):
         if(ctx)
         {
+          auto  i = m_data.p.get();
+
             if(m_data.p.is_function())
             {
-              printf("%s",ctx->get_function(m_data.p.get()).get_name().data());
+              printf("%s",ctx->get_function(i).get_name().data());
             }
 
           else
             if(m_data.p.is_global())
             {
-              printf("%s",ctx->get_global_variable(m_data.p.get()).get_name().data());
+              printf("%s",ctx->get_global_variable(i).get_name().data());
             }
 
           else
             if(m_data.p.is_local())
             {
-              printf("%s",fn->get_declaration_list()[m_data.p.get()].get_name().data());
+                if(fn)
+                {
+                  auto&   args = fn->get_argument_name_list();
+                  auto&  decls = fn->get_declaration_list();
+
+                  auto  num_args = args.size();
+
+                    if(i < num_args)
+                    {
+                      printf("%s",args[i].data());
+                    }
+
+                  else
+                    if(i < num_args+decls.size())
+                    {
+                      printf("%s",decls[i-num_args].get_name().data());
+                    }
+
+                  else
+                    {
+                      printf("ERROR: operand print multi pointer\n");
+                    }
+                }
+
+              else
+                {
+                  printf("%" PRIu32,i);
+                }
             }
 
           else

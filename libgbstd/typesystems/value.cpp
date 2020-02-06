@@ -23,7 +23,7 @@ assign(const type_info&  ti) noexcept
 
 value&
 value::
-assign(const type_info&  ti,  int64_t  i) noexcept
+assign(const type_info&  ti, int64_t  i) noexcept
 {
   assign(ti).set_integer(i);
 
@@ -54,7 +54,7 @@ get_integer() const noexcept
     }
 
   else
-    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer() || ti.is_reference())
     {
       return (sz == 1)? mem.get_u8()
             :(sz == 2)? mem.get_u16()
@@ -90,7 +90,7 @@ get_unsigned_integer() const noexcept
     }
 
   else
-    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer() || ti.is_reference())
     {
       return (sz == 1)? mem.get_u8()
             :(sz == 2)? mem.get_u16()
@@ -124,7 +124,7 @@ set_integer(int64_t  i) const noexcept
     }
 
   else
-    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer() || ti.is_reference())
     {
            if(sz == 1){mem.get_u8()  = i;}
       else if(sz == 2){mem.get_u16() = i;}
@@ -153,7 +153,7 @@ set_unsigned_integer(uint64_t  u) const noexcept
     }
 
   else
-    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer() || ti.is_reference())
     {
            if(sz == 1){mem.get_u8()  = u;}
       else if(sz == 2){mem.get_u16() = u;}

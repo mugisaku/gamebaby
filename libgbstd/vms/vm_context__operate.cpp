@@ -91,7 +91,6 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   auto&  lt = lv.get_type_info();
   auto&  rt = rv.get_type_info();
 
-
     if(op == binary_opcodes::add)
     {
         if(lt.is_integer())

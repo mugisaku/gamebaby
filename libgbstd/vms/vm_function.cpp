@@ -10,7 +10,7 @@ namespace gbstd{
 
 function&
 function::
-set_argument_name_list(const std::vector<std::string_view>&  argnams) noexcept
+set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept
 {
   m_argument_name_list.clear();
 
