@@ -55,8 +55,6 @@ reset(std::string_view  fn_name, std::vector<operand>&&  args) noexcept
     }
 
 
-  args.clear();
-
   m_kind = kind::call;
 
   return *this;
@@ -65,7 +63,7 @@ reset(std::string_view  fn_name, std::vector<operand>&&  args) noexcept
 
 operation&
 operation::
-reset(std::initializer_list<std::string_view>  names) noexcept
+reset(std::vector<std::string_view>&&  names) noexcept
 {
   m_operand_list.resize(1);
 

@@ -358,14 +358,14 @@ public:
   operation(std::string_view  lb, unary_opcodes  unop, operand&&  o) noexcept: m_operand_list({lb}){reset(unop,std::move(o));}
   operation(std::string_view  lb, binary_opcodes  binop, operand&&  l, operand&&  r) noexcept: m_operand_list({lb}){reset(binop,std::move(l),std::move(r));}
   operation(std::string_view  lb, std::string_view  fn_name, std::vector<operand>&&  args) noexcept: m_operand_list({lb}){reset(fn_name,std::move(args));}
-  operation(std::string_view  lb, std::initializer_list<std::string_view>  names) noexcept: m_operand_list({lb}){reset(names);}
+  operation(std::string_view  lb, std::vector<std::string_view>&&  names) noexcept: m_operand_list({lb}){reset(std::move(names));}
  ~operation(){}
 
   operation&  reset() noexcept;
   operation&  reset(unary_opcodes  unop, operand&&  o) noexcept;
   operation&  reset(binary_opcodes  binop, operand&&  l, operand&&  r) noexcept;
   operation&  reset(std::string_view  fn_name, std::vector<operand>&&  args) noexcept;
-  operation&  reset(std::initializer_list<std::string_view>  names) noexcept;
+  operation&  reset(std::vector<std::string_view>&&  names) noexcept;
 
   unary_opcodes   get_unary_opcodes()  const noexcept{return static_cast< unary_opcodes>(m_opcode);}
   binary_opcodes  get_binary_opcodes() const noexcept{return static_cast<binary_opcodes>(m_opcode);}

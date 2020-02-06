@@ -503,53 +503,6 @@ report;
 }
 
 
-/*void
-binary_operation::
-print() const noexcept
-{
-    switch(m_kind)
-    {
-  case(kind::bit_not    ): printf("bit_not");break;
-  case(kind::logical_not): printf("logical_not");break;
-  case(kind::get_size   ): printf("get_size");break;
-  case(kind::get_address): printf("get_address");break;
-  case(kind::dereference): printf("dereference");break;
-    }
-        switch(m_kind)
-        {
-      case(kind::add        ): printf("add");break;
-      case(kind::sub        ): printf("sub");break;
-      case(kind::mul        ): printf("mul");break;
-      case(kind::div        ): printf("div");break;
-      case(kind::rem        ): printf("rem");break;
-      case(kind::shl        ): printf("shl");break;
-      case(kind::shr        ): printf("shr");break;
-      case(kind::eq         ): printf("eq");break;
-      case(kind::neq        ): printf("neq");break;
-      case(kind::lt         ): printf("lt");break;
-      case(kind::lteq       ): printf("lteq");break;
-      case(kind::gt         ): printf("gt");break;
-      case(kind::gteq       ): printf("gteq");break;
-      case(kind::logical_and): printf("and");break;
-      case(kind::logical_or ): printf("or");break;
-      case(kind::bit_and    ): printf("and");break;
-      case(kind::bit_or     ): printf("or");break;
-      case(kind::bit_xor    ): printf("xor");break;
-        }
-
-
-  printf(" ");
-
-  m_left.print();
-
-  printf(" ");
-
-  m_right.print();
-}
-*/
-
-
-
 }
 
 

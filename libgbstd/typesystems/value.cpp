@@ -25,9 +25,141 @@ value&
 value::
 assign(const type_info&  ti,  int64_t  i) noexcept
 {
-  assign(ti).get_integer() = i;
+  assign(ti).set_integer(i);
 
   return *this;
+}
+
+
+
+
+int64_t
+value::
+get_integer() const noexcept
+{
+  auto&  ti = *m_type_info;
+
+  auto&  mem = m_memory;
+
+  auto  sz = ti.get_size();
+
+    if(ti.is_integer() || ti.is_boolean())
+    {
+      return (sz == 1)? mem.get_s8()
+            :(sz == 2)? mem.get_s16()
+            :(sz == 4)? mem.get_s32()
+            :(sz == 8)? mem.get_s64()
+            :0
+            ;
+    }
+
+  else
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    {
+      return (sz == 1)? mem.get_u8()
+            :(sz == 2)? mem.get_u16()
+            :(sz == 4)? mem.get_u32()
+            :(sz == 8)? mem.get_u64()
+            :0
+            ;
+    }
+
+
+  return 0;
+}
+
+
+uint64_t
+value::
+get_unsigned_integer() const noexcept
+{
+  auto&  ti = *m_type_info;
+
+  auto&  mem = m_memory;
+
+  auto  sz = ti.get_size();
+
+    if(ti.is_integer() || ti.is_boolean())
+    {
+      return (sz == 1)? mem.get_s8()
+            :(sz == 2)? mem.get_s16()
+            :(sz == 4)? mem.get_s32()
+            :(sz == 8)? mem.get_s64()
+            :0
+            ;
+    }
+
+  else
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    {
+      return (sz == 1)? mem.get_u8()
+            :(sz == 2)? mem.get_u16()
+            :(sz == 4)? mem.get_u32()
+            :(sz == 8)? mem.get_u64()
+            :0
+            ;
+    }
+
+
+  return 0;
+}
+
+
+void
+value::
+set_integer(int64_t  i) const noexcept
+{
+  auto&  ti = *m_type_info;
+
+  auto&  mem = m_memory;
+
+  auto  sz = ti.get_size();
+
+    if(ti.is_integer() || ti.is_boolean())
+    {
+           if(sz == 1){mem.get_s8()  = i;}
+      else if(sz == 2){mem.get_s16() = i;}
+      else if(sz == 4){mem.get_s32() = i;}
+      else if(sz == 8){mem.get_s64() = i;}
+    }
+
+  else
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    {
+           if(sz == 1){mem.get_u8()  = i;}
+      else if(sz == 2){mem.get_u16() = i;}
+      else if(sz == 4){mem.get_u32() = i;}
+      else if(sz == 8){mem.get_u64() = i;}
+    }
+}
+
+
+void
+value::
+set_unsigned_integer(uint64_t  u) const noexcept
+{
+  auto&  ti = *m_type_info;
+
+  auto&  mem = m_memory;
+
+  auto  sz = ti.get_size();
+
+    if(ti.is_integer() || ti.is_boolean())
+    {
+           if(sz == 1){mem.get_s8()  = u;}
+      else if(sz == 2){mem.get_s16() = u;}
+      else if(sz == 4){mem.get_s32() = u;}
+      else if(sz == 8){mem.get_s64() = u;}
+    }
+
+  else
+    if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+    {
+           if(sz == 1){mem.get_u8()  = u;}
+      else if(sz == 2){mem.get_u16() = u;}
+      else if(sz == 4){mem.get_u32() = u;}
+      else if(sz == 8){mem.get_u64() = u;}
+    }
 }
 
 
@@ -108,7 +240,26 @@ print() const noexcept
 {
     if(m_memory && m_type_info)
     {
-      m_type_info->print();
+      auto&  ti = *m_type_info;
+
+      auto  sz = ti.get_size();
+
+        if(ti.is_integer())
+        {
+          printf("%" PRIi64,get_integer());
+        }
+
+      else
+        if(ti.is_boolean())
+        {
+          printf("%s",get_integer()? "true":"false");
+        }
+
+      else
+        if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+        {
+          printf("%" PRIu64,get_unsigned_integer());
+        }
     }
 
   else

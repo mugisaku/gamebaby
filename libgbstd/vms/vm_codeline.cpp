@@ -144,6 +144,7 @@ void
 codeline::
 print(const context*  ctx, const function*  fn) const noexcept
 {
+report;
     switch(m_kind)
     {
   case(kind::store_instruction ):

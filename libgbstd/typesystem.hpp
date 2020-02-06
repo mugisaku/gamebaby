@@ -495,8 +495,11 @@ public:
         memory_sharer&  get_memory()       noexcept{return m_memory;}
   const memory_sharer&  get_memory() const noexcept{return m_memory;}
 
-  int64_t&   get_integer()          const noexcept{return m_memory.get_s64();}
-  uint64_t&  get_unsigned_integer() const noexcept{return m_memory.get_u64();}
+  int64_t   get_integer()          const noexcept;
+  uint64_t  get_unsigned_integer() const noexcept;
+
+  void  set_integer(          int64_t  i) const noexcept;
+  void  set_unsigned_integer(uint64_t  u) const noexcept;
 
   value  get_element(int  i) const noexcept;
   value  get_member(std::string_view  name) const noexcept;
