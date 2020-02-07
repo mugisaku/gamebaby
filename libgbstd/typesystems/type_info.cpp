@@ -104,6 +104,8 @@ clear() noexcept
 
   m_number_of_elements = 0;
 
+  m_derivation->clear();
+
   return *this;
 }
 

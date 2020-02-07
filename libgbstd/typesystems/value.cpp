@@ -260,6 +260,30 @@ print() const noexcept
         {
           printf("%" PRIu64,get_unsigned_integer());
         }
+
+      else
+        if(ti.is_reference())
+        {
+          printf("reference");
+        }
+
+      else
+        if(ti.is_null_pointer())
+        {
+          printf("nullptr");
+        }
+
+      else
+        if(ti.is_pointer() || ti.is_generic_pointer())
+        {
+          printf("pointer(%" PRIu64 ")",get_unsigned_integer());
+        }
+
+      else
+        if(ti.is_void())
+        {
+          printf("void");
+        }
     }
 
   else

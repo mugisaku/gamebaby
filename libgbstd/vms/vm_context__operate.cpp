@@ -74,7 +74,7 @@ operate(unary_opcodes  op, const operand&  o) noexcept
 
 report;
 
-  return value();
+  return value(get_void_type_info());
 }
 
 
@@ -497,8 +497,19 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
     }
 
 
-report;
-  return value();
+  printf("ERROR: context::operate_binary unknown operation.\n");
+
+  printf("left value: ");
+
+  lv.print();
+
+  printf("\nright value: ");
+
+  rv.print();
+
+  printf("\n");
+
+  return value(get_void_type_info());
 }
 
 

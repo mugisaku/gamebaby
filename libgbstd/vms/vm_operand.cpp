@@ -170,7 +170,7 @@ evaluate(context&  ctx) const noexcept
     }
 
 
-  return value();
+  return value(ctx.get_void_type_info());
 }
 
 

@@ -177,30 +177,40 @@ binary_opcodes
 };
 
 
+using address_t = uint32_t;
+
+
 class
 variable
 {
-  uint64_t  m_address;
+  address_t  m_address;
 
   value  m_value;
 
   std::string  m_name;
 
 public:
-  variable(uint64_t  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
+  variable(address_t  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
   m_address(addr), m_value(ti), m_name(name){}
 
-  variable(uint64_t  addr, value&&  v, std::string_view  name) noexcept:
+  variable(address_t  addr, value&&  v, std::string_view  name) noexcept:
   m_address(addr), m_value(std::move(v)), m_name(name){}
 
-  uint64_t  get_address() const noexcept{return m_address;}
+  address_t  get_address() const noexcept{return m_address;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
         value&  get_value()       noexcept{return m_value;}
   const value&  get_value() const noexcept{return m_value;}
 
-  void  print() const noexcept{  printf("%s ",m_name.data());  m_value.print();}
+  void  print() const noexcept
+  {
+    printf("{var: {address: %4" PRIu32 ", name:%s, value:",m_address,m_name.data());
+
+    m_value.print();
+
+    printf("}}");
+  }
 
 };
 
@@ -268,6 +278,8 @@ public:
 
   variable&  get_variable(multi_pointer  p) noexcept;
 
+  const typesystem::type_info&  get_void_type_info() const noexcept{return *m_type_collection.find_by_name("void");}
+
   value  get_value(multi_pointer  p) const noexcept;
 
   value  dereference(const value&  v) noexcept;
@@ -280,6 +292,7 @@ public:
   context&  finalize() noexcept;
 
   void  print() const noexcept;
+  void  print_debug() const noexcept;
 
 };
 
@@ -508,7 +521,7 @@ function
 {
   context&  m_context;
 
-  uint32_t  m_address=0;
+  address_t  m_address=0;
 
   const typesystem::type_info&  m_signature;
 
@@ -527,12 +540,12 @@ function
   void  resolve(const context&  ctx, operand&  o) const noexcept;
 
 public:
-  function(context&  ctx, uint32_t  addr, const typesystem::type_info&  sig, std::string_view  name) noexcept:
+  function(context&  ctx, address_t  addr, const typesystem::type_info&  sig, std::string_view  name) noexcept:
   m_context(ctx), m_address(addr), m_signature(sig), m_name(name){}
 
   const codeline&  operator[](int  i) const noexcept{return m_codelines[i];}
 
-  uint32_t  get_address() const noexcept{return m_address;}
+  address_t  get_address() const noexcept{return m_address;}
 
   int  get_number_of_codelines() const noexcept{return m_codelines.size();}
 

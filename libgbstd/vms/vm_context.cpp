@@ -119,7 +119,7 @@ get_value(multi_pointer  p) const noexcept
   return p.is_global()  ? get_global_variable(p.get()).get_value()
         :p.is_local()   ? get_local_variable( p.get()).get_value()
         :p.is_function()? get_function(       p.get()).get_value()
-        :value()
+        :value(get_void_type_info())
         ;
 }
 
@@ -223,8 +223,29 @@ process(const branch_instruction&   br) noexcept
 
 void
 context::
+print_debug() const noexcept
+{
+    if(m_current_frame)
+    {
+      printf("[%s]:\n",m_current_frame->m_function.get_name().data());
+    }
+
+
+    for(auto&  v: m_variable_table)
+    {
+      v.print();
+
+      printf("\n");
+    }
+}
+
+
+void
+context::
 process(const return_instruction&  ret) noexcept
 {
+  print_debug();
+
   auto  val = dereference(ret.get_operand().evaluate(*this));
 
   pop_frame();

@@ -8,6 +8,19 @@ namespace typesystem{
 
 
 
+type_derivation&
+type_derivation::
+clear() noexcept
+{
+  m_reference_type_info.reset();
+  m_pointer_type_info.reset();
+  m_array_type_info_list.clear();
+  m_function_type_info_list.clear();
+
+  return *this;
+}
+
+
 const type_info&
 type_derivation::
 get_array_type(int  n) noexcept

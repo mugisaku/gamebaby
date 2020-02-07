@@ -243,6 +243,8 @@ type_derivation
 public:
   type_derivation(const type_info&  ti) noexcept: m_base(ti){}
 
+  type_derivation&  clear() noexcept;
+
   const type_info&      get_array_type(int  n) noexcept;
   const type_info&  get_reference_type() noexcept;
   const type_info&    get_pointer_type() noexcept;
