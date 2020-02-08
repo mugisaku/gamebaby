@@ -34,39 +34,39 @@ make_id(unsigned_integer_type_info  ti) noexcept
 
 std::string
 type_info::
-make_id(const type_info&  base, pointer_type_info  ti) noexcept
+make_id(const pointer_type_info&  ti) noexcept
 {
-  return base.m_id+"p";
+  return ti.get_base_type_info().get_id()+"p";
 }
 
 
 std::string
 type_info::
-make_id(const type_info&  base, reference_type_info  ti) noexcept
+make_id(const reference_type_info&  ti) noexcept
 {
-  return base.m_id+"r";
+  return ti.get_base_type_info().get_id()+"r";
 }
 
 
 std::string
 type_info::
-make_id(const type_info&  base, int  n) noexcept
+make_id(const array_type_info&  ti) noexcept
 {
   char  buf[48];
 
-  snprintf(buf,sizeof(buf),"a%d",n);
+  snprintf(buf,sizeof(buf),"a%d",ti.get_number_of_elements());
 
-  return base.m_id+buf;
+  return ti.get_base_type_info().get_id()+buf;
 }
 
 
 std::string
 type_info::
-make_id(const type_info&  ret, const parameter_list&  parals) noexcept
+make_id(const function_signature&  fnsig) noexcept
 {
   std::string  s = "f(";
 
-    for(auto&  para: parals)
+    for(auto&  para: fnsig.get_parameter_list())
     {
       char  buf[256];
 
@@ -77,7 +77,7 @@ make_id(const type_info&  ret, const parameter_list&  parals) noexcept
 
 
   s += ")->";
-  s += ret.m_id;
+  s += fnsig.get_return_type_info().get_id();
 
   return std::move(s);
 }
@@ -91,7 +91,7 @@ clear() noexcept
 {
     switch(m_kind)
     {
-  case(kind::function): m_data.parals.~parameter_list();break;
+  case(kind::array   ): m_data.arr_ti.~array_type_info();break;
   case(kind::struct_ ): m_data.str_ti.~struct_type_info();break;
   case(kind::union_  ): m_data.uni_ti.~union_type_info();break;
   case(kind::enum_   ): m_data.enu_ti.~enum_type_info();break;
@@ -101,8 +101,6 @@ clear() noexcept
   m_kind = kind::null;
 
   m_id.clear();
-
-  m_number_of_elements = 0;
 
   m_derivation->clear();
 
@@ -117,26 +115,31 @@ get_size() const noexcept
     switch(m_kind)
     {
   case(kind::boolean):
-      return m_collection.get_boolean_size();
+      return m_data.bool_ti.get_size();
       break;
   case(kind::null_pointer):
+      return m_data.nptr_ti.get_size();
+      break;
   case(kind::generic_pointer):
+      return m_data.gptr_ti.get_size();
+      break;
   case(kind::pointer):
+      return m_data.ptr_ti.get_size();
+      break;
   case(kind::reference):
-  case(kind::function):
-      return m_collection.get_pointer_size();
+      return m_data.ref_ti.get_size();
       break;
   case(kind::integer):
-      return m_data.int_ti.get_bitwidth()/8;
+      return m_data.int_ti.get_size();
       break;
   case(kind::unsigned_integer):
-      return m_data.uint_ti.get_bitwidth()/8;
+      return m_data.uint_ti.get_size();
       break;
   case(kind::array):
-      return m_base->get_size()*m_number_of_elements;
+      return m_data.arr_ti.get_size();
       break;
   case(kind::enum_):
-      return m_collection.get_enum_size();
+      return m_data.enu_ti.get_size();
       break;
   case(kind::struct_):
       return m_data.str_ti.get_size();
@@ -160,7 +163,7 @@ get_align() const noexcept
     switch(m_kind)
     {
   case(kind::array):
-      return m_base->get_align();
+      return m_data.arr_ti.get_align();
       break;
   case(kind::struct_):
       return m_data.str_ti.get_align();
@@ -183,6 +186,7 @@ void
 type_info::
 print() const noexcept
 {
+/*
   std::vector<const type_info*>  buf;
 
   buf.emplace_back(this);
@@ -207,6 +211,9 @@ print() const noexcept
         {
       case(kind::void_):
           printf("void");
+          break;
+      case(kind::undefined):
+          printf("undefined");
           break;
       case(kind::null_pointer):
           printf("nullptr_t");
@@ -257,6 +264,7 @@ print() const noexcept
       default:;
         }
     }
+*/
 }
 
 

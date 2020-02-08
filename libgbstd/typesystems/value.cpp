@@ -33,6 +33,87 @@ assign(const type_info&  ti, int64_t  i) noexcept
 
 
 
+value
+value::
+convert(const type_info&  target_ti) const noexcept
+{
+  auto&  this_ti = *m_type_info;
+
+    if(this_ti == target_ti)
+    {
+      return *this;
+    }
+
+
+    if(target_ti.is_integer())
+    {
+        if(this_ti.is_integer())
+        {
+        }
+
+      else
+        if(this_ti.is_unsigned_integer())
+        {
+        }
+    }
+
+  else
+    if(target_ti.is_unsigned_integer())
+    {
+    }
+
+  else
+    if(target_ti.is_null_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_generic_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_reference())
+    {
+    }
+
+  else
+    if(target_ti.is_boolean())
+    {
+    }
+
+  else
+    if(target_ti.is_array())
+    {
+    }
+
+  else
+    if(target_ti.is_struct())
+    {
+    }
+
+  else
+    if(target_ti.is_union())
+    {
+    }
+
+  else
+    if(target_ti.is_enum())
+    {
+    }
+
+
+  return value();
+}
+
+
+
+
 int64_t
 value::
 get_integer() const noexcept
@@ -171,7 +252,7 @@ get_element(int  i) const noexcept
 {
     if(m_type_info && m_type_info->is_array())
     {
-      auto&  base_type = *m_type_info->get_base();
+      auto&  base_type = m_type_info->get_array_type_info().get_base_type_info();
 
       auto  elsz = base_type.get_size();
 

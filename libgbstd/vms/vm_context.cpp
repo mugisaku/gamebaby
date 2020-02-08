@@ -15,7 +15,7 @@ context() noexcept
 
   m_type_collection.push_c_like_types();
 
-  push_variable(*m_type_collection.find_by_name("int"),"final return value");
+  push_variable("GLOB",*m_type_collection.find_by_name("int"),"final return value");
 }
 
 
@@ -27,7 +27,7 @@ create_function(std::string_view  sig, std::string_view  name) noexcept
 {
   auto  ti = m_type_collection.create_from_string(sig);
 
-  m_function_table.emplace_back(*this,m_function_table.size(),*ti,name);
+  m_function_table.emplace_back(*this,m_function_table.size(),ti->get_function_signature(),name);
 
   return m_function_table.back();
 }
@@ -118,7 +118,7 @@ get_value(multi_pointer  p) const noexcept
 {
   return p.is_global()  ? get_global_variable(p.get()).get_value()
         :p.is_local()   ? get_local_variable( p.get()).get_value()
-        :p.is_function()? get_function(       p.get()).get_value()
+//        :p.is_function()? get_function(       p.get()).get_value()
         :value(get_void_type_info())
         ;
 }
@@ -315,9 +315,9 @@ seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 
 variable&
 context::
-push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept
+push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept
 {
-  m_variable_table.emplace_back(m_variable_table.size(),ti,name);
+  m_variable_table.emplace_back(fn_name,m_variable_table.size(),ti,name);
 
   return m_variable_table.back();
 }
@@ -346,13 +346,13 @@ push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  argv)
       auto&    ti = **paras++;
       auto&  name =  *names++;
 
-      push_variable(ti,name).get_value() = argv++->evaluate(*this);
+      push_variable(fn.get_name().data(),ti,name).get_value() = argv++->evaluate(*this);
     }
 
 
     for(auto&  decl: fn.get_declaration_list())
     {
-      push_variable(*decl.get_type_info(),decl.get_name());
+      push_variable(fn.get_name().data(),*decl.get_type_info(),decl.get_name());
     }
 }
 

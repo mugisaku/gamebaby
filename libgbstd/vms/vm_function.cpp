@@ -257,7 +257,9 @@ void
 function::
 print(const context*  ctx) const noexcept
 {
-  m_signature.print();  
+  m_signature.get_return_type_info().print();  
+
+  m_signature.get_parameter_list().print();  
 
   printf(" %s{\n",m_name.data());
 

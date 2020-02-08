@@ -22,17 +22,17 @@ operate(unary_opcodes  op, const operand&  o) noexcept
     {
         if(t.is_pointer())
         {
-          auto  tt = t.get_base();
+          auto&  tt = t.get_pointer_type_info().get_base_type_info();
 
-            if(tt->is_integer())
+            if(tt.is_integer())
             {
-              auto  inf = tt->get_integer_type_info();
+              auto  inf = tt.get_integer_type_info();
 
               return make_value(~v.get_integer());
             }
 
           else
-            if(tt->is_unsigned_integer())
+            if(tt.is_unsigned_integer())
             {
             }
         }
@@ -130,7 +130,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
         if(lt.is_pointer())
         {
           auto  li = lv.get_unsigned_integer();
-          auto  sz = lt.get_base()->get_size();
+          auto  sz = lt.get_pointer_type_info().get_base_type_info().get_size();
 
             if(rt.is_integer())
             {
@@ -184,7 +184,7 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
       else
         if(lt.is_pointer())
         {
-          auto  sz = lt.get_base()->get_size();
+          auto  sz = lt.get_pointer_type_info().get_base_type_info().get_size();
 
             if(rt.is_pointer() && (lt == rt))
             {

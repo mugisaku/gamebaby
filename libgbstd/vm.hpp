@@ -183,6 +183,8 @@ using address_t = uint32_t;
 class
 variable
 {
+  std::string  m_function_name;
+
   address_t  m_address;
 
   value  m_value;
@@ -190,11 +192,13 @@ variable
   std::string  m_name;
 
 public:
-  variable(address_t  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
-  m_address(addr), m_value(ti), m_name(name){}
+  variable(std::string_view  fn_name, address_t  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
+  m_function_name(fn_name), m_address(addr), m_value(ti), m_name(name){}
 
-  variable(address_t  addr, value&&  v, std::string_view  name) noexcept:
-  m_address(addr), m_value(std::move(v)), m_name(name){}
+  variable(std::string_view  fn_name, address_t  addr, value&&  v, std::string_view  name) noexcept:
+  m_function_name(fn_name), m_address(addr), m_value(std::move(v)), m_name(name){}
+
+  const std::string&  get_function_name() const noexcept{return m_function_name;}
 
   address_t  get_address() const noexcept{return m_address;}
 
@@ -205,7 +209,7 @@ public:
 
   void  print() const noexcept
   {
-    printf("{var: {address: %4" PRIu32 ", name:%s, value:",m_address,m_name.data());
+    printf("{var[%4" PRIu32 "]: {fn: \"%s\", name: \"%s\", value:",m_address,m_function_name.data(),m_name.data());
 
     m_value.print();
 
@@ -233,7 +237,7 @@ context
 
   bool  m_finalized=false;
 
-  variable&  push_variable(const typesystem::type_info&  ti, std::string_view  name) noexcept;
+  variable&  push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept;
 
   void  push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  args) noexcept;
   void  pop_frame() noexcept;
@@ -523,7 +527,7 @@ function
 
   address_t  m_address=0;
 
-  const typesystem::type_info&  m_signature;
+  const typesystem::function_signature&  m_signature;
 
   std::string  m_name;
 
@@ -540,7 +544,7 @@ function
   void  resolve(const context&  ctx, operand&  o) const noexcept;
 
 public:
-  function(context&  ctx, address_t  addr, const typesystem::type_info&  sig, std::string_view  name) noexcept:
+  function(context&  ctx, address_t  addr, const typesystem::function_signature&  sig, std::string_view  name) noexcept:
   m_context(ctx), m_address(addr), m_signature(sig), m_name(name){}
 
   const codeline&  operator[](int  i) const noexcept{return m_codelines[i];}
@@ -551,7 +555,7 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
 
-  const typesystem::type_info&  get_signature() const noexcept{return m_signature;}
+  const typesystem::function_signature&  get_signature() const noexcept{return m_signature;}
 
   function&  set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept;
 
@@ -574,7 +578,7 @@ public:
 
   void  finalize(const context&  ctx) noexcept;
 
-  value  get_value() const noexcept{return value(m_signature,static_cast<uint64_t>(m_address));}
+//  value  get_value() const noexcept{return value(m_signature,static_cast<uint64_t>(m_address));}
 
   void  print(const context*  ctx=nullptr) const noexcept;
 

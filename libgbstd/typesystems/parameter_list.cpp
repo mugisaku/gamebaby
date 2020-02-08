@@ -30,6 +30,24 @@ push(const type_info&  ti) noexcept
 }
 
 
+void
+parameter_list::
+print() const noexcept
+{
+  printf("(");
+
+    for(auto&  para: m_container)
+    {
+      para->print();
+
+      printf(",");
+    }
+
+
+  printf(")");
+}
+
+
 
 
 }}

@@ -88,20 +88,22 @@ void
 type_collection::
 push_c_like_types() noexcept
 {
-  push(     "void",std::make_unique<type_info>(*this,void_type_info{}));
-  push("nullptr_t",std::make_unique<type_info>(*this,null_pointer_type_info{}));
-  push("geneptr_t",std::make_unique<type_info>(*this,generic_pointer_type_info{}));
-  push(     "bool",std::make_unique<type_info>(*this,boolean_type_info{}));
+  push("undefined",std::make_unique<type_info>(undefined_type_info{}));
 
-  push( "int8_t",std::make_unique<type_info>(*this,integer_type_info( 8)));
-  push("int16_t",std::make_unique<type_info>(*this,integer_type_info(16)));
-  push("int32_t",std::make_unique<type_info>(*this,integer_type_info(32)));
-  push("int64_t",std::make_unique<type_info>(*this,integer_type_info(64)));
+  push(     "void",std::make_unique<type_info>(void_type_info{}));
+  push("nullptr_t",std::make_unique<type_info>(null_pointer_type_info(8*m_pointer_size)));
+  push("geneptr_t",std::make_unique<type_info>(generic_pointer_type_info(8*m_pointer_size)));
+  push(     "bool",std::make_unique<type_info>(boolean_type_info(8*m_boolean_size)));
 
-  push( "uint8_t",std::make_unique<type_info>(*this,unsigned_integer_type_info( 8)));
-  push("uint16_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(16)));
-  push("uint32_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(32)));
-  push("uint64_t",std::make_unique<type_info>(*this,unsigned_integer_type_info(64)));
+  push( "int8_t",std::make_unique<type_info>(integer_type_info( 8)));
+  push("int16_t",std::make_unique<type_info>(integer_type_info(16)));
+  push("int32_t",std::make_unique<type_info>(integer_type_info(32)));
+  push("int64_t",std::make_unique<type_info>(integer_type_info(64)));
+
+  push( "uint8_t",std::make_unique<type_info>(unsigned_integer_type_info( 8)));
+  push("uint16_t",std::make_unique<type_info>(unsigned_integer_type_info(16)));
+  push("uint32_t",std::make_unique<type_info>(unsigned_integer_type_info(32)));
+  push("uint64_t",std::make_unique<type_info>(unsigned_integer_type_info(64)));
 
   make_alias("int32_t","int");
   make_alias("uint32_t","uint");

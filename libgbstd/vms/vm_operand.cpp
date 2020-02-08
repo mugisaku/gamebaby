@@ -135,6 +135,8 @@ evaluate(context&  ctx) const noexcept
     {
       auto  p = get_pointer();
 
+      auto&  tc = ctx.get_type_collection();
+
         if(p.is_null())
         {
           return ctx.make_value(nullptr);
@@ -145,7 +147,7 @@ evaluate(context&  ctx) const noexcept
         {
           auto&  var = ctx.get_global_variable(p.get());
 
-          auto&  t = var.get_value().get_type_derivation().get_reference_type();
+          auto&  t = var.get_value().get_type_derivation().get_reference_type(8*tc.get_pointer_size());
 
           return value(t,p.get_packed());
         }
@@ -155,7 +157,7 @@ evaluate(context&  ctx) const noexcept
         {
           auto&  var = ctx.get_local_variable(p.get());
 
-          auto&  t = var.get_value().get_type_derivation().get_reference_type();
+          auto&  t = var.get_value().get_type_derivation().get_reference_type(8*tc.get_pointer_size());
 
           return value(t,p.get_packed());
         }
@@ -165,7 +167,7 @@ evaluate(context&  ctx) const noexcept
         {
           auto&  fn = ctx.get_function(p.get());
 
-          return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
+//          return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
         }
     }
 

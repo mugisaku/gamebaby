@@ -60,7 +60,7 @@ public:
 
   struct_type_info  read_struct(type_collection&  tc) noexcept;
   union_type_info   read_union(type_collection&  tc) noexcept;
-  enum_type_info    read_enum() noexcept;
+  enum_type_info    read_enum(type_collection&  tc) noexcept;
 
   const type_info*  read(type_collection&  tc, const type_info*  ti) noexcept;
 
@@ -316,9 +316,9 @@ read_union(type_collection&  tc) noexcept
 
 enum_type_info
 character_pointer::
-read_enum() noexcept
+read_enum(type_collection&  tc) noexcept
 {
-  enum_type_info  eti;
+  enum_type_info  eti(8*tc.get_enum_size());
 
   int  next = 0;
 
@@ -402,7 +402,7 @@ read(type_collection&  tc, const type_info*  ti) noexcept
         {
           ++m_current;
 
-          ti = &ti->get_derivation().get_pointer_type();
+          ti = &ti->get_derivation().get_pointer_type(8*tc.get_pointer_size());
         }
 
       else
@@ -410,7 +410,7 @@ read(type_collection&  tc, const type_info*  ti) noexcept
         {
           ++m_current;
 
-          return &ti->get_derivation().get_reference_type();
+          return &ti->get_derivation().get_reference_type(8*tc.get_pointer_size());
         }
 
       else
@@ -426,7 +426,9 @@ read(type_collection&  tc, const type_info*  ti) noexcept
         {
           ++m_current;
 
-          ti = &ti->get_derivation().get_function_type(read_parameter_list(tc));
+          auto  new_ti = std::make_unique<type_info>(function_signature(*ti,read_parameter_list(tc)));
+
+          ti = new_ti.get();
         }
 
       else
@@ -463,7 +465,7 @@ create_from_string(const char*&  begin, const char*  end) noexcept
         {
           ++p;
 
-          return &push(std::make_unique<type_info>(*this,p.read_struct(*this)));
+          return &push(std::make_unique<type_info>(p.read_struct(*this)));
         }
     }
 
@@ -476,7 +478,7 @@ create_from_string(const char*&  begin, const char*  end) noexcept
         {
           ++p;
 
-          return &push(std::make_unique<type_info>(*this,p.read_union(*this)));
+          return &push(std::make_unique<type_info>(p.read_union(*this)));
         }
     }
 
@@ -489,7 +491,7 @@ create_from_string(const char*&  begin, const char*  end) noexcept
         {
           ++p;
 
-          return &push(std::make_unique<type_info>(*this,p.read_enum()));
+          return &push(std::make_unique<type_info>(p.read_enum(*this)));
         }
     }
 

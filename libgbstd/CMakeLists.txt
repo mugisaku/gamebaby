@@ -72,12 +72,7 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
-  vms/vm_function.cpp
-  vms/vm_context.cpp
-  vms/vm_context__operate.cpp
-  vms/vm_operand.cpp
-  vms/vm_operation.cpp
-  vms/vm_codeline.cpp
+  typesystems/array_type_info.cpp
   typesystems/struct_type_info.cpp
   typesystems/union_type_info.cpp
   typesystems/enum_type_info.cpp
@@ -89,6 +84,12 @@ set(SOURCES
   typesystems/parameter_list.cpp
   typesystems/memory_sharer.cpp
   typesystems/value.cpp
+  vms/vm_function.cpp
+  vms/vm_context.cpp
+  vms/vm_context__operate.cpp
+  vms/vm_operand.cpp
+  vms/vm_operation.cpp
+  vms/vm_codeline.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp
