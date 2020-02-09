@@ -260,6 +260,8 @@ public:
 
   typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
 
+  value  convert(const value&  v, const typesystem::type_info&  target_ti) const noexcept;
+
   value  make_value(int64_t    i) noexcept{return value(*m_type_collection.find_by_name("int"),i);}
   value  make_value(uint64_t   u) noexcept{return value(*m_type_collection.find_by_name("uint"),u);}
   value  make_value(bool       b) noexcept{return value(*m_type_collection.find_by_name("bool"),static_cast<int64_t>(b));}

@@ -426,9 +426,7 @@ read(type_collection&  tc, const type_info*  ti) noexcept
         {
           ++m_current;
 
-          auto  new_ti = std::make_unique<type_info>(function_signature(*ti,read_parameter_list(tc)));
-
-          ti = new_ti.get();
+          ti = &ti->get_derivation().get_function_type(read_parameter_list(tc));
         }
 
       else

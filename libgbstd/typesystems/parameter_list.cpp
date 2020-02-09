@@ -8,25 +8,23 @@ namespace typesystem{
 
 
 
+std::string
 parameter_list::
-parameter_list(std::initializer_list<const type_info*>  ls) noexcept
+make_id() const noexcept
 {
-    for(auto  p: ls)
+  std::string  s = "(";
+
+    for(auto&  para: m_container)
     {
-      push(*p);
+      s += para->get_id();
+
+      s += ",";
     }
-}
 
 
-parameter_list&
-parameter_list::
-push(const type_info&  ti) noexcept
-{
-  m_container.emplace_back(&ti);
+  s += ")";
 
-  m_id += ti.get_id();
-
-  return *this;
+  return std::move(s);
 }
 
 

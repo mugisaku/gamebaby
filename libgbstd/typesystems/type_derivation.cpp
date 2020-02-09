@@ -15,8 +15,33 @@ clear() noexcept
   m_reference_type_info.reset();
   m_pointer_type_info.reset();
   m_array_type_info_list.clear();
+  m_function_type_info_list.clear();
 
   return *this;
+}
+
+
+const type_info&
+type_derivation::
+get_function_type(parameter_list&&  parals) noexcept
+{
+  auto  id = parals.make_id();
+
+    for(auto&  fn: m_function_type_info_list)
+    {
+        if(fn->get_function_signature().get_parameter_list().make_id() == id)
+        {
+          return *fn;
+        }
+    }
+
+
+
+  auto  ptr = std::make_unique<type_info>(function_signature(m_base,std::move(parals)));
+
+  m_function_type_info_list.emplace_back(std::move(ptr));
+
+  return *m_function_type_info_list.back();
 }
 
 

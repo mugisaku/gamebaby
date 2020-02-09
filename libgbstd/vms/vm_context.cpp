@@ -21,6 +21,87 @@ context() noexcept
 
 
 
+value
+context::
+convert(const value&  v, const typesystem::type_info&  target_ti) const noexcept
+{
+  auto&  this_ti = v.get_type_info();
+
+    if(this_ti == target_ti)
+    {
+      return v;
+    }
+
+
+    if(target_ti.is_integer())
+    {
+        if(this_ti.is_integer())
+        {
+        }
+
+      else
+        if(this_ti.is_unsigned_integer())
+        {
+        }
+    }
+
+  else
+    if(target_ti.is_unsigned_integer())
+    {
+    }
+
+  else
+    if(target_ti.is_null_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_generic_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_pointer())
+    {
+    }
+
+  else
+    if(target_ti.is_reference())
+    {
+    }
+
+  else
+    if(target_ti.is_boolean())
+    {
+    }
+
+  else
+    if(target_ti.is_array())
+    {
+    }
+
+  else
+    if(target_ti.is_struct())
+    {
+    }
+
+  else
+    if(target_ti.is_union())
+    {
+    }
+
+  else
+    if(target_ti.is_enum())
+    {
+    }
+
+
+  return value();
+}
+
+
+
+
 function&
 context::
 create_function(std::string_view  sig, std::string_view  name) noexcept

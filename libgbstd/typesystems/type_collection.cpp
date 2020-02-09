@@ -88,12 +88,13 @@ void
 type_collection::
 push_c_like_types() noexcept
 {
-  push("undefined",std::make_unique<type_info>(undefined_type_info{}));
+  push("null_t",type_infos::null);
+  push("void",type_infos::void_);
+  push("undefined",type_infos::undefined);
 
-  push(     "void",std::make_unique<type_info>(void_type_info{}));
-  push("nullptr_t",std::make_unique<type_info>(null_pointer_type_info(8*m_pointer_size)));
-  push("geneptr_t",std::make_unique<type_info>(generic_pointer_type_info(8*m_pointer_size)));
-  push(     "bool",std::make_unique<type_info>(boolean_type_info(8*m_boolean_size)));
+  push("nullptr_t",std::make_unique<type_info>(null_pointer_type_info(m_pointer_size)));
+  push("geneptr_t",std::make_unique<type_info>(generic_pointer_type_info(m_pointer_size)));
+  push(     "bool",std::make_unique<type_info>(boolean_type_info(m_boolean_size)));
 
   push( "int8_t",std::make_unique<type_info>(integer_type_info( 8)));
   push("int16_t",std::make_unique<type_info>(integer_type_info(16)));

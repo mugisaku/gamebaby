@@ -82,6 +82,7 @@ set(SOURCES
   typesystems/type_collection.cpp
   typesystems/type_collection__create.cpp
   typesystems/parameter_list.cpp
+  typesystems/function_signature.cpp
   typesystems/memory_sharer.cpp
   typesystems/value.cpp
   vms/vm_function.cpp
