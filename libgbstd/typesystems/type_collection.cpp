@@ -84,6 +84,23 @@ ENTRY:
 }
 
 
+const type_entry*
+type_collection::
+find_entry(const type_info&  ti) const noexcept
+{
+    for(auto&  ent: m_entry_table)
+    {
+        if(&ent.get_info() == &ti)
+        {
+          return &ent;
+        }
+    }
+
+
+  return nullptr;
+}
+
+
 void
 type_collection::
 push_c_like_types() noexcept
@@ -91,20 +108,20 @@ push_c_like_types() noexcept
   push("null_t",type_infos::null);
   push("void",type_infos::void_);
   push("undefined",type_infos::undefined);
+  push("nullptr_t",type_infos::null_pointer);
 
-  push("nullptr_t",std::make_unique<type_info>(null_pointer_type_info(m_pointer_size)));
   push("geneptr_t",std::make_unique<type_info>(generic_pointer_type_info(m_pointer_size)));
   push(     "bool",std::make_unique<type_info>(boolean_type_info(m_boolean_size)));
 
-  push( "int8_t",std::make_unique<type_info>(integer_type_info( 8)));
-  push("int16_t",std::make_unique<type_info>(integer_type_info(16)));
-  push("int32_t",std::make_unique<type_info>(integer_type_info(32)));
-  push("int64_t",std::make_unique<type_info>(integer_type_info(64)));
+  push( "int8_t",std::make_unique<type_info>(integer_type_info(1)));
+  push("int16_t",std::make_unique<type_info>(integer_type_info(2)));
+  push("int32_t",std::make_unique<type_info>(integer_type_info(4)));
+  push("int64_t",std::make_unique<type_info>(integer_type_info(8)));
 
-  push( "uint8_t",std::make_unique<type_info>(unsigned_integer_type_info( 8)));
-  push("uint16_t",std::make_unique<type_info>(unsigned_integer_type_info(16)));
-  push("uint32_t",std::make_unique<type_info>(unsigned_integer_type_info(32)));
-  push("uint64_t",std::make_unique<type_info>(unsigned_integer_type_info(64)));
+  push( "uint8_t",std::make_unique<type_info>(unsigned_integer_type_info(1)));
+  push("uint16_t",std::make_unique<type_info>(unsigned_integer_type_info(2)));
+  push("uint32_t",std::make_unique<type_info>(unsigned_integer_type_info(4)));
+  push("uint64_t",std::make_unique<type_info>(unsigned_integer_type_info(8)));
 
   make_alias("int32_t","int");
   make_alias("uint32_t","uint");

@@ -41,9 +41,6 @@ get_size() const noexcept
   case(kind::boolean):
       return m_data.bool_ti.get_size();
       break;
-  case(kind::null_pointer):
-      return m_data.nptr_ti.get_size();
-      break;
   case(kind::generic_pointer):
       return m_data.gptr_ti.get_size();
       break;
@@ -123,9 +120,10 @@ print_detail() const noexcept
 
 
 namespace type_infos{
-const type_info       null{};
+const type_info          null{};
 const type_info  undefined{undefined_type_info()};
-const type_info      void_{void_type_info()};
+const type_info  null_pointer{null_pointer_type_info()};
+const type_info         void_{void_type_info()};
 }
 
 

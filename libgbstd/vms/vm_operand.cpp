@@ -133,7 +133,7 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_pointer_literal())
     {
-      auto  p = get_pointer();
+      auto  p = get_pointer().get_major();
 
       auto&  tc = ctx.get_type_collection();
 
@@ -143,23 +143,15 @@ evaluate(context&  ctx) const noexcept
         }
 
       else
-        if(p.is_global())
+        if(p.is_global() || p.is_local())
         {
-          auto&  var = ctx.get_global_variable(p.get());
+          auto&  var = ctx.get_variable(p);
 
-          auto&  t = var.get_value().get_type_derivation().get_reference_type(8*tc.get_pointer_size());
+          auto&  t = var.get_value().get_type_derivation().get_reference_type(tc.get_pointer_size());
 
-          return value(t,p.get_packed());
-        }
+          multi_pointer  mp(p,0);
 
-      else
-        if(p.is_local())
-        {
-          auto&  var = ctx.get_local_variable(p.get());
-
-          auto&  t = var.get_value().get_type_derivation().get_reference_type(8*tc.get_pointer_size());
-
-          return value(t,p.get_packed());
+          return value(t,mp.get_packed());
         }
 
       else
@@ -167,7 +159,7 @@ evaluate(context&  ctx) const noexcept
         {
           auto&  fn = ctx.get_function(p.get());
 
-//          return value(fn.get_signature(),static_cast<uint64_t>(p.get()));
+          return value(fn.get_type_info(),static_cast<uint64_t>(p.get()));
         }
     }
 
@@ -188,21 +180,21 @@ print(const context*  ctx, const function*  fn) const noexcept
   case(kind::pointer_literal):
         if(ctx)
         {
-          auto  i = m_data.p.get();
+          auto  maj = m_data.p.get_major();
 
-            if(m_data.p.is_function())
+            if(maj.is_function())
             {
-              printf("%s",ctx->get_function(i).get_name().data());
+              printf("%s",ctx->get_function(maj).get_name().data());
             }
 
           else
-            if(m_data.p.is_global())
+            if(maj.is_global())
             {
-              printf("%s",ctx->get_global_variable(i).get_name().data());
+              printf("%s",ctx->get_variable(maj).get_name().data());
             }
 
           else
-            if(m_data.p.is_local())
+            if(maj.is_local())
             {
                 if(fn)
                 {
@@ -210,6 +202,8 @@ print(const context*  ctx, const function*  fn) const noexcept
                   auto&  decls = fn->get_declaration_list();
 
                   auto  num_args = args.size();
+
+                  auto  i = maj.get();
 
                     if(i < num_args)
                     {
@@ -230,12 +224,12 @@ print(const context*  ctx, const function*  fn) const noexcept
 
               else
                 {
-                  printf("%" PRIu32,i);
+                  printf("Error:");
                 }
             }
 
           else
-            if(m_data.p.is_null())
+            if(maj.is_null())
             {
               printf("nullptr");
             }
@@ -243,7 +237,7 @@ print(const context*  ctx, const function*  fn) const noexcept
 
       else
         {
-          printf("%" PRIu32,m_data.p.get());
+          printf("%" PRIu32,m_data.p.get_major().get());
         }
       break;
     }

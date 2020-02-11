@@ -127,7 +127,7 @@ find_entry_point(std::string_view  label) const noexcept
 
 void
 function::
-resolve(const context&  ctx, operand&  o) const noexcept
+resolve(operand&  o) const noexcept
 {
     if(!o.is_identifier())
     {
@@ -137,11 +137,11 @@ resolve(const context&  ctx, operand&  o) const noexcept
 
   auto&  name = o.get_identifier();
 
-  auto  fn = ctx.find_function(name);
+  auto  fn = m_context.find_function(name);
 
     if(fn)
     {
-      o = multi_pointer('f',fn->get_address());
+      o = multi_pointer(fn->get_address(),0);
 
       return;
     }
@@ -153,7 +153,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
     {
         if(id == name)
         {
-          o = multi_pointer('l',i);
+          o = multi_pointer(major_address('l',i),0);
 
           return;
         }
@@ -167,7 +167,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
     {
         if(decl.get_name() == name)
         {
-          o = multi_pointer('l',i);
+          o = multi_pointer(major_address('l',i),0);
 
           return;
         }
@@ -177,11 +177,11 @@ resolve(const context&  ctx, operand&  o) const noexcept
     }
 
 
-  auto  var = ctx.find_variable(name);
+  auto  var = m_context.find_variable(name);
 
     if(var)
     {
-      o = multi_pointer('g',var->get_address());
+      o = multi_pointer(var->get_address(),0);
 
       return;
     }
@@ -203,7 +203,7 @@ resolve(const context&  ctx, operand&  o) const noexcept
 
 void
 function::
-finalize(const context&  ctx) noexcept
+finalize() noexcept
 {
     if(m_finalized)
     {
@@ -215,7 +215,7 @@ finalize(const context&  ctx) noexcept
     {
         if(codeln.is_return_instruction())
         {
-          resolve(ctx,codeln.get_return_instruction().get_operand());
+          resolve(codeln.get_return_instruction().get_operand());
         }
 
       else
@@ -223,8 +223,8 @@ finalize(const context&  ctx) noexcept
         {
           auto&  st = codeln.get_store_instruction();
 
-          resolve(ctx,st.get_destination());
-          resolve(ctx,st.get_source()     );
+          resolve(st.get_destination());
+          resolve(st.get_source()     );
         }
 
       else
@@ -232,8 +232,8 @@ finalize(const context&  ctx) noexcept
         {
           auto&  br = codeln.get_branch_instruction();
 
-          resolve(ctx,br.get_condition()  );
-          resolve(ctx,br.get_destination());
+          resolve(br.get_condition()  );
+          resolve(br.get_destination());
         }
 
       else
@@ -243,7 +243,7 @@ finalize(const context&  ctx) noexcept
 
             for(auto&  o: op.get_operand_list())
             {
-              resolve(ctx,o);
+              resolve(o);
             }
         }
     }
@@ -253,19 +253,53 @@ finalize(const context&  ctx) noexcept
 }
 
 
+value
+function::
+get_value() const noexcept
+{
+  auto&  tc = m_context.get_type_collection();
+
+  return m_type_info.get_derivation().get_reference_type(tc.get_pointer_size());
+}
+
+
 void
 function::
-print(const context*  ctx) const noexcept
+print() const noexcept
 {
-  m_signature.get_return_type_info().print();  
+  auto&  tc = m_context.get_type_collection();
 
-  m_signature.get_parameter_list().print();  
+  auto&  sig = m_type_info.get_function_signature();
 
-  printf(" %s{\n",m_name.data());
+  auto  retti_ent = tc.find_entry(sig.get_return_type_info());
+
+  printf("%s(",retti_ent->get_name().data());
+
+  auto  argnams_it = m_argument_name_list.begin();
+
+    for(auto&  para: sig.get_parameter_list())
+    {
+      auto  ti_ent = tc.find_entry(*para);
+
+      printf("%s  %s, ",ti_ent->get_name().data(),argnams_it++->data());
+    }
+
+
+  printf(")\n%s\n{\n",m_name.data());
+
+    for(auto&  decl: m_declaration_list)
+    {
+      printf("  %s  %s\n",tc.find_entry(*decl.get_type_info())->get_name().data(),decl.get_name().data());
+    }
+
+
+  printf("\n");
 
     for(auto&  cl: m_codelines)
     {
-      cl.print(ctx,this);
+      printf("  ");
+
+      cl.print(&m_context,this);
 
       printf("\n");
     }

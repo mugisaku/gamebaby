@@ -36,7 +36,7 @@ integer_type_info
   int  m_size;
 
 public:
-  constexpr integer_type_info(int  sz=0) noexcept: m_size(sz){}
+  constexpr integer_type_info(int  sz) noexcept: m_size(sz){}
 
   constexpr int  get_size() const noexcept{return m_size;}
 
@@ -51,7 +51,7 @@ unsigned_integer_type_info
   int  m_size;
 
 public:
-  constexpr unsigned_integer_type_info(int  sz=0) noexcept: m_size(sz){}
+  constexpr unsigned_integer_type_info(int  sz) noexcept: m_size(sz){}
 
   constexpr int  get_size() const noexcept{return m_size;}
 
@@ -66,7 +66,7 @@ boolean_type_info
   int  m_size;
 
 public:
-  constexpr boolean_type_info(int  sz=0) noexcept: m_size(sz){}
+  constexpr boolean_type_info(int  sz) noexcept: m_size(sz){}
 
   constexpr int  get_size() const noexcept{return m_size;}
 
@@ -76,12 +76,8 @@ public:
 class
 null_pointer_type_info
 {
-  int  m_size;
-
 public:
-  constexpr null_pointer_type_info(int  sz) noexcept: m_size(sz){}
-
-  constexpr int   get_size() const noexcept{return m_size;}
+  constexpr null_pointer_type_info() noexcept{}
 
 };
 
@@ -402,7 +398,6 @@ type_info
     unsigned_integer_type_info  uint_ti;
 
     boolean_type_info           bool_ti;
-    null_pointer_type_info      nptr_ti;
     generic_pointer_type_info   gptr_ti;
     pointer_type_info            ptr_ti;
     reference_type_info          ref_ti;
@@ -439,20 +434,20 @@ public:
   type_info()noexcept: m_kind(kind::null), m_id("null"), m_derivation(*this){}
   type_info(const type_info&   rhs) noexcept=delete;
   type_info(const type_info&&  rhs) noexcept=delete;
-  type_info(void_type_info)            noexcept: m_kind(kind::void_), m_id("void"), m_derivation(*this){}
-  type_info(undefined_type_info)       noexcept: m_kind(kind::undefined), m_id("undefined"), m_derivation(*this){}
-  type_info(boolean_type_info)         noexcept: m_kind(kind::boolean), m_id("bool"), m_derivation(*this){}
-  type_info(null_pointer_type_info)    noexcept: m_kind(kind::null_pointer), m_id("nullptr"), m_derivation(*this){}
-  type_info(generic_pointer_type_info) noexcept: m_kind(kind::generic_pointer), m_id("geneptr"), m_derivation(*this){}
-  type_info(pointer_type_info    ti) noexcept:   m_kind(kind::pointer  ), m_id(ti.make_id()), m_derivation(*this){}
-  type_info(reference_type_info  ti) noexcept:   m_kind(kind::reference), m_id(ti.make_id()), m_derivation(*this){}
-  type_info(         integer_type_info  ti)  noexcept: m_kind(kind::integer), m_id(ti.make_id()), m_derivation(*this){new(&m_data) integer_type_info(ti);}
-  type_info(unsigned_integer_type_info  ti)  noexcept: m_kind(kind::unsigned_integer), m_id(ti.make_id()), m_derivation(*this){new(&m_data) unsigned_integer_type_info(ti);}
-  type_info(struct_type_info&&  ti) noexcept: m_kind(kind::struct_), m_id(ti.make_id()), m_derivation(*this){new(&m_data) struct_type_info(std::move(ti));}
-  type_info(union_type_info&&   ti) noexcept: m_kind(kind::union_), m_id(ti.make_id()), m_derivation(*this){new(&m_data) union_type_info(std::move(ti));}
-  type_info(enum_type_info&&    ti) noexcept: m_kind(kind::enum_), m_id(ti.make_id()), m_derivation(*this){new(&m_data) enum_type_info(std::move(ti));}
-  type_info(array_type_info&&   ti) noexcept: m_kind(kind::array), m_id(ti.make_id()), m_derivation(*this){new(&m_data) array_type_info(std::move(ti));}
-  type_info(function_signature&&  fnsig) noexcept: m_kind(kind::function), m_id(fnsig.make_id()), m_derivation(*this){new(&m_data) function_signature(std::move(fnsig));}
+  type_info(void_type_info)                 noexcept: m_kind(kind::void_           ), m_id("void"),          m_derivation(*this){}
+  type_info(undefined_type_info)            noexcept: m_kind(kind::undefined       ), m_id("undefined"),     m_derivation(*this){}
+  type_info(null_pointer_type_info)         noexcept: m_kind(kind::null_pointer    ), m_id("nullptr"),       m_derivation(*this){}
+  type_info(boolean_type_info           ti) noexcept: m_kind(kind::boolean         ), m_id("bool"),          m_derivation(*this){new(&m_data) boolean_type_info(ti);}
+  type_info(generic_pointer_type_info   ti) noexcept: m_kind(kind::generic_pointer ), m_id("geneptr"),       m_derivation(*this){new(&m_data) generic_pointer_type_info(ti);}
+  type_info(pointer_type_info           ti) noexcept: m_kind(kind::pointer         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) pointer_type_info(ti);}
+  type_info(reference_type_info         ti) noexcept: m_kind(kind::reference       ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) reference_type_info(ti);}
+  type_info(         integer_type_info  ti) noexcept: m_kind(kind::integer         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) integer_type_info(ti);}
+  type_info(unsigned_integer_type_info  ti) noexcept: m_kind(kind::unsigned_integer), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) unsigned_integer_type_info(ti);}
+  type_info(struct_type_info&&          ti) noexcept: m_kind(kind::struct_         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) struct_type_info(std::move(ti));}
+  type_info(union_type_info&&           ti) noexcept: m_kind(kind::union_          ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) union_type_info(std::move(ti));}
+  type_info(enum_type_info&&            ti) noexcept: m_kind(kind::enum_           ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) enum_type_info(std::move(ti));}
+  type_info(array_type_info&&           ti) noexcept: m_kind(kind::array           ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) array_type_info(std::move(ti));}
+  type_info(function_signature&&     fnsig) noexcept: m_kind(kind::function        ), m_id(fnsig.make_id()), m_derivation(*this){new(&m_data) function_signature(std::move(fnsig));}
  ~type_info(){clear();}
 
   bool  operator==(const type_info&  rhs) const noexcept{return m_id == rhs.m_id;}
@@ -482,6 +477,7 @@ public:
 
   bool  is_null()             const noexcept{return m_kind == kind::null;}
   bool  is_void()             const noexcept{return m_kind == kind::void_;}
+  bool  is_undefined()        const noexcept{return m_kind == kind::undefined;}
   bool  is_boolean()          const noexcept{return m_kind == kind::boolean;}
   bool  is_null_pointer()     const noexcept{return m_kind == kind::null_pointer;}
   bool  is_generic_pointer()  const noexcept{return m_kind == kind::generic_pointer;}
@@ -508,9 +504,10 @@ public:
 
 
 namespace type_infos{
-extern const type_info       null;
-extern const type_info  undefined;
-extern const type_info      void_;
+extern const type_info          null;
+extern const type_info     undefined;
+extern const type_info  null_pointer;
+extern const type_info         void_;
 }
 
 
@@ -527,6 +524,9 @@ type_entry
 
 public:
   type_entry(std::string_view  name, const type_info&  ti) noexcept;
+
+  const type_info&  operator*()  const noexcept{return m_type_info;}
+  const type_info*  operator->() const noexcept{return &m_type_info;}
 
   const std::string&  get_name() const noexcept{return m_name;}
   const type_info&    get_info() const noexcept{return m_type_info;}
@@ -674,6 +674,8 @@ public:
 
   const type_info*  find_by_id(  std::string_view    id) const noexcept;
   const type_info*  find_by_name(std::string_view  name) const noexcept;
+
+  const type_entry*  find_entry(const type_info&  ti) const noexcept;
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
 

@@ -121,6 +121,10 @@ set_integer(int64_t  i) const noexcept
       else if(sz == 2){mem.get_s16() = i;}
       else if(sz == 4){mem.get_s32() = i;}
       else if(sz == 8){mem.get_s64() = i;}
+      else
+        {
+          printf("ERROR: set_integer %d\n",sz);
+        }
     }
 
   else
@@ -130,6 +134,10 @@ set_integer(int64_t  i) const noexcept
       else if(sz == 2){mem.get_u16() = i;}
       else if(sz == 4){mem.get_u32() = i;}
       else if(sz == 8){mem.get_u64() = i;}
+      else
+        {
+          printf("ERROR: set_integer %d\n",sz);
+        }
     }
 }
 
@@ -150,6 +158,10 @@ set_unsigned_integer(uint64_t  u) const noexcept
       else if(sz == 2){mem.get_s16() = u;}
       else if(sz == 4){mem.get_s32() = u;}
       else if(sz == 8){mem.get_s64() = u;}
+      else
+        {
+          printf("ERROR: set_unsigned_integer %d\n",sz);
+        }
     }
 
   else
@@ -159,6 +171,10 @@ set_unsigned_integer(uint64_t  u) const noexcept
       else if(sz == 2){mem.get_u16() = u;}
       else if(sz == 4){mem.get_u32() = u;}
       else if(sz == 8){mem.get_u64() = u;}
+      else
+        {
+          printf("ERROR: set_unsigned_integer %d\n",sz);
+        }
     }
 }
 
@@ -209,6 +225,11 @@ get_member(std::string_view  name) const noexcept
               v.m_memory    = memory_sharer(m_memory,m->get_offset(),member_ti.get_size());
               v.m_type_info = &member_ti;
             }
+
+          else
+            {
+              printf("ERROR: value::get_member, %s is not found.\n",name.data());
+            }
         }
 
       else
@@ -220,6 +241,11 @@ get_member(std::string_view  name) const noexcept
             {
               v.m_memory    = memory_sharer(m_memory,0,member_ti->get_size());
               v.m_type_info = member_ti;
+            }
+
+          else
+            {
+              printf("ERROR: value::get_member, %s is not found.\n",name.data());
             }
         }
 
@@ -283,6 +309,12 @@ print() const noexcept
         if(ti.is_void())
         {
           printf("void");
+        }
+
+      else
+        if(ti.is_undefined())
+        {
+          printf("undefined");
         }
     }
 

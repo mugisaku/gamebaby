@@ -11,92 +11,11 @@ namespace gbstd{
 context::
 context() noexcept
 {
-  m_type_collection.set_pointer_size(8);
+  m_type_collection.set_pointer_size(sizeof(multi_pointer::value_type));
 
   m_type_collection.push_c_like_types();
 
   push_variable("GLOB",*m_type_collection.find_by_name("int"),"final return value");
-}
-
-
-
-
-value
-context::
-convert(const value&  v, const typesystem::type_info&  target_ti) const noexcept
-{
-  auto&  this_ti = v.get_type_info();
-
-    if(this_ti == target_ti)
-    {
-      return v;
-    }
-
-
-    if(target_ti.is_integer())
-    {
-        if(this_ti.is_integer())
-        {
-        }
-
-      else
-        if(this_ti.is_unsigned_integer())
-        {
-        }
-    }
-
-  else
-    if(target_ti.is_unsigned_integer())
-    {
-    }
-
-  else
-    if(target_ti.is_null_pointer())
-    {
-    }
-
-  else
-    if(target_ti.is_generic_pointer())
-    {
-    }
-
-  else
-    if(target_ti.is_pointer())
-    {
-    }
-
-  else
-    if(target_ti.is_reference())
-    {
-    }
-
-  else
-    if(target_ti.is_boolean())
-    {
-    }
-
-  else
-    if(target_ti.is_array())
-    {
-    }
-
-  else
-    if(target_ti.is_struct())
-    {
-    }
-
-  else
-    if(target_ti.is_union())
-    {
-    }
-
-  else
-    if(target_ti.is_enum())
-    {
-    }
-
-
-  return value();
 }
 
 
@@ -108,7 +27,7 @@ create_function(std::string_view  sig, std::string_view  name) noexcept
 {
   auto  ti = m_type_collection.create_from_string(sig);
 
-  m_function_table.emplace_back(*this,m_function_table.size(),ti->get_function_signature(),name);
+  m_function_table.emplace_back(*this,major_address('f',m_function_table.size()),*ti,name);
 
   return m_function_table.back();
 }
@@ -182,25 +101,14 @@ find_variable(std::string_view  name) const noexcept
 }
 
 
-variable&
-context::
-get_variable(multi_pointer  p) noexcept
-{
-  return p.is_global()? get_global_variable(p.get())
-        :p.is_local() ? get_local_variable( p.get())
-        :m_variable_table[0]
-        ;
-}
-
-
 value
 context::
 get_value(multi_pointer  p) const noexcept
 {
-  return p.is_global()  ? get_global_variable(p.get()).get_value()
-        :p.is_local()   ? get_local_variable( p.get()).get_value()
-//        :p.is_function()? get_function(       p.get()).get_value()
-        :value(get_void_type_info())
+  auto  maj = p.get_major();
+
+  return maj.is_function()? get_function(maj).get_value()
+        :get_variable(maj).get_value()
         ;
 }
 
@@ -211,7 +119,7 @@ print() const noexcept
 {
     for(auto&  f: m_function_table)
     {
-      f.print(this);
+      f.print();
 
       printf("\n");
     }
@@ -230,7 +138,7 @@ frame
 
   const uint32_t  m_base_index=0;
 
-  uint32_t  m_store_pointer;
+  major_address  m_store_pointer;
 
   uint32_t  m_pc=0;
 
@@ -333,7 +241,7 @@ process(const return_instruction&  ret) noexcept
 
     if(m_current_frame)
     {
-      get_global_variable(m_current_frame->m_store_pointer).get_value() = std::move(val);
+      get_variable(m_current_frame->m_store_pointer).get_value() = std::move(val);
     }
 
   else
@@ -357,23 +265,27 @@ process(const operation&  op) noexcept
 {
   auto&  opls = op.get_operand_list();
 
-  auto&  dst = get_variable(opls[0].get_pointer());
+  auto&  dst = get_variable(opls[0].get_pointer().get_major());
 
     if(op.is_unary())
     {
-      dst.get_value() = operate(op.get_unary_opcodes(),opls[1]);
+      auto  v = operate(op.get_unary_opcodes(),opls[1]);
+
+      dst.get_value() = dereference(v);
     }
 
   else
     if(op.is_binary())
     {
-      dst.get_value() = operate(op.get_binary_opcodes(),opls[1],opls[2]);
+      auto  v = operate(op.get_binary_opcodes(),opls[1],opls[2]);
+
+      dst.get_value() = dereference(v);
     }
 
   else
     if(op.is_call())
     {
-      push_frame(dst.get_address(),get_function(opls[1].get_pointer()),opls.size()-2,&opls[2]);
+      push_frame(dst.get_address(),get_function(opls[1].get_pointer().get_major()),opls.size()-2,&opls[2]);
     }
 
   else
@@ -398,7 +310,7 @@ variable&
 context::
 push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept
 {
-  m_variable_table.emplace_back(fn_name,m_variable_table.size(),ti,name);
+  m_variable_table.emplace_back(fn_name,major_address('l',m_variable_table.size()),ti,name);
 
   return m_variable_table.back();
 }
@@ -406,7 +318,7 @@ push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::
 
 void
 context::
-push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  argv) noexcept
+push_frame(major_address st_p, const function&  fn, int  argc, const operand*  argv) noexcept
 {
     if(m_current_frame)
     {
@@ -419,7 +331,7 @@ push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  argv)
   new_frame->m_previous = m_current_frame            ;
                           m_current_frame = new_frame;
 
-  auto  paras = fn.get_signature().get_parameter_list().begin();
+  auto  paras = fn.get_type_info().get_function_signature().get_parameter_list().begin();
   auto  names = fn.get_argument_name_list().begin();
 
     while(argc--)
@@ -530,7 +442,7 @@ finalize() noexcept
 {
     for(auto&  fn: m_function_table)
     {
-      fn.finalize(*this);
+      fn.finalize();
     }
 
 

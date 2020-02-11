@@ -55,27 +55,64 @@ using mutabilities::unmute;
 
 
 class
-multi_pointer
+major_address
 {
-  char  m_kind;
-
   uint32_t  m_value;
 
 public:
-  constexpr multi_pointer(char  k=0, uint32_t  v=0) noexcept: m_kind(k), m_value(v){}
-  constexpr multi_pointer(uint64_t  v) noexcept: m_kind(v>>32), m_value(v&0xFFFFFFFF){}
+  constexpr major_address(char  k=0, uint32_t  v=0) noexcept: m_value((k<<24)|(v&0x00FFFFFF)){}
 
   constexpr operator bool() const noexcept{return m_value;}
 
-  constexpr char  get_kind() const noexcept{return m_kind;}
+  constexpr char  get_kind() const noexcept{return m_value>>24;}
 
-  constexpr bool  is_function() const noexcept{return m_kind == 'f';}
-  constexpr bool  is_global()   const noexcept{return m_kind == 'g';}
-  constexpr bool  is_local()    const noexcept{return m_kind == 'l';}
-  constexpr bool  is_null()     const noexcept{return m_kind == 'n';}
+  constexpr bool  is_function() const noexcept{return get_kind() == 'f';}
+  constexpr bool  is_global()   const noexcept{return get_kind() == 'g';}
+  constexpr bool  is_local()    const noexcept{return get_kind() == 'l';}
+  constexpr bool  is_null()     const noexcept{return get_kind() == 0;}
 
-  constexpr uint32_t  get() const noexcept{return m_value;}
-  constexpr uint64_t  get_packed() const noexcept{return (static_cast<uint64_t>(m_kind)<<32)|m_value;}
+  constexpr uint32_t  get(             ) const noexcept{return m_value&0x00FFFFFF;}
+  void                set(uint32_t  v=0) noexcept{m_value = (m_value&0xFF000000)|(v&0x00FFFFFF);}
+
+};
+
+
+class
+minor_address
+{
+  uint32_t  m_value;
+
+public:
+  constexpr minor_address(uint32_t  v=0) noexcept: m_value(v){}
+
+  constexpr operator bool() const noexcept{return m_value;}
+
+  constexpr uint32_t  get(             ) const noexcept{return m_value;}
+  void                set(uint32_t  v=0) noexcept{m_value = v;}
+
+};
+
+
+class
+multi_pointer
+{
+public:
+  using value_type = uint64_t;
+
+private:
+  major_address  m_major;
+  minor_address  m_minor;
+
+public:
+  constexpr multi_pointer(value_type  v=0) noexcept: m_major(v>>32), m_minor(v&0xFFFFFFFF){}
+  constexpr multi_pointer(major_address  maj, minor_address  min) noexcept: m_major(maj), m_minor(min){}
+
+  constexpr operator bool() const noexcept{return m_major;}
+
+  constexpr major_address  get_major() const noexcept{return m_major;}
+  constexpr minor_address  get_minor() const noexcept{return m_minor;}
+
+  constexpr value_type  get_packed() const noexcept{return (static_cast<uint64_t>(m_major.get())<<32)|m_minor.get();}
 
 };
 
@@ -177,44 +214,34 @@ binary_opcodes
 };
 
 
-using address_t = uint32_t;
-
-
 class
 variable
 {
   std::string  m_function_name;
 
-  address_t  m_address;
+  major_address  m_address;
 
   value  m_value;
 
   std::string  m_name;
 
 public:
-  variable(std::string_view  fn_name, address_t  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
+  variable(std::string_view  fn_name, major_address  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
   m_function_name(fn_name), m_address(addr), m_value(ti), m_name(name){}
 
-  variable(std::string_view  fn_name, address_t  addr, value&&  v, std::string_view  name) noexcept:
+  variable(std::string_view  fn_name, major_address  addr, value&&  v, std::string_view  name) noexcept:
   m_function_name(fn_name), m_address(addr), m_value(std::move(v)), m_name(name){}
 
   const std::string&  get_function_name() const noexcept{return m_function_name;}
 
-  address_t  get_address() const noexcept{return m_address;}
+  major_address  get_address() const noexcept{return m_address;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
         value&  get_value()       noexcept{return m_value;}
   const value&  get_value() const noexcept{return m_value;}
 
-  void  print() const noexcept
-  {
-    printf("{var[%4" PRIu32 "]: {fn: \"%s\", name: \"%s\", value:",m_address,m_function_name.data(),m_name.data());
-
-    m_value.print();
-
-    printf("}}");
-  }
+  void  print() const noexcept;
 
 };
 
@@ -239,7 +266,7 @@ context
 
   variable&  push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept;
 
-  void  push_frame(uint32_t  st_p, const function&  fn, int  argc, const operand*  args) noexcept;
+  void  push_frame(major_address  st_p, const function&  fn, int  argc, const operand*  args) noexcept;
   void  pop_frame() noexcept;
 
   void  store(const value&  dst, const value&  src) noexcept;
@@ -258,9 +285,8 @@ context
 public:
   context() noexcept;
 
-  typesystem::type_collection&  get_type_collection() noexcept{return m_type_collection;}
-
-  value  convert(const value&  v, const typesystem::type_info&  target_ti) const noexcept;
+        typesystem::type_collection&  get_type_collection()       noexcept{return m_type_collection;}
+  const typesystem::type_collection&  get_type_collection() const noexcept{return m_type_collection;}
 
   value  make_value(int64_t    i) noexcept{return value(*m_type_collection.find_by_name("int"),i);}
   value  make_value(uint64_t   u) noexcept{return value(*m_type_collection.find_by_name("uint"),u);}
@@ -275,14 +301,11 @@ public:
         variable*  find_variable(std::string_view  name)       noexcept;
   const variable*  find_variable(std::string_view  name) const noexcept;
 
-        variable&  get_global_variable(uint32_t  p) noexcept{return m_variable_table[p];}
-        variable&  get_local_variable( uint32_t  p) noexcept{return m_variable_table[get_base_index()+p];}
-        function&  get_function(       uint32_t  p) noexcept{return m_function_table[p];}
-  const variable&  get_global_variable(uint32_t  p) const noexcept{return m_variable_table[p];}
-  const variable&  get_local_variable( uint32_t  p) const noexcept{return m_variable_table[get_base_index()+p];}
-  const function&  get_function(       uint32_t  p) const noexcept{return m_function_table[p];}
+        variable&  get_variable(major_address  addr)       noexcept{return m_variable_table[(addr.is_local()? get_base_index():0)+addr.get()];}
+  const variable&  get_variable(major_address  addr) const noexcept{return m_variable_table[(addr.is_local()? get_base_index():0)+addr.get()];}
 
-  variable&  get_variable(multi_pointer  p) noexcept;
+        function&  get_function(major_address  addr)       noexcept{return m_function_table[addr.get()];}
+  const function&  get_function(major_address  addr) const noexcept{return m_function_table[addr.get()];}
 
   const typesystem::type_info&  get_void_type_info() const noexcept{return *m_type_collection.find_by_name("void");}
 
@@ -303,6 +326,7 @@ public:
 };
 
 
+void  assign(const context&  ctx, const value&  src, value&  dst) noexcept;
 
 
 class
@@ -527,9 +551,9 @@ function
 {
   context&  m_context;
 
-  address_t  m_address=0;
+  major_address  m_address;
 
-  const typesystem::function_signature&  m_signature;
+  const typesystem::type_info&  m_type_info;
 
   std::string  m_name;
 
@@ -543,21 +567,21 @@ function
 
   bool  m_finalized=false;
 
-  void  resolve(const context&  ctx, operand&  o) const noexcept;
+  void  resolve(operand&  o) const noexcept;
 
 public:
-  function(context&  ctx, address_t  addr, const typesystem::function_signature&  sig, std::string_view  name) noexcept:
-  m_context(ctx), m_address(addr), m_signature(sig), m_name(name){}
+  function(context&  ctx, major_address  addr, const typesystem::type_info&  ti, std::string_view  name) noexcept:
+  m_context(ctx), m_address(addr), m_type_info(ti), m_name(name){}
 
   const codeline&  operator[](int  i) const noexcept{return m_codelines[i];}
 
-  address_t  get_address() const noexcept{return m_address;}
+  major_address  get_address() const noexcept{return m_address;}
 
   int  get_number_of_codelines() const noexcept{return m_codelines.size();}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
-  const typesystem::function_signature&  get_signature() const noexcept{return m_signature;}
+  const typesystem::type_info&  get_type_info() const noexcept{return m_type_info;}
 
   function&  set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept;
 
@@ -578,11 +602,11 @@ public:
 
   const entry_point*  find_entry_point(std::string_view  label) const noexcept;
 
-  void  finalize(const context&  ctx) noexcept;
+  void  finalize() noexcept;
 
-//  value  get_value() const noexcept{return value(m_signature,static_cast<uint64_t>(m_address));}
+  value  get_value() const noexcept;
 
-  void  print(const context*  ctx=nullptr) const noexcept;
+  void  print() const noexcept;
 
 };
 
