@@ -466,7 +466,8 @@ public:
   const          integer_type_info&           get_integer_type_info() const noexcept{return m_data.int_ti;}
   const unsigned_integer_type_info&  get_unsigned_integer_type_info() const noexcept{return m_data.uint_ti;}
 
-  const pointer_type_info&  get_pointer_type_info() const noexcept{return m_data.ptr_ti;}
+  const   pointer_type_info&    get_pointer_type_info() const noexcept{return m_data.ptr_ti;}
+  const reference_type_info&  get_reference_type_info() const noexcept{return m_data.ref_ti;}
 
   const array_type_info&    get_array_type_info() const noexcept{return m_data.arr_ti;}
   const struct_type_info&  get_struct_type_info() const noexcept{return m_data.str_ti;}

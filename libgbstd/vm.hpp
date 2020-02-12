@@ -60,19 +60,25 @@ major_address
   uint32_t  m_value;
 
 public:
-  constexpr major_address(char  k=0, uint32_t  v=0) noexcept: m_value((k<<24)|(v&0x00FFFFFF)){}
+  constexpr major_address() noexcept: m_value(0){}
+  constexpr major_address(uint32_t  v) noexcept: m_value(v){}
+  constexpr major_address(int  k, uint32_t  v) noexcept: m_value((k<<24)|(v&0x00FFFFFF)){}
 
   constexpr operator bool() const noexcept{return m_value;}
 
-  constexpr char  get_kind() const noexcept{return m_value>>24;}
+  constexpr int  get_kind() const noexcept{return m_value>>24;}
 
   constexpr bool  is_function() const noexcept{return get_kind() == 'f';}
   constexpr bool  is_global()   const noexcept{return get_kind() == 'g';}
   constexpr bool  is_local()    const noexcept{return get_kind() == 'l';}
   constexpr bool  is_null()     const noexcept{return get_kind() == 0;}
 
+  constexpr uint32_t  get_raw_value() const noexcept{return m_value;}
+
   constexpr uint32_t  get(             ) const noexcept{return m_value&0x00FFFFFF;}
   void                set(uint32_t  v=0) noexcept{m_value = (m_value&0xFF000000)|(v&0x00FFFFFF);}
+
+  void  print() const noexcept{printf("major{%c %d}",get_kind(),get());}
 
 };
 
@@ -112,7 +118,7 @@ public:
   constexpr major_address  get_major() const noexcept{return m_major;}
   constexpr minor_address  get_minor() const noexcept{return m_minor;}
 
-  constexpr value_type  get_packed() const noexcept{return (static_cast<uint64_t>(m_major.get())<<32)|m_minor.get();}
+  constexpr value_type  get_packed() const noexcept{return (static_cast<uint64_t>(m_major.get_raw_value())<<32)|m_minor.get();}
 
 };
 

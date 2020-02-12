@@ -272,7 +272,7 @@ print() const noexcept
 
         if(ti.is_integer())
         {
-          printf("%" PRIi64,get_integer());
+          printf("int(%" PRIi64 ")",get_integer());
         }
 
       else
@@ -282,15 +282,16 @@ print() const noexcept
         }
 
       else
-        if(ti.is_unsigned_integer() || ti.is_kind_of_pointer())
+        if(ti.is_unsigned_integer())
         {
-          printf("%" PRIu64,get_unsigned_integer());
+          printf("uint(%" PRIu64 ")",get_unsigned_integer());
         }
+
 
       else
         if(ti.is_reference())
         {
-          printf("reference");
+          printf("reference(%" PRIu64 ")",get_unsigned_integer());
         }
 
       else

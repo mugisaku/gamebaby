@@ -133,33 +133,44 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_pointer_literal())
     {
-      auto  p = get_pointer().get_major();
+      auto  p = get_pointer();
+
+      auto  maj = get_pointer().get_major();
 
       auto&  tc = ctx.get_type_collection();
 
-        if(p.is_null())
+        if(maj.is_null())
         {
           return ctx.make_value(nullptr);
         }
 
       else
-        if(p.is_global() || p.is_local())
+        if(maj.is_global() || maj.is_local())
         {
-          auto&  var = ctx.get_variable(p);
+          auto&  val = ctx.get_variable(maj).get_value();
 
-          auto&  t = var.get_value().get_type_derivation().get_reference_type(tc.get_pointer_size());
+          auto  ti = &val.get_type_info();
 
-          multi_pointer  mp(p,0);
+            if(ti->is_reference())
+            {
+              p = multi_pointer(val.get_unsigned_integer());
+            }
 
-          return value(t,mp.get_packed());
+          else
+            {
+              ti = &val.get_type_derivation().get_reference_type(tc.get_pointer_size());
+            }
+
+
+          return value(*ti,p.get_packed());
         }
 
       else
-        if(p.is_function())
+        if(maj.is_function())
         {
-          auto&  fn = ctx.get_function(p.get());
-
-          return value(fn.get_type_info(),static_cast<uint64_t>(p.get()));
+          auto&  fn = ctx.get_function(maj);
+	
+          return value(fn.get_type_info(),m_data.p.get_packed());
         }
     }
 

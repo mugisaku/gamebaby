@@ -67,6 +67,16 @@ find_function(std::string_view  name) const noexcept
 }
 
 
+variable&
+context::
+push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept
+{
+  m_variable_table.emplace_back(fn_name,major_address('l',m_variable_table.size()),ti,name);
+
+  return m_variable_table.back();
+}
+
+
 variable*
 context::
 find_variable(std::string_view  name) noexcept
@@ -233,7 +243,7 @@ void
 context::
 process(const return_instruction&  ret) noexcept
 {
-  print_debug();
+//  print_debug();
 
   auto  val = dereference(ret.get_operand().evaluate(*this));
 
@@ -279,13 +289,13 @@ process(const operation&  op) noexcept
     {
       auto  v = operate(op.get_binary_opcodes(),opls[1],opls[2]);
 
-      dst.get_value() = dereference(v);
+      dst.get_value() = std::move(v);
     }
 
   else
     if(op.is_call())
     {
-      push_frame(dst.get_address(),get_function(opls[1].get_pointer().get_major()),opls.size()-2,&opls[2]);
+      push_frame(opls[0].get_pointer().get_major(),get_function(opls[1].get_pointer().get_major()),opls.size()-2,&opls[2]);
     }
 
   else
@@ -306,30 +316,11 @@ seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 
 
 
-variable&
-context::
-push_variable(std::string_view  fn_name, const typesystem::type_info&  ti, std::string_view  name) noexcept
-{
-  m_variable_table.emplace_back(fn_name,major_address('l',m_variable_table.size()),ti,name);
-
-  return m_variable_table.back();
-}
-
-
 void
 context::
-push_frame(major_address st_p, const function&  fn, int  argc, const operand*  argv) noexcept
+push_frame(major_address  st_p, const function&  fn, int  argc, const operand*  argv) noexcept
 {
-    if(m_current_frame)
-    {
-      m_current_frame->m_store_pointer = st_p;
-    }
-
-
-  auto  new_frame = new frame(fn,m_variable_table.size());
-
-  new_frame->m_previous = m_current_frame            ;
-                          m_current_frame = new_frame;
+  int  new_base_index = m_variable_table.size();
 
   auto  paras = fn.get_type_info().get_function_signature().get_parameter_list().begin();
   auto  names = fn.get_argument_name_list().begin();
@@ -339,9 +330,45 @@ push_frame(major_address st_p, const function&  fn, int  argc, const operand*  a
       auto&    ti = **paras++;
       auto&  name =  *names++;
 
-      push_variable(fn.get_name().data(),ti,name).get_value() = argv++->evaluate(*this);
+      auto&  dst_var = push_variable(fn.get_name().data(),ti,name);
+
+      auto  dst_ti = &dst_var.get_value().get_type_info();
+
+      auto    src_v = argv++->evaluate(*this);
+      auto&  src_ti = src_v.get_type_info();
+
+        if(src_ti == *dst_ti)
+        {
+          dst_var.get_value() = src_v;
+        }
+
+      else
+        {
+            if(src_ti.is_reference())
+            {
+                if(src_ti.get_reference_type_info().get_base_type_info() == *dst_ti)
+                {
+                  auto  p = multi_pointer(src_v.get_unsigned_integer());
+
+                  auto&  var = get_variable(p.get_major());
+
+                  dst_var.get_value() = var.get_value();
+                }
+            }
+        }
     }
 
+
+    if(m_current_frame)
+    {
+      m_current_frame->m_store_pointer = st_p;
+    }
+
+
+  auto  new_frame = new frame(fn,new_base_index);
+
+  new_frame->m_previous = m_current_frame            ;
+                          m_current_frame = new_frame;
 
     for(auto&  decl: fn.get_declaration_list())
     {
