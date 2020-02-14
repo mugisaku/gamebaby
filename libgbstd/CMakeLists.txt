@@ -89,8 +89,9 @@ set(SOURCES
   vms/vm_variable.cpp
   vms/vm_function.cpp
   vms/vm_context.cpp
-  vms/vm_context__operate.cpp
+  vms/vm_operations_callback.cpp
   vms/vm_operand.cpp
+  vms/vm_expression.cpp
   vms/vm_operation.cpp
   vms/vm_codeline.cpp
   ilc_javascript.cpp

@@ -187,7 +187,6 @@ public:
 enum class
 unary_opcodes
 {
-  ld,
   bit_not,
   logical_not,
   get_size,
@@ -218,6 +217,140 @@ binary_opcodes
   bit_or,
   bit_xor,
 };
+
+
+class expression;
+
+
+class
+unary_expression
+{
+  unary_opcodes  m_opcode;
+
+  std::unique_ptr<expression>  m_expression;
+
+public:
+  unary_expression(unary_opcodes  op, std::unique_ptr<expression>&&  e) noexcept:
+  m_opcode(op), m_expression(std::move(e)){}
+
+  unary_opcodes  get_opcode() const noexcept{return m_opcode;}
+
+  const expression&  get_expression()  const noexcept{return *m_expression;}
+
+  value  evaluate(context&  ctx) const noexcept;
+
+};
+
+
+class
+binary_expression
+{
+  binary_opcodes  m_opcode;
+
+  std::unique_ptr<expression>  m_left;
+  std::unique_ptr<expression>  m_right;
+
+public:
+  binary_expression(binary_opcodes  op, std::unique_ptr<expression>&&  l, std::unique_ptr<expression>&&  r) noexcept:
+  m_opcode(op), m_left(std::move(l)), m_right(std::move(r)){}
+
+  binary_opcodes  get_opcode() const noexcept{return m_opcode;}
+
+  const expression&  get_left()  const noexcept{return *m_left;}
+  const expression&  get_right() const noexcept{return *m_right;}
+
+  value  evaluate(context&  ctx) const noexcept;
+
+};
+
+
+class
+expression
+{
+  enum class kind{
+    null,
+    operand,
+     unary,
+    binary,
+  } m_kind=kind::null;
+
+  union data{
+    operand                op;
+     unary_expression   unexp;
+    binary_expression  binexp;
+
+  data() noexcept{}
+ ~data(){}
+
+  } m_data;
+
+public:
+  expression() noexcept{}
+  expression(const expression&   rhs) noexcept=delete;
+  expression(      expression&&  rhs) noexcept{assign(std::move(rhs));}
+  expression(operand&&  o) noexcept{assign(std::move(o));}
+  expression( unary_expression&&  e) noexcept{assign(std::move(e));}
+  expression(binary_expression&&  e) noexcept{assign(std::move(e));}
+ ~expression(){clear();}
+
+  expression&  operator=(const expression&   rhs) noexcept=delete;
+  expression&  operator=(      expression&&  rhs) noexcept{return assign(std::move(rhs));}
+  expression&  operator=(operand&&  o) noexcept{return assign(std::move(o));}
+  expression&  operator=( unary_expression&&  e) noexcept{return assign(std::move(e));}
+  expression&  operator=(binary_expression&&  e) noexcept{return assign(std::move(e));}
+
+  expression&  assign(expression&&  rhs) noexcept;
+  expression&  assign(operand&&  o) noexcept;
+  expression&  assign( unary_expression&&  e) noexcept;
+  expression&  assign(binary_expression&&  e) noexcept;
+
+  expression&  clear() noexcept;
+
+  bool  is_operand() const noexcept{return m_kind == kind::operand;}
+  bool  is_unary()   const noexcept{return m_kind == kind::unary;}
+  bool  is_binary()  const noexcept{return m_kind == kind::binary;}
+
+  value  evaluate(context&  ctx) const noexcept;
+
+};
+
+
+namespace unary_operations{
+value      bit_not(context&  ctx, const value&  v) noexcept;
+value  logical_not(context&  ctx, const value&  v) noexcept;
+value     get_size(context&  ctx, const value&  v) noexcept;
+value  get_address(context&  ctx, const value&  v) noexcept;
+
+using callback = value(*)(context&,const value&);
+
+callback  get_callback(unary_opcodes  op) noexcept;
+}
+
+
+namespace binary_operations{
+value          add(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          sub(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          mul(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          div(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          rem(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          shl(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          shr(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value           eq(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value          neq(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value           lt(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value         lteq(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value           gt(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value         gteq(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value   logical_or(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value  logical_and(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value       bit_or(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value      bit_and(context&  ctx, const value&  lv, const value&  rv) noexcept;
+value      bit_xor(context&  ctx, const value&  lv, const value&  rv) noexcept;
+
+using callback = value(*)(context&  ctx, const value&,const value&);
+
+callback  get_callback(binary_opcodes  op) noexcept;
+}
 
 
 class

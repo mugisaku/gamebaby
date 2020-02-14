@@ -295,9 +295,11 @@ print() const noexcept
 
   printf("\n");
 
+  int  i = 0;
+
     for(auto&  cl: m_codelines)
     {
-      printf("  ");
+      printf("%4d  ",i++);
 
       cl.print(&m_context,this);
 

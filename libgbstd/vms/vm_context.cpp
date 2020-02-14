@@ -209,7 +209,7 @@ void
 context::
 process(const branch_instruction&   br) noexcept
 {
-  value  condv = br.get_condition().evaluate(*this);
+  value  condv = dereference(br.get_condition().evaluate(*this));
 
     if(condv.get_integer())
     {
@@ -316,6 +316,48 @@ seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 
 
 
+value
+context::
+operate(unary_opcodes  op, const operand&  o) noexcept
+{
+  auto  ov = o.evaluate(*this);
+
+  return unary_operations::get_callback(op)(*this,ov);
+}
+
+
+value
+context::
+operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
+{
+  auto  olv = l.evaluate(*this);
+  auto  orv = r.evaluate(*this);
+
+  auto  lv = dereference(olv);
+  auto  rv = dereference(orv);
+
+  return binary_operations::get_callback(op)(*this,lv,rv);
+
+/*
+  printf("ERROR: context::operate_binary unknown operation.\n");
+
+  printf("left value: ");
+
+  lv.print();
+
+  printf("\nright value: ");
+
+  rv.print();
+
+  printf("\n");
+*/
+
+  return value(get_void_type_info());
+}
+
+
+
+
 void
 context::
 push_frame(major_address  st_p, const function&  fn, int  argc, const operand*  argv) noexcept
@@ -415,9 +457,9 @@ START:
     }
 
 
+//printf("%s pc: %4d\n",m_current_frame->m_function.get_name().data(),m_current_frame->m_pc);
   auto&  codeln = **m_current_frame;
 
-//printf("%s pc: %4d\n",m_current_frame->m_function.get_name().data(),m_current_frame->m_pc);
     if(codeln.is_store_instruction())
     {
       auto&  st = codeln.get_store_instruction();
