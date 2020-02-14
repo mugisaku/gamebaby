@@ -342,7 +342,9 @@ step(operator_code  close, int close_len)
       printf("[処理できない文字です %d]\n",c);
       printf("%s\n",m_current);
 
-      throw 0;
+      m_elements.back().m_block.print();
+
+      throw m_current;
     }
 }
 

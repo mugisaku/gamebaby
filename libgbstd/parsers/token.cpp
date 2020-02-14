@@ -260,8 +260,36 @@ print_string(const std::string&  s, char  punct) noexcept
 
 void
 token::
-print() const noexcept
+print(const char*  base, int  indent) const noexcept
 {
+  int  i = 0;
+
+    if(base)
+    {
+      auto  p = base;
+
+        while(p < m_begin)
+        {
+           if(*p == '\n')
+           {
+             ++i;
+           }
+
+
+          ++p;
+        }
+
+
+      printf("%4d  ",i);
+    }
+
+
+    for(int  n = 0;  n < indent;  ++n)
+    {
+      printf(" ");
+    }
+
+
     switch(m_kind)
     {
   case(kind::null): printf("NULL");break;
@@ -271,7 +299,7 @@ print() const noexcept
   case(kind::double_quoted): print_string(m_data.s,'\"');break;
   case(kind::floating_point_number): printf("%f",m_data.f);break;
   case(kind::operator_code): printf("%s",m_data.opco.get_string());break;
-  case(kind::block): m_data.blk.print();break;
+  case(kind::block): m_data.blk.print(base,indent+2);break;
   default: printf("UNKNOWN");break;
     }
 }

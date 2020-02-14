@@ -17,7 +17,7 @@ m_null;
 
 
 token_block::
-token_block(std::string_view  sv) noexcept
+token_block(std::string_view  sv)
 {
   tokenizer  tknz;
 
@@ -40,26 +40,21 @@ clear() noexcept
 
 void
 token_block::
-print() const noexcept
+print(const char*  base, int  indent) const noexcept
 {
   printf("%s\n",m_open.get_string());
 
     for(auto&  tok: m_container)
     {
-      tok.print();
+      tok.print(base,indent);
 
-      auto    p = tok.get_begin();
-      auto  end = tok.get_end();
-
-      printf("  --  ");
-
-        while(p < end)
-        {
-          printf("%c",*p++);
-        }
+      printf("\n");
+    }
 
 
-      printf("  --\n");
+    for(int  n = 0;  n < indent;  ++n)
+    {
+      printf(" ");
     }
 
 

@@ -70,8 +70,8 @@ token_block
 
 public:
    token_block() noexcept{}
-   token_block(std::string_view  sv) noexcept;
-   token_block(operator_code  open, operator_code  close): m_open(open), m_close(close){}
+   token_block(std::string_view  sv);
+   token_block(operator_code  open, operator_code  close) noexcept: m_open(open), m_close(close){}
   ~token_block(){clear();}
 
   token_block&  operator+=(token&&  tok) noexcept{  m_container.emplace_back(std::move(tok));  return *this;}
@@ -85,7 +85,7 @@ public:
 
   const std::vector<token>*  operator->()const noexcept{return &m_container;}
 
-  void  print() const noexcept;
+  void  print(const char*  base=nullptr, int  indent=0) const noexcept;
 
 };
 
@@ -172,7 +172,7 @@ public:
   operator_code       get_operator_code()         const noexcept{return m_data.opco;}
   const token_block&  get_block()                 const noexcept{return m_data.blk;}
 
-  void  print() const noexcept;
+  void  print(const char*  base=nullptr, int  indent=0) const noexcept;
 
 };
 

@@ -224,12 +224,10 @@ read_number_that_begins_by_zero() noexcept
 {
   auto  c = *++m_current;
 
-  ++m_current;
-
-       if((c == 'b') || (c == 'B')){      read_binary_number();}
-  else if((c == 'o') || (c == 'O')){       read_octal_number();}
-  else if((c == 'x') || (c == 'X')){read_hexadecimal_number();}
-  else if((c == '.')              ){         read_floating_point_number(0);}
+       if((c == 'b') || (c == 'B')){  ++m_current;           read_binary_number();}
+  else if((c == 'o') || (c == 'O')){  ++m_current;            read_octal_number();}
+  else if((c == 'x') || (c == 'X')){  ++m_current;      read_hexadecimal_number();}
+  else if((c == '.')              ){  ++m_current;  read_floating_point_number(0);}
   else                             {push(token(m_begin,m_current,static_cast<uint64_t>(0)));}
 }
 
