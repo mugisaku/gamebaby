@@ -61,37 +61,27 @@ class tokenizer;
 
 
 class
-token_info
-{
-  const char*  m_pointer;
-
-  int  m_line_number;
-
-public:
-  constexpr token_info(const char*  p=nullptr, int  ln=0) noexcept: m_pointer(p), m_line_number(ln){}
-
-  constexpr const char*  get_pointer()     const noexcept{return m_pointer;}
-  constexpr int          get_line_number() const noexcept{return m_line_number;}
-
-};
-
-
-class
 token_block
 {
   std::vector<token>  m_container;
 
-  operator_code  m_open;
+  operator_code  m_open ;
   operator_code  m_close;
 
 public:
    token_block() noexcept{}
-   token_block(std::vector<token>&&  c, operator_code  open, operator_code  close);
+   token_block(std::string_view  sv) noexcept;
+   token_block(operator_code  open, operator_code  close): m_open(open), m_close(close){}
   ~token_block(){clear();}
+
+  token_block&  operator+=(token&&  tok) noexcept{  m_container.emplace_back(std::move(tok));  return *this;}
 
   void  clear() noexcept;
 
   bool  test(operator_code  open, operator_code  close) const noexcept{return (m_open == open) && (m_close == close);}
+
+  operator_code   get_open_code() const noexcept{return m_open;}
+  operator_code  get_close_code() const noexcept{return m_close;}
 
   const std::vector<token>*  operator->()const noexcept{return &m_container;}
 
@@ -103,7 +93,8 @@ public:
 class
 token
 {
-  token_info  m_info;
+  const char*  m_begin=nullptr;
+  const char*  m_end  =nullptr;
 
   enum class kind{
     null,
@@ -137,11 +128,11 @@ public:
   token() noexcept{}
   token(const token&   rhs) noexcept{assign(rhs);}
   token(      token&&  rhs) noexcept{assign(std::move(rhs));}
-  token(token_info  info, uint64_t  n)                noexcept{assign(info,n);}
-  token(token_info  info, double  f)                  noexcept{assign(info,f);}
-  token(token_info  info, std::string&&  s, int  sym) noexcept{assign(info,std::move(s),sym);}
-  token(token_info  info, operator_code  opco)        noexcept{assign(info,opco);}
-  token(token_info  info, token_block&&  blk)         noexcept{assign(info,std::move(blk));}
+  token(const char*  begin, const char*  end, uint64_t  n)                noexcept{assign(begin,end,n);}
+  token(const char*  begin, const char*  end, double  f)                  noexcept{assign(begin,end,f);}
+  token(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept{assign(begin,end,std::move(s),sym);}
+  token(const char*  begin, const char*  end, operator_code  opco)        noexcept{assign(begin,end,opco);}
+  token(const char*  begin, const char*  end, token_block&&  blk)         noexcept{assign(begin,end,std::move(blk));}
  ~token(){clear();}
 
   operator bool() const noexcept{return !is_null();}
@@ -151,15 +142,16 @@ public:
 
   token&  assign(const token&   rhs) noexcept;
   token&  assign(      token&&  rhs) noexcept;
-  token&  assign(token_info  info, uint64_t  n) noexcept;
-  token&  assign(token_info  info, double  f) noexcept;
-  token&  assign(token_info  info, std::string&&  s, int  sym) noexcept;
-  token&  assign(token_info  info, operator_code  opco) noexcept;
-  token&  assign(token_info  info, token_block&&  blk) noexcept;
+  token&  assign(const char*  begin, const char*  end, uint64_t  n) noexcept;
+  token&  assign(const char*  begin, const char*  end, double  f) noexcept;
+  token&  assign(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept;
+  token&  assign(const char*  begin, const char*  end, operator_code  opco) noexcept;
+  token&  assign(const char*  begin, const char*  end, token_block&&  blk) noexcept;
 
   void  clear() noexcept;
 
-  const token_info&  get_info() const noexcept{return m_info;}
+  const char*  get_begin() const noexcept{return m_begin;}
+  const char*  get_end()   const noexcept{return m_end;}
 
   bool  is_null()                             const noexcept{return m_kind == kind::null;}
   bool  is_integer()                          const noexcept{return m_kind == kind::integer;}
@@ -188,38 +180,49 @@ public:
 class
 tokenizer
 {
-  int  m_line_counter=0;
+  struct element{
+    const char*  m_begin;
+    token_block  m_block;
 
-  const char*  m_pointer=nullptr;
-  const char*  m_end_pointer=nullptr;
+  element(const char*  begin, operator_code  open, operator_code  close) noexcept: m_begin(begin), m_block(open,close){}
+  };
 
-  token_info  m_info;
+  std::vector<element>  m_elements;
 
-  token       read_binary_number() noexcept;
-  token        read_octal_number() noexcept;
-  token      read_decimal_number() noexcept;
-  token  read_hexadecimal_number() noexcept;
-  token  read_floating_point_number(uint64_t  i) noexcept;
+  const char*  m_begin  =nullptr;
+  const char*  m_current=nullptr;
+  const char*  m_end    =nullptr;
 
-  token  read_number_that_begins_by_zero() noexcept;
-  token  read_number() noexcept;
+  void       read_binary_number() noexcept;
+  void        read_octal_number() noexcept;
+  void      read_decimal_number() noexcept;
+  void  read_hexadecimal_number() noexcept;
+  void  read_floating_point_number(uint64_t  i) noexcept;
 
-  token  read_operator_code() noexcept;
+  void  read_number_that_begins_by_zero() noexcept;
+  void  read_number() noexcept;
 
-  token  read_quoted_string(char  close_char);
+  void  read_operator_code() noexcept;
 
-  token  read_block(operator_code  open, operator_code  close);
+  void  read_quoted_string(char  close_char);
 
+  void  read_block(operator_code  open, operator_code  close);
+
+  static bool  test_head_of_identifier_defaultly(char  c) noexcept;
+  static bool  test_body_of_identifier_defaultly(char  c) noexcept;
+
+  bool  (*m_test_head_of_identifier)(char  c)=test_head_of_identifier_defaultly;
+  bool  (*m_test_body_of_identifier)(char  c)=test_body_of_identifier_defaultly;
 
   void  skip_spaces();
 
   void  skip_linestyle_comment() noexcept;
   void  skip_blockstyle_comment();
 
+  void  push(token&&  tok) noexcept{m_elements.back().m_block += std::move(tok);}
 
-  bool  step(std::vector<token>&  toks, operator_code  close, int close_len);
 
-  void  update_info() noexcept{m_info = token_info(m_pointer,m_line_counter);}
+  void  step(operator_code  close, int close_len);
 
 public:
   token_block  operator()(std::string_view  sv);

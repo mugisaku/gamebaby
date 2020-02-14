@@ -85,7 +85,6 @@ set(SOURCES
   typesystems/function_signature.cpp
   typesystems/memory_sharer.cpp
   typesystems/value.cpp
-  vms/vm_assign.cpp
   vms/vm_variable.cpp
   vms/vm_function.cpp
   vms/vm_context.cpp

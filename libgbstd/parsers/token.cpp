@@ -19,8 +19,9 @@ assign(const token&  rhs) noexcept
     {
       clear();
 
-      m_info = rhs.m_info;
-      m_kind = rhs.m_kind;
+      m_begin = rhs.m_begin;
+      m_end   =   rhs.m_end;
+      m_kind  =  rhs.m_kind;
 
         switch(m_kind)
         {
@@ -59,8 +60,9 @@ assign(token&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_info,rhs.m_info);
-      std::swap(m_kind,rhs.m_kind);
+      std::swap(m_begin,rhs.m_begin);
+      std::swap(m_end  ,rhs.m_end  );
+      std::swap(m_kind ,rhs.m_kind );
 
         switch(m_kind)
         {
@@ -93,11 +95,12 @@ assign(token&&  rhs) noexcept
 
 token&
 token::
-assign(token_info  info, uint64_t  n) noexcept
+assign(const char*  begin, const char*  end, uint64_t  n) noexcept
 {
   clear();
 
-  m_info = info;
+  m_begin = begin;
+  m_end   =   end;
 
   m_data.n = n;
 
@@ -110,11 +113,12 @@ assign(token_info  info, uint64_t  n) noexcept
 
 token&
 token::
-assign(token_info  info, std::string&&  s, int  sym) noexcept
+assign(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept
 {
   clear();
 
-  m_info = info;
+  m_begin = begin;
+  m_end   =   end;
 
   new(&m_data) std::string(std::move(s));
 
@@ -132,11 +136,12 @@ assign(token_info  info, std::string&&  s, int  sym) noexcept
 
 token&
 token::
-assign(token_info  info, double  f) noexcept
+assign(const char*  begin, const char*  end, double  f) noexcept
 {
   clear();
 
-  m_info = info;
+  m_begin = begin;
+  m_end   =   end;
 
   m_data.f = f;
 
@@ -149,11 +154,12 @@ assign(token_info  info, double  f) noexcept
 
 token&
 token::
-assign(token_info  info, operator_code  opco) noexcept
+assign(const char*  begin, const char*  end, operator_code  opco) noexcept
 {
   clear();
 
-  m_info = info;
+  m_begin = begin;
+  m_end   =   end;
 
   m_data.opco = opco;
 
@@ -166,11 +172,12 @@ assign(token_info  info, operator_code  opco) noexcept
 
 token&
 token::
-assign(token_info  info, token_block&&  blk) noexcept
+assign(const char*  begin, const char*  end, token_block&&  blk) noexcept
 {
   clear();
 
-  m_info = info;
+  m_begin = begin;
+  m_end   =   end;
 
   new(&m_data) token_block(std::move(blk));
 
@@ -205,7 +212,9 @@ clear() noexcept
     }
 
 
-  m_info = token_info();
+  m_begin = nullptr;
+  m_end   = nullptr;
+
   m_kind = kind::null;
 }
 
@@ -253,8 +262,6 @@ void
 token::
 print() const noexcept
 {
-  printf("[%4d] ",m_info.get_line_number()+1);
-
     switch(m_kind)
     {
   case(kind::null): printf("NULL");break;

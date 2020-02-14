@@ -31,34 +31,38 @@ isalnum(char  c) noexcept
 }
 
 
-constexpr bool
-isident0(char  c) noexcept
+}
+
+
+
+
+bool
+tokenizer::
+test_head_of_identifier_defaultly(char  c) noexcept
 {
   return isalpha(c) || (c == '_');
 }
 
 
-constexpr bool
-isidentn(char  c) noexcept
+bool
+tokenizer::
+test_body_of_identifier_defaultly(char  c) noexcept
 {
   return isalnum(c) || (c == '_');
 }
 
 
-}
 
 
-
-
-token
+void
 tokenizer::
 read_quoted_string(char  close_char)
 {
   std::string  s;
 
-    while(m_pointer < m_end_pointer)
+    while(m_current < m_end)
     {
-      auto  c = *m_pointer++;
+      auto  c = *m_current++;
 
         if(c == close_char)
         {
@@ -68,7 +72,8 @@ read_quoted_string(char  close_char)
       else
         if(c == '\\')
         {
-          c = *m_pointer++;
+          c = *m_current++;
+
                if(!c){  report;printf("quoted string is not terminated by %c",close_char);  throw 0;}
           else if(c == '0'){c = '\0';}
           else if(c == 'n'){c = '\n';}
@@ -107,11 +112,11 @@ read_quoted_string(char  close_char)
     }
 
 
-  return token(m_info,std::move(s),close_char);
+  push(token(m_begin,m_current,std::move(s),close_char));
 }
 
 
-token
+void
 tokenizer::
 read_operator_code() noexcept
 {
@@ -174,144 +179,110 @@ read_operator_code() noexcept
 
       auto  l = std::strlen(s);
 
-        if(std::memcmp(m_pointer,s,l) == 0)
+        if(std::memcmp(m_current,s,l) == 0)
         {
-          m_pointer += l;
+          m_current += l;
 
-          return token(m_info,opco);
+          push(token(m_begin,m_current,opco));
+
+          return;
         }
     }
 
 
-  return token(m_info,operator_code());
+  push(token(m_begin,m_current,operator_code()));
 }
 
 
-token
+void
 tokenizer::
 read_block(operator_code  open, operator_code  close)
 {
-  std::vector<token>  toks;
+  m_elements.emplace_back(m_begin,open,close);
 
-  auto  info = m_info;
-
-  m_pointer += open.get_length();
-
-  auto  close_len = close.get_length();
-
-    while(m_pointer < m_end_pointer)
-    {
-        if(!step(toks,close,close_len))
-        {
-          break;
-        }
-
-
-        if(m_pointer == info.get_pointer())
-        {
-          report;
-          break;
-        }
-    }
-
-
-  return token(info,token_block(std::move(toks),open,close));
+  m_current += open.get_length();
 }
 
 
-bool
+void
 tokenizer::
-step(std::vector<token>&  toks, operator_code  close, int close_len)
+step(operator_code  close, int close_len)
 {
-START:
-    if(m_pointer >= m_end_pointer)
-    {
-      return false;
-    }
-
-
-  auto  c = *m_pointer;
-
-    if((c ==  ' ') ||
-       (c == '\n') ||
-       (c == '\v') ||
-       (c == '\t') ||
-       (c == '\r'))
-    {
-      skip_spaces();
-
-      c = *m_pointer;
-    }
-
-
-  update_info();
+  auto  c = *m_current;
 
     if(!c)
     {
-      return false;
+      return;
     }
 
   else
-    if(close_len && (std::memcmp(m_pointer,close.get_string(),close_len) == 0))
+    if(close_len && (std::memcmp(m_current,close.get_string(),close_len) == 0))
     {
-      m_pointer += close_len;
+      m_current += close_len;
 
-      return false;
+
+      auto  e = std::move(m_elements.back());
+
+      m_elements.pop_back();
+
+      push(token(e.m_begin,m_current,std::move(e.m_block)));
+
+      return;
     }
 
   else
-    if(isident0(c))
+    if(m_test_head_of_identifier(c))
     {
       std::string  s;
 
-        while(isidentn(*m_pointer))
+        while(m_test_body_of_identifier(*m_current))
         {
-          s += *m_pointer++;
+          s += *m_current++;
         }
 
 
-      toks.emplace_back(m_info,std::move(s),'\0');
+      push(token(m_begin,m_current,std::move(s),'\0'));
 
-      return true;
+      return;
     }
 
   else
     if(isdigit(c))
     {
-      toks.emplace_back(read_number());
+      read_number();
 
-      return true;
+      return;
     }
 
   else
     if((c == '\'') ||
        (c == '\"'))
     {
-      ++m_pointer;
+      ++m_current;
 
-      toks.emplace_back(read_quoted_string(c));
+      read_quoted_string(c);
 
-      return true;
+      return;
     }
 
   else
-    if(std::memcmp(m_pointer,"/*",2) == 0)
+    if(std::memcmp(m_current,"/*",2) == 0)
     {
-      m_pointer += 2;
+      m_current += 2;
 
       skip_blockstyle_comment();
 
-      goto START;
+      return;
     }
 
   else
-    if(std::memcmp(m_pointer,"//",2) == 0)
+    if(std::memcmp(m_current,"//",2) == 0)
     {
-      m_pointer += 2;
+      m_current += 2;
 
       skip_linestyle_comment();
 
-      goto START;
+      return;
     }
 
   else
@@ -337,46 +308,42 @@ START:
        (c == '@') ||
        (c == '$'))
     {
-      toks.emplace_back(read_operator_code());
+      read_operator_code();
 
-      return true;
+      return;
     }
 
   else
     if(c == '(')
     {
-      toks.emplace_back(read_block(operator_code("("),operator_code(")")));
+      read_block(operator_code("("),operator_code(")"));
 
-      return true;
+      return;
     }
 
   else
     if(c == '[')
     {
-      toks.emplace_back(read_block(operator_code("["),operator_code("]")));
+      read_block(operator_code("["),operator_code("]"));
 
-      return true;
+      return;
     }
 
   else
     if(c == '{')
     {
-      toks.emplace_back(read_block(operator_code("{"),operator_code("}")));
+      read_block(operator_code("{"),operator_code("}"));
 
-      return true;
+      return;
     }
 
   else
     {
       printf("[処理できない文字です %d]\n",c);
-      printf("[%d行目]\n",m_line_counter);
-      printf("%s\n",m_pointer);
+      printf("%s\n",m_current);
 
       throw 0;
     }
-
-
-  return false;
 }
 
 
@@ -384,23 +351,45 @@ token_block
 tokenizer::
 operator()(std::string_view  sv)
 {
-  std::vector<token>  toks;
+  m_begin   = sv.data();
+  m_current = sv.data();
+  m_end     = sv.data()+sv.size();
 
-  m_pointer     = sv.data();
-  m_end_pointer = sv.data()+sv.size();
+  skip_spaces();
 
-  m_line_counter = 0;
+  m_elements.emplace_back(m_begin,"","");
 
-    while(m_pointer < m_end_pointer)
+    for(;;)
     {
-        if(!step(toks,"",0))
+        if(m_current < m_end)
         {
-          break;
+          auto&  blk = m_elements.back().m_block;
+
+          m_begin = m_current;
+
+          step(blk.get_close_code(),blk.get_close_code().get_length());
+
+          skip_spaces();
+        }
+
+      else
+        {
+            if(m_elements.size() == 1)
+            {
+              return std::move(m_elements.back().m_block);
+            }
+
+          else
+            {
+              break;
+            }
         }
     }
 
 
-  return token_block(std::move(toks),"","");
+  report;
+
+  return {};
 }
 
 

@@ -11,9 +11,9 @@ void
 tokenizer::
 skip_linestyle_comment() noexcept
 {
-    while(m_pointer < m_end_pointer)
+    while(m_current < m_end)
     {
-      auto  c = *m_pointer;
+      auto  c = *m_current;
 
         if(!c)
         {
@@ -23,16 +23,14 @@ skip_linestyle_comment() noexcept
       else           
         if(c == '\n')
         {
-          ++m_line_counter;
-
-          ++m_pointer;
+          ++m_current;
 
           break;
         }
 
       else
         {
-          ++m_pointer;
+          ++m_current;
         }           
     }
 }
@@ -42,40 +40,33 @@ void
 tokenizer::
 skip_blockstyle_comment()
 {
-    while(m_pointer < m_end_pointer)
+    while(m_current < m_end)
     {
-      auto  c = *m_pointer;
+      auto  c = *m_current;
 
         if(!c)
         {
           printf("ブロック式コメントが閉じられていない\n");
 
-          throw m_pointer;
+          throw m_current;
         }
 
       else           
         if(c == '*')
         {
-          ++m_pointer;
+          ++m_current;
 
-            if(*m_pointer == '/')
+            if(*m_current == '/')
             {
-              ++m_pointer;
+              ++m_current;
 
               break;
             }
         }
 
       else
-        if(c == '\n')
         {
-          ++m_line_counter;
-          ++m_pointer;
-        }
-
-      else
-        {
-          ++m_pointer;
+          ++m_current;
         }           
     }
 }
@@ -85,9 +76,9 @@ void
 tokenizer::
 skip_spaces()
 {
-    while(m_pointer < m_end_pointer)
+    while(m_current < m_end)
     {
-      auto  c = *m_pointer;
+      auto  c = *m_current;
 
         if(!c)
         {
@@ -100,24 +91,17 @@ skip_spaces()
            (c == '\r') ||
            (c == '\v'))
         {
-          ++m_pointer;
-        }
-
-      else
-        if(c == '\n')
-        {
-          ++m_line_counter;
-          ++m_pointer;
+          ++m_current;
         }
 
       else           
         if(c == '/')
         {
-          c = *(m_pointer+1);
+          c = *(m_current+1);
 
             if(c == '*')
             {
-              m_pointer += 2;
+              m_current += 2;
 
               skip_blockstyle_comment();
             }
@@ -125,7 +109,7 @@ skip_spaces()
           else
             if(c == '/')
             {
-              m_pointer += 2;
+              m_current += 2;
 
               skip_linestyle_comment();
             }

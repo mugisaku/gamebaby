@@ -17,11 +17,11 @@ m_null;
 
 
 token_block::
-token_block(std::vector<token>&&  c, operator_code  open, operator_code  close):
-m_container(std::move(c)),
-m_open(open),
-m_close(close)
+token_block(std::string_view  sv) noexcept
 {
+  tokenizer  tknz;
+
+  *this = tknz(sv);
 }
 
 
@@ -48,7 +48,18 @@ print() const noexcept
     {
       tok.print();
 
-      printf("\n");
+      auto    p = tok.get_begin();
+      auto  end = tok.get_end();
+
+      printf("  --  ");
+
+        while(p < end)
+        {
+          printf("%c",*p++);
+        }
+
+
+      printf("  --\n");
     }
 
 
