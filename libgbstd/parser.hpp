@@ -74,6 +74,8 @@ public:
    token_block(operator_code  open, operator_code  close) noexcept: m_open(open), m_close(close){}
   ~token_block(){clear();}
 
+  const token&  operator[](int  i) const noexcept{return m_container[i];}
+
   token_block&  operator+=(token&&  tok) noexcept{  m_container.emplace_back(std::move(tok));  return *this;}
 
   void  clear() noexcept;
@@ -83,7 +85,7 @@ public:
   operator_code   get_open_code() const noexcept{return m_open;}
   operator_code  get_close_code() const noexcept{return m_close;}
 
-  const std::vector<token>*  operator->()const noexcept{return &m_container;}
+  const std::vector<token>*  operator->() const noexcept{return &m_container;}
 
   void  print(const char*  base=nullptr, int  indent=0) const noexcept;
 
@@ -251,7 +253,8 @@ public:
 
   const token&  operator[](int  i) const noexcept{return ((m_begin+i) < m_end)? m_begin[i]:m_null;}
 
-  const token&  operator*() const noexcept{return (m_begin < m_end)? *m_begin:m_null;}
+  const token&  operator*()  const noexcept{return (m_begin < m_end)? *m_begin: m_null;}
+  const token*  operator->() const noexcept{return (m_begin < m_end)?  m_begin:&m_null;}
 
   token_block_view&  operator++(   ) noexcept{  ++m_begin;  return *this;}
   token_block_view   operator++(int) noexcept{  auto  ret = *this;  ++m_begin;  return ret;}

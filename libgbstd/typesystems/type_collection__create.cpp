@@ -1,4 +1,5 @@
 #include"libgbstd/typesystem.hpp"
+#include"libgbstd/parser.hpp"
 
 
 
@@ -9,190 +10,43 @@ namespace typesystem{
 
 
 namespace{
-constexpr bool  isid0(int  c) noexcept
-{
-  return ((c >= 'a') && (c <= 'z')) ||
-         ((c >= 'A') && (c <= 'Z')) ||
-         ((c == '_')              );
-}
 
 
-constexpr bool  isdigit(int  c) noexcept
-{return (c >= '0') && (c <= '9');}
-
-constexpr bool  isidx(int  c) noexcept
-{return isid0(c) || isdigit(c);}
-
-
-const char
-g_null = 0;
-
-
-class
-character_pointer
-{
-  const char*&  m_current;
-  const char*   m_end;
-
-public:
-  constexpr character_pointer(const char*&  cur, const char*  end) noexcept:
-  m_current(cur), m_end(end){}
-
-  const char&  operator*() noexcept{return (*this)? *m_current:g_null;}
-  operator bool() const noexcept{return m_current < m_end;}
-
-  character_pointer&  operator++(   ) noexcept{  ++m_current;  return *this;}
-  character_pointer   operator++(int) noexcept{  character_pointer  t(m_current,m_end);  ++m_current;  return t;}
-
-  int  operator-(const char*  p) const noexcept{return m_current-p;}
-
-  char  get() noexcept{return (*this)? *m_current:0;}
-
-  void  skip_spaces() noexcept;
-
-  std::string  read_name() noexcept;
-
-  int  read_decimal_number() noexcept;
-
-  int  read_number_of_elements() noexcept;
-
-  parameter_list  read_parameter_list(type_collection&  tc) noexcept;
-
-  struct_type_info  read_struct(type_collection&  tc) noexcept;
-  union_type_info   read_union(type_collection&  tc) noexcept;
-  enum_type_info    read_enum(type_collection&  tc) noexcept;
-
-  const type_info*  read(type_collection&  tc, const type_info*  ti) noexcept;
-
-};
-
-
-void
-character_pointer::
-skip_spaces() noexcept
-{
-    while(*m_current == ' ')
-    {
-      ++m_current;
-    }
-}
-
-
-std::string
-character_pointer::
-read_name() noexcept
-{
-  std::string  s;
-
-  auto  c = *m_current;
-
-    if(isid0(c))
-    {
-      s += c;
-
-      ++m_current;
-
-        for(;;)
-        {
-          c = *m_current;
-
-            if(isidx(c))
-            {
-              s += c;
-
-              ++m_current;
-            }
-
-          else
-            {
-              break;
-            }
-        }
-    }
-
-
-  return std::move(s);
-}
-
-
-int
-character_pointer::
-read_decimal_number() noexcept
-{
-  int  n = 0;
-
-  skip_spaces();
-
-  auto  c = *m_current;
-
-    if(isdigit(c))
-    {
-        for(;;)
-        {
-          n *=    10;
-          n += c-'0';
-
-          c = *++m_current;
-
-            if(!isdigit(c))
-            {
-              break;
-            }
-        }
-    }
-
-  else
-    {
-      printf("ERROR: number string is not found.");
-    }
-
-
-  return n;
-}
-
-
-int
-character_pointer::
-read_number_of_elements() noexcept
-{
-  auto  n = read_decimal_number();
-
-  skip_spaces();
-
-    if(*m_current == ']')
-    {
-      ++m_current;
-    }
-
-  else
-    {
-      printf("ERROR: number string is not closed by \']\'.");
-    }
-
-
-  return n;
-}
+const type_info*
+read_type(type_collection&  tc, token_block_view&  bv) noexcept;
 
 
 parameter_list
-character_pointer::
-read_parameter_list(type_collection&  tc) noexcept
+read_parameter_list(type_collection&  tc, const token_block&  blk) noexcept
 {
+  token_block_view  bv(blk);
+
   parameter_list  ls;
 
-  skip_spaces();
-
-    for(;;)
+    while(bv)
     {
-      auto  ti = tc.create_from_string(m_current,m_end);
+      auto  ti = read_type(tc,bv);
 
-        if(!ti)
+        if(ti)
+        {
+          ls.push(*ti);
+
+            if(bv->is_identifier())
+            {
+              ++bv;
+            }
+
+
+            if(bv->is_operator_code(","))
+            {
+              ++bv;
+            }
+        }
+
+      else
         {
           break;
         }
-
-
-      ls.push(*ti);
     }
 
 
@@ -201,53 +55,36 @@ read_parameter_list(type_collection&  tc) noexcept
 
 
 struct_type_info
-character_pointer::
-read_struct(type_collection&  tc) noexcept
+read_struct_type(type_collection&  tc, const token_block&  blk) noexcept
 {
+  token_block_view  bv(blk);
+
   struct_type_info  sti;
 
-    for(;;)
+    while(bv)
     {
-      skip_spaces();
+      auto  ti = read_type(tc,bv);
 
-      auto  c = get();
-
-        if(c == '}')
+        if(ti)
         {
-          break;
-        }
-
-      else
-        if(isid0(c))
-        {
-          auto  ti = tc.create_from_string(m_current,m_end);
-
-            if(ti)
+            if(bv->is_identifier())
             {
-              skip_spaces();
+              sti.push(*ti,bv++->get_string());
 
-                if(isid0(get()))
+                if(bv->is_operator_code(";"))
                 {
-                  auto  id = read_name();
-
-                  sti.push(*ti,id);
-
-                  skip_spaces();
+                  ++bv;
                 }
+            }
 
-
-                if((get() == ',') ||
-                   (get() == ';'))
-                {
-                  ++m_current;
-                }
+          else
+            {
+              break;
             }
         }
 
       else
         {
-          printf("ERROR: struct");
-
           break;
         }
     }
@@ -258,53 +95,36 @@ read_struct(type_collection&  tc) noexcept
 
 
 union_type_info
-character_pointer::
-read_union(type_collection&  tc) noexcept
+read_union_type(type_collection&  tc, const token_block&  blk) noexcept
 {
+  token_block_view  bv(blk);
+
   union_type_info  uti;
 
-    for(;;)
+    while(bv)
     {
-      skip_spaces();
+      auto  ti = read_type(tc,bv);
 
-      auto  c = get();
-
-        if(c == '}')
+        if(ti)
         {
-          break;
-        }
-
-      else
-        if(isid0(c))
-        {
-          auto  ti = tc.create_from_string(m_current,m_end);
-
-            if(ti)
+            if(bv->is_identifier())
             {
-              skip_spaces();
+              uti.push(*ti,bv++->get_string());
 
-                if(isid0(get()))
+                if(bv->is_operator_code(";"))
                 {
-                  auto  id = read_name();
-
-                  uti.push(*ti,id);
-
-                  skip_spaces();
+                  ++bv;
                 }
+            }
 
-
-                if((get() == ',') ||
-                   (get() == ';'))
-                {
-                  ++m_current;
-                }
+          else
+            {
+              break;
             }
         }
 
       else
         {
-          printf("ERROR: union");
-
           break;
         }
     }
@@ -315,59 +135,46 @@ read_union(type_collection&  tc) noexcept
 
 
 enum_type_info
-character_pointer::
-read_enum(type_collection&  tc) noexcept
+read_enum_type(type_collection&  tc, const token_block&  blk) noexcept
 {
-  enum_type_info  eti(8*tc.get_enum_size());
+  token_block_view  bv(blk);
+
+  enum_type_info  eti(tc.get_enum_size());
 
   int  next = 0;
 
-    for(;;)
+    while(bv)
     {
-      skip_spaces();
-
-      auto  c = get();
-
-        if(c == '}')
+        if(bv->is_identifier())
         {
-          break;
-        }
+          auto&  id = bv++->get_string();
 
-      else
-        if(isid0(c))
-        {
-          auto  id = read_name();
-
-          skip_spaces();
-
-            if(get() == '=')
+            if(bv->is_operator_code("="))
             {
-              ++m_current;
+              ++bv;
 
-              skip_spaces();
-
-                if(isdigit(get()))
+                if(bv->is_integer())
                 {
-                  next = read_decimal_number();
+                  next = bv++->get_integer();
+
+                  eti.push(id,next++);
                 }
             }
 
-
-          eti.push(id,next++);
-
-          skip_spaces();
-
-            if((get() == ',') ||
-               (get() == ';'))
+          else
             {
-              ++m_current;
+              eti.push(id,next++);
+            }
+
+            
+            if(bv->is_operator_code(","))
+            {
+              ++bv;
             }
         }
 
       else
         {
-          printf("ERROR: enum");
-
           break;
         }
     }
@@ -377,56 +184,50 @@ read_enum(type_collection&  tc) noexcept
 }
 
 
-
-
 const type_info*
-character_pointer::
-read(type_collection&  tc, const type_info*  ti) noexcept
+read_derived_type(type_collection&  tc, token_block_view&  bv, std::string_view  name) noexcept
 {
-    while(*this)
+  auto  ti = tc.find_by_name(name);
+
+    if(!ti)
     {
-      skip_spaces();
+      goto END;
+    }
 
-      auto  c = *m_current;
 
-        if((c == ',') ||
-           (c == ')'))
+    while(bv)
+    {
+        if(bv->is_block("[","]"))
         {
-          ++m_current;
+          auto&  blk = bv++->get_block();
 
-          return ti;
+            if((blk->size() == 1) && blk[0].is_integer())
+            {
+              ti = &ti->get_derivation().get_array_type(blk[0].get_integer());
+            }
+
+          else
+            {
+              report;
+
+              return nullptr;
+            }
         }
 
       else
-        if(c == '*')
+        if(bv->is_operator_code("*"))
         {
-          ++m_current;
+          ti = &ti->get_derivation().get_pointer_type(tc.get_pointer_size());
 
-          ti = &ti->get_derivation().get_pointer_type(8*tc.get_pointer_size());
+          ++bv;
         }
 
       else
-        if(c == '&')
+        if(bv->is_operator_code("&"))
         {
-          ++m_current;
+          ti = &ti->get_derivation().get_reference_type(tc.get_pointer_size());
 
-          return &ti->get_derivation().get_reference_type(8*tc.get_pointer_size());
-        }
-
-      else
-        if(c == '[')
-        {
-          ++m_current;
-
-          ti = &ti->get_derivation().get_array_type(read_number_of_elements());
-        }
-
-      else
-        if(c == '(')
-        {
-          ++m_current;
-
-          ti = &ti->get_derivation().get_function_type(read_parameter_list(tc));
+          ++bv;
         }
 
       else
@@ -436,7 +237,82 @@ read(type_collection&  tc, const type_info*  ti) noexcept
     }
 
 
+END:
   return ti;
+}
+
+
+const type_info*
+read_type(type_collection&  tc, token_block_view&  bv) noexcept
+{
+    if(!bv->is_identifier())
+    {
+      return nullptr;
+    }
+
+
+  auto&  name = bv++->get_string();
+
+    if(name == std::string_view("struct"))
+    {
+        if(bv->is_block("{","}"))
+        {
+          return &tc.push(std::make_unique<type_info>(read_struct_type(tc,bv++->get_block())));
+        }
+
+      else
+        {
+          return nullptr;
+        }
+    }
+
+  else
+    if(name == std::string_view("union"))
+    {
+        if(bv->is_block("{","}"))
+        {
+          return &tc.push(std::make_unique<type_info>(read_union_type(tc,bv++->get_block())));
+        }
+
+      else
+        {
+          return nullptr;
+        }
+    }
+
+  else
+    if(name == std::string_view("enum"))
+    {
+        if(bv->is_block("{","}"))
+        {
+          return &tc.push(std::make_unique<type_info>(read_enum_type(tc,bv++->get_block())));
+        }
+
+      else
+        {
+          return nullptr;
+        }
+    }
+
+  else
+    if(name == std::string_view("function"))
+    {
+      auto  ti = read_type(tc,bv);
+
+        if(ti)
+        {
+            if(bv->is_block("(",")"))
+            {
+              return &ti->get_derivation().get_function_type(read_parameter_list(tc,bv++->get_block()));
+            }
+        }
+
+
+      return nullptr;
+    }
+
+
+  return read_derived_type(tc,bv,name);
 }
 
 
@@ -447,67 +323,13 @@ read(type_collection&  tc, const type_info*  ti) noexcept
 
 const type_info*
 type_collection::
-create_from_string(const char*&  begin, const char*  end) noexcept
+create_from_string(std::string_view  sv) noexcept
 {
-  character_pointer  p(begin,end);
+  token_block  blk(sv);
 
-  p.skip_spaces();
+  token_block_view  bv(blk);
 
-  auto  base_type_name = p.read_name();
-
-    if(base_type_name == "struct")
-    {
-      p.skip_spaces();
-
-        if(*p == '{')
-        {
-          ++p;
-
-          return &push(std::make_unique<type_info>(p.read_struct(*this)));
-        }
-    }
-
-  else
-    if(base_type_name == "union")
-    {
-      p.skip_spaces();
-
-        if(*p == '{')
-        {
-          ++p;
-
-          return &push(std::make_unique<type_info>(p.read_union(*this)));
-        }
-    }
-
-  else
-    if(base_type_name == "enum")
-    {
-      p.skip_spaces();
-
-        if(*p == '{')
-        {
-          ++p;
-
-          return &push(std::make_unique<type_info>(p.read_enum(*this)));
-        }
-    }
-
-  else
-    {
-      auto  ti = find_by_name(base_type_name);
-
-        if(!ti)
-        {
-          return nullptr;
-        }
-
-
-      return p.read(*this,ti);
-    }
-
-
-  return nullptr;
+  return read_type(*this,bv);
 }
 
 

@@ -156,6 +156,32 @@ print() const noexcept
     {
       printf("alias %s = %s\n",a.first.data(),a.second.data());
     }
+
+
+    for(auto&  ti: m_info_table)
+    {
+        if(ti->is_struct())
+        {
+          ti->get_struct_type_info().print();
+        }
+
+      else
+        if(ti->is_union())
+        {
+          ti->get_union_type_info().print();
+        }
+
+      else
+        if(ti->is_enum())
+        {
+          ti->get_enum_type_info().print();
+        }
+
+
+      ti->print();
+
+      printf("\n");
+    }
 }
 
 

@@ -680,8 +680,7 @@ public:
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
 
-  const type_info*  create_from_string(const char*&  begin, const char*  end) noexcept;
-  const type_info*  create_from_string(std::string_view  sv) noexcept{  auto  p = sv.data();  return create_from_string(p,p+sv.size());}
+  const type_info*  create_from_string(std::string_view  sv) noexcept;
 
   void  print() const noexcept;
 
