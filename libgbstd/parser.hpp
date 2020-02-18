@@ -36,10 +36,12 @@ public:
   constexpr operator_code() noexcept: m_data{0,0,0,0}{}
   constexpr operator_code(const char*  s) noexcept: m_data{chr(s,0),chr(s,1),chr(s,2),0}{}
 
+  constexpr  operator bool() const noexcept{return m_data[0];}
+
   constexpr const char*  get_string() const noexcept{return m_data;}
   constexpr int  get_length() const noexcept{return len(m_data);}
 
-  constexpr operator uint32_t() const noexcept{return (m_data[0]<<24)|(m_data[1]<<16)|(m_data[2]<<8);}
+  constexpr  operator uint32_t() const noexcept{return (m_data[0]<<24)|(m_data[1]<<16)|(m_data[2]<<8);}
 
   constexpr bool  operator==(operator_code  rhs) const noexcept
   {
@@ -237,8 +239,8 @@ public:
 class
 token_block_view
 {
-  const token*  m_begin;
-  const token*  m_end;
+  const token*  m_begin=nullptr;
+  const token*  m_end  =nullptr;
 
   static const token  m_null;
 
@@ -246,6 +248,7 @@ token_block_view
   m_begin(begin), m_end(end){}
 
 public:
+  token_block_view() noexcept{}
   token_block_view(const token_block&  blk) noexcept:
   m_begin(blk->data()), m_end(blk->data()+blk->size()){}
 
@@ -273,6 +276,69 @@ public:
 };
 
 
+class
+exprelem
+{
+  char  m_kind=0;
+
+  union data{
+   int64_t  i;
+  uint64_t  u;
+    double  f;
+
+    operator_code  o;
+
+  constexpr data(int64_t   i_) noexcept: i(i_){}
+  constexpr data(uint64_t  u_) noexcept: u(u_){}
+  constexpr data(double    f_) noexcept: f(f_){}
+  constexpr data(operator_code  o_) noexcept: o(o_){}
+
+  } m_data;
+
+public:
+  constexpr exprelem(int64_t        i=0) noexcept: m_kind('i'), m_data(i){}
+  constexpr exprelem(uint64_t       u  ) noexcept: m_kind('u'), m_data(u){}
+  constexpr exprelem(double         f  ) noexcept: m_kind('f'), m_data(f){}
+  constexpr exprelem(char  k, operator_code  o) noexcept: m_kind(k), m_data(o){}
+
+  constexpr bool  is_integer()          const noexcept{return m_kind == 'i';}
+  constexpr bool  is_unsigned_integer() const noexcept{return m_kind == 'u';}
+  constexpr bool  is_real_number()      const noexcept{return m_kind == 'f';}
+  constexpr bool  is_unary_operator()   const noexcept{return m_kind == 'U';}
+  constexpr bool  is_binary_operator()  const noexcept{return m_kind == 'B';}
+
+  constexpr  int64_t             get_integer() const noexcept{return m_data.i;}
+  constexpr uint64_t    get_unsigned_integer() const noexcept{return m_data.u;}
+  constexpr   double         get_real_number() const noexcept{return m_data.f;}
+  constexpr operator_code  get_operator_code() const noexcept{return m_data.o;}
+
+  constexpr operator  int64_t() const noexcept
+  {
+    return is_integer()?          static_cast<int64_t>(m_data.i)
+          :is_unsigned_integer()? static_cast<int64_t>(m_data.u)
+          :                       static_cast<int64_t>(m_data.f)
+          ;
+  }
+
+  constexpr operator uint64_t() const noexcept
+  {
+    return is_integer()?          static_cast<uint64_t>(m_data.i)
+          :is_unsigned_integer()? static_cast<uint64_t>(m_data.u)
+          :                       static_cast<uint64_t>(m_data.f)
+          ;
+  }
+  constexpr operator double() const noexcept
+  {
+    return is_integer()?          static_cast<double>(m_data.i)
+          :is_unsigned_integer()? static_cast<double>(m_data.u)
+          :                       static_cast<double>(m_data.f)
+          ;
+  }
+
+};
+
+
+exprelem  calculate(std::string_view  sv) noexcept;
 
 
 }

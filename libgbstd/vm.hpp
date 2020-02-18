@@ -315,6 +315,9 @@ public:
 };
 
 
+expression  make_expression(std::string_view  sv) noexcept;
+
+
 namespace unary_operations{
 value      bit_not(context&  ctx, const value&  v) noexcept;
 value  logical_not(context&  ctx, const value&  v) noexcept;
