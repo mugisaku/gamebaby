@@ -16,6 +16,8 @@ context
 {
   token_block_view  m_view;
 
+  std::vector<exprelem>  m_operator_stack;
+
   context() noexcept{}
   context(const token_block&  blk) noexcept: m_view(blk){}
 
@@ -94,85 +96,118 @@ report;
 
 template<typename  T>
 T
+operate(T  operand, operator_code  o) noexcept
+{
+       if(o == "-" ){return -operand;}
+  else if(o == "!" ){return !operand;}
+  else if(o == "~" ){return -operand;}
+
+
+  report;
+  return  0;
+}
+
+
+template<typename  T>
+T
 operate(T  l, T  r, operator_code  o) noexcept
 {
-  return (o == "+" )? l+r
-        :(o == "-" )? l-r
-        :(o == "*" )? l*r
-        :(o == "/" )? l/r
-        :(o == "%" )? l%r
-        :(o == "<<")? l<<r
-        :(o == ">>")? l>>r
-        :(o == "==")? (l == r? 1:0)
-        :(o == "!=")? (l != r? 1:0)
-        :(o == "<" )? (l <  r? 1:0)
-        :(o == "<=")? (l <= r? 1:0)
-        :(o == ">=")? (l >= r? 1:0)
-        :(o == "|" )? l|r
-        :(o == "&" )? l&r
-        :(o == "^" )? l^r
-        :(o == "||")? (l || r? 1:0)
-        :(o == "&&")? (l && r? 1:0)
-        :0
-        ;
+       if(o == "+" ){return l+r;}
+  else if(o == "-" ){return l-r;}
+  else if(o == "*" ){return l*r;}
+  else if(o == "/" ){return l/r;}
+  else if(o == "%" ){return l%r;}
+  else if(o == "<<"){return l<<r;}
+  else if(o == ">>"){return l>>r;}
+  else if(o == "=="){return (l == r? 1:0);}
+  else if(o == "!="){return (l != r? 1:0);}
+  else if(o == "<" ){return (l <  r? 1:0);}
+  else if(o == "<="){return (l <= r? 1:0);}
+  else if(o == ">="){return (l >= r? 1:0);}
+  else if(o == "|" ){return l|r;}
+  else if(o == "&" ){return l&r;}
+  else if(o == "^" ){return l^r;}
+  else if(o == "||"){return (l || r? 1:0);}
+  else if(o == "&&"){return (l && r? 1:0);}
+
+  report;
+  return  0;
 }
 
 
 double
 operate(double  l, double  r, operator_code  o) noexcept
 {
-  return (o == "+" )? l+r
-        :(o == "-" )? l-r
-        :(o == "*" )? l*r
-        :(o == "/" )? l/r
-        :0
-        ;
+       if(o == "+" ){return l+r;}
+  else if(o == "-" ){return l-r;}
+  else if(o == "*" ){return l*r;}
+  else if(o == "/" ){return l/r;}
+
+  report;
+  return  0;
 }
 
 
 template<typename  T>
-int64_t
+T
 boperate(T  l, T  r, operator_code  o) noexcept
 {
-  return (o == "==")? (l == r? 1:0)
-        :(o == "!=")? (l != r? 1:0)
-        :(o == "<" )? (l <  r? 1:0)
-        :(o == "<=")? (l <= r? 1:0)
-        :(o == ">=")? (l >= r? 1:0)
-        :(o == "||")? (l || r? 1:0)
-        :(o == "&&")? (l && r? 1:0)
-        :0
-        ;
+       if(o == "=="){return (l == r? 1:0);}
+  else if(o == "!="){return (l != r? 1:0);}
+  else if(o == "<" ){return (l <  r? 1:0);}
+  else if(o == "<="){return (l <= r? 1:0);}
+  else if(o == ">" ){return (l >  r? 1:0);}
+  else if(o == ">="){return (l >= r? 1:0);}
+  else if(o == "||"){return (l || r? 1:0);}
+  else if(o == "&&"){return (l && r? 1:0);}
+
+  report;
+  return  0;
 }
 
 
 int64_t
 boperate(double  l, double  r, operator_code  o) noexcept
 {
-  return (o == "==")? (l == r? 1:0)
-        :(o == "!=")? (l != r? 1:0)
-        :(o == "<" )? (l <  r? 1:0)
-        :(o == "<=")? (l <= r? 1:0)
-        :(o == ">=")? (l >= r? 1:0)
-        :0
-        ;
+       if(o == "=="){return (l == r? 1:0);}
+  else if(o == "!="){return (l != r? 1:0);}
+  else if(o == "<" ){return (l <  r? 1:0);}
+  else if(o == "<="){return (l <= r? 1:0);}
+  else if(o == ">" ){return (l >  r? 1:0);}
+  else if(o == ">="){return (l >= r? 1:0);}
+
+  report;
+  return  0;
 }
 
 
-}
-
-
-
-
-exprelem
-calculate(std::string_view  sv) noexcept
+void
+finish(std::vector<exprelem>&  src, std::vector<exprelem>&  dst) noexcept
 {
+    while(src.size())
+    {
+      dst.emplace_back(src.back());
+
+      src.pop_back();
+    }
+}
+
+
+}
+
+
+
+
+std::vector<exprelem>
+make_rpn_stack(std::string_view  sv) noexcept
+{
+  printf("%s\n",sv.data());
+
   token_block  blk(sv);
 
   std::vector<context>  stack({blk});
 
-  std::vector<exprelem>    output_stack;
-  std::vector<exprelem>  operator_stack;
+  std::vector<exprelem>  output_stack;
 
   auto  ctx = &stack.back();
 
@@ -209,7 +244,7 @@ calculate(std::string_view  sv) noexcept
 
                 if(last_kind == kind::null)
                 {
-                  operator_stack.emplace_back('U',op);
+                  ctx->m_operator_stack.emplace_back('U',op);
 
                   last_kind = kind::unary;
                 }
@@ -217,19 +252,19 @@ calculate(std::string_view  sv) noexcept
               else
                 if(last_kind == kind::unary)
                 {
-                  output_stack.emplace_back(operator_stack.back());
+                  output_stack.emplace_back(ctx->m_operator_stack.back());
 
-                  operator_stack.pop_back();
+                  ctx->m_operator_stack.pop_back();
 
-                  operator_stack.emplace_back('U',op);
+                  ctx->m_operator_stack.emplace_back('U',op);
                 }
 
               else
                 if(last_kind == kind::operand)
                 {
-                    while(operator_stack.size())
+                    while(ctx->m_operator_stack.size())
                     {
-                      auto  prev_op = operator_stack.back().get_operator_code();
+                      auto  prev_op = ctx->m_operator_stack.back().get_operator_code();
 
                         if(get_precedence(op) > get_precedence(prev_op))
                         {
@@ -237,13 +272,13 @@ calculate(std::string_view  sv) noexcept
                         }
 
 
-                      output_stack.emplace_back(operator_stack.back());
+                      output_stack.emplace_back(ctx->m_operator_stack.back());
 
-                      operator_stack.pop_back();
+                      ctx->m_operator_stack.pop_back();
                     }
 
                   
-                  operator_stack.emplace_back('B',op);
+                  ctx->m_operator_stack.emplace_back('B',op);
                 }
             }
 
@@ -253,6 +288,8 @@ calculate(std::string_view  sv) noexcept
               stack.emplace_back(bv++->get_block());
 
               ctx = &stack.back();
+
+              last_kind = kind::null;
             }
 
           else
@@ -266,9 +303,13 @@ calculate(std::string_view  sv) noexcept
 
         if(stack.size() > 1)
         {
+          finish(ctx->m_operator_stack,output_stack);
+
           stack.pop_back();
 
           ctx = &stack.back();
+
+          last_kind = kind::operand;
         }
 
       else
@@ -278,20 +319,23 @@ calculate(std::string_view  sv) noexcept
     }
 
 
-    while(operator_stack.size())
-    {
-      output_stack.emplace_back(operator_stack.back());
+  finish(ctx->m_operator_stack,output_stack);
 
-      operator_stack.pop_back();
-    }
+  return std::move(output_stack);
+};
 
 
+exprelem
+evaluate(const std::vector<exprelem>&  rpn) noexcept
+{
   std::vector<exprelem>  buf;
 
   int  num_operands = 0;
 
-    for(auto&  e: output_stack)
+    for(auto&  e: rpn)
     {
+e.print();
+printf(",");
         if(e.is_integer() || e.is_unsigned_integer() || e.is_real_number())
         {
           buf.emplace_back(e);
@@ -308,6 +352,33 @@ calculate(std::string_view  sv) noexcept
 
               return {};
             }
+
+
+          auto  op = e.get_operator_code();
+          auto  o  = buf.back();
+
+            if(o.is_real_number())
+            {
+                if(op == "-")
+                {
+                  o = exprelem(-o.get_real_number());
+                }
+            }
+
+          else
+            if(o.is_unsigned_integer())
+            {
+              o = exprelem(operate(o.get_unsigned_integer(),op));
+            }
+
+          else
+            if(o.is_integer())
+            {
+              o = exprelem(operate(o.get_integer(),op));
+            }
+
+
+          buf.back() = o;
         }
 
       else
@@ -337,6 +408,7 @@ calculate(std::string_view  sv) noexcept
                (o == "!=") ||
                (o == "<" ) ||
                (o == "<=") ||
+               (o == ">" ) ||
                (o == ">=") ||
                (o == "||") ||
                (o == "&&"))
