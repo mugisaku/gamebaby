@@ -96,7 +96,7 @@ find_operation(std::string_view  label) const noexcept
         {
           auto&  op = cl.get_operation();
 
-            if(op.get_operand_list()[0].get_identifier() == label)
+            if(op.get_operand_list()[0].get_string() == label)
             {
               return &op;
             }
@@ -135,7 +135,7 @@ resolve(operand&  o) const noexcept
     }
 
 
-  auto&  name = o.get_identifier();
+  auto&  name = o.get_string();
 
   auto  fn = m_context.find_function(name);
 
@@ -191,7 +191,7 @@ resolve(operand&  o) const noexcept
 
     if(ep)
     {
-      o = ep->get_value();
+      o = static_cast<uint64_t>(ep->get_value());
 
       return;
     }

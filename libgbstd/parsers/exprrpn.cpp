@@ -385,7 +385,7 @@ preprocess() noexcept
           break;
         }
     }
-print();
+//print();
 }
 
 
@@ -476,9 +476,11 @@ postprocess() noexcept
   finish(std::move(operator_stack.back()),tmp);
 
   m_stack = std::move(tmp);
+/*
 printf("\n");
 print();
 printf("\n");
+*/
 }
 
 
@@ -486,7 +488,7 @@ exprrpn&
 exprrpn::
 assign(std::string_view  sv) noexcept
 {
-  printf("%s\n",sv.data());
+//  printf("%s\n",sv.data());
 
   m_block = sv;
 

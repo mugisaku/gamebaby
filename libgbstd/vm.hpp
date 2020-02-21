@@ -14,6 +14,7 @@
 #include"libgbstd/misc.hpp"
 #include"libgbstd/utility.hpp"
 #include"libgbstd/typesystem.hpp"
+#include"libgbstd/parser.hpp"
 
 
 namespace gbstd{
@@ -123,19 +124,45 @@ public:
 };
 
 
+struct undefined{};
+
+class
+identifier
+{
+  std::string  m_string;
+
+public:
+  identifier() noexcept{}
+  identifier(std::string_view  sv) noexcept: m_string(sv){}
+
+  const std::string&  get_string() const noexcept{return m_string;}
+
+  std::string  release() noexcept{return std::move(m_string);}
+
+};
+
+
 class
 operand
 {
   enum class kind{
     null,
     identifier,
+    undefined_literal,
+    null_pointer_literal,
+    boolean_literal,
+    string_literal,
     integer_literal,
+    fpn_literal,
     pointer_literal,
   } m_kind=kind::null;
 
   union data{
+    bool         b;
     std::string  s;
-    int64_t      i;
+    uint64_t     i;
+
+    double  f;
 
     multi_pointer  p;
 
@@ -148,32 +175,53 @@ public:
   operand() noexcept{}
   operand(const operand&   rhs) noexcept{assign(rhs);}
   operand(      operand&&  rhs) noexcept{assign(std::move(rhs));}
+  operand(undefined  u) noexcept{assign(u);}
+  operand(nullptr_t  n) noexcept{assign(n);}
+  operand(bool  b) noexcept{assign(b);}
+  operand(identifier&&  id) noexcept{assign(std::move(id));}
   operand(std::string_view  sv) noexcept{assign(sv);}
-  operand(int64_t  i) noexcept{assign(i);}
+  operand(uint64_t  i) noexcept{assign(i);}
+  operand(double  f) noexcept{assign(f);}
   operand(multi_pointer  p) noexcept{assign(p);}
  ~operand(){clear();}
 
   operand&  operator=(const operand&   rhs) noexcept{return assign(rhs);}
   operand&  operator=(      operand&&  rhs) noexcept{return assign(std::move(rhs));}
+  operand&  operator=(undefined  u) noexcept{return assign(u);}
+  operand&  operator=(nullptr_t  n) noexcept{return assign(n);}
+  operand&  operator=(bool  b) noexcept{return assign(b);}
+  operand&  operator=(identifier&&  id) noexcept{return assign(std::move(id));}
   operand&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  operand&  operator=(int64_t  i) noexcept{return assign(i);}
+  operand&  operator=(uint64_t  i) noexcept{return assign(i);}
+  operand&  operator=(double  f) noexcept{return assign(f);}
   operand&  operator=(multi_pointer  p) noexcept{return assign(p);}
 
   operand&  assign(const operand&   rhs) noexcept;
   operand&  assign(      operand&&  rhs) noexcept;
+  operand&  assign(undefined  u) noexcept;
+  operand&  assign(nullptr_t  n) noexcept;
+  operand&  assign(bool  b) noexcept;
+  operand&  assign(identifier&&  id) noexcept;
   operand&  assign(std::string_view  sv) noexcept;
-  operand&  assign(int64_t  i) noexcept;
+  operand&  assign(uint64_t  i) noexcept;
+  operand&  assign(double  f) noexcept;
   operand&  assign(multi_pointer  p) noexcept;
 
   void  clear() noexcept;
 
-  bool  is_identifier()      const noexcept{return m_kind == kind::identifier;}
-  bool  is_integer_literal() const noexcept{return m_kind == kind::integer_literal;}
-  bool  is_pointer_literal() const noexcept{return m_kind == kind::pointer_literal;}
+  bool  is_undefined_literal()    const noexcept{return m_kind == kind::undefined_literal;}
+  bool  is_boolean_literal()      const noexcept{return m_kind == kind::boolean_literal;}
+  bool  is_null_pointer_literal() const noexcept{return m_kind == kind::null_pointer_literal;}
+  bool  is_identifier()           const noexcept{return m_kind == kind::identifier;}
+  bool  is_string()               const noexcept{return m_kind == kind::string_literal;}
+  bool  is_integer_literal()      const noexcept{return m_kind == kind::integer_literal;}
+  bool  is_fpn_literal()          const noexcept{return m_kind == kind::fpn_literal;}
+  bool  is_pointer_literal()      const noexcept{return m_kind == kind::pointer_literal;}
 
-  const std::string&  get_identifier() const noexcept{return m_data.s;}
+  const std::string&  get_string() const noexcept{return m_data.s;}
 
-  int64_t  get_integer_literal() const noexcept{return m_data.i;}
+  uint64_t  get_integer_literal() const noexcept{return m_data.i;}
+  double    get_fpn_literal() const noexcept{return m_data.f;}
 
   const multi_pointer&  get_pointer() const noexcept{return m_data.p;}
 
@@ -187,6 +235,10 @@ public:
 enum class
 unary_opcodes
 {
+  prefix_increment,
+  prefix_decrement,
+  postfix_increment,
+  postfix_decrement,
   bit_not,
   logical_not,
   get_size,
@@ -225,19 +277,17 @@ class expression;
 class
 unary_expression
 {
-  unary_opcodes  m_opcode;
+  operator_code  m_opcode;
 
   std::unique_ptr<expression>  m_expression;
 
 public:
-  unary_expression(unary_opcodes  op, std::unique_ptr<expression>&&  e) noexcept:
+  unary_expression(operator_code  op, std::unique_ptr<expression>&&  e) noexcept:
   m_opcode(op), m_expression(std::move(e)){}
 
-  unary_opcodes  get_opcode() const noexcept{return m_opcode;}
+  operator_code  get_opcode() const noexcept{return m_opcode;}
 
   const expression&  get_expression()  const noexcept{return *m_expression;}
-
-  value  evaluate(context&  ctx) const noexcept;
 
 };
 
@@ -245,21 +295,19 @@ public:
 class
 binary_expression
 {
-  binary_opcodes  m_opcode;
+  operator_code  m_opcode;
 
   std::unique_ptr<expression>  m_left;
   std::unique_ptr<expression>  m_right;
 
 public:
-  binary_expression(binary_opcodes  op, std::unique_ptr<expression>&&  l, std::unique_ptr<expression>&&  r) noexcept:
+  binary_expression(operator_code  op, std::unique_ptr<expression>&&  l, std::unique_ptr<expression>&&  r) noexcept:
   m_opcode(op), m_left(std::move(l)), m_right(std::move(r)){}
 
-  binary_opcodes  get_opcode() const noexcept{return m_opcode;}
+  operator_code  get_opcode() const noexcept{return m_opcode;}
 
   const expression&  get_left()  const noexcept{return *m_left;}
   const expression&  get_right() const noexcept{return *m_right;}
-
-  value  evaluate(context&  ctx) const noexcept;
 
 };
 
@@ -270,7 +318,8 @@ expression
   enum class kind{
     null,
     operand,
-     unary,
+     prefix_unary,
+    postfix_unary,
     binary,
   } m_kind=kind::null;
 
@@ -289,28 +338,28 @@ public:
   expression(const expression&   rhs) noexcept=delete;
   expression(      expression&&  rhs) noexcept{assign(std::move(rhs));}
   expression(operand&&  o) noexcept{assign(std::move(o));}
-  expression( unary_expression&&  e) noexcept{assign(std::move(e));}
+  expression(int  k, unary_expression&&  e) noexcept{assign(k,std::move(e));}
   expression(binary_expression&&  e) noexcept{assign(std::move(e));}
  ~expression(){clear();}
 
   expression&  operator=(const expression&   rhs) noexcept=delete;
   expression&  operator=(      expression&&  rhs) noexcept{return assign(std::move(rhs));}
   expression&  operator=(operand&&  o) noexcept{return assign(std::move(o));}
-  expression&  operator=( unary_expression&&  e) noexcept{return assign(std::move(e));}
   expression&  operator=(binary_expression&&  e) noexcept{return assign(std::move(e));}
 
   expression&  assign(expression&&  rhs) noexcept;
   expression&  assign(operand&&  o) noexcept;
-  expression&  assign( unary_expression&&  e) noexcept;
+  expression&  assign(int  k, unary_expression&&  e) noexcept;
   expression&  assign(binary_expression&&  e) noexcept;
 
   expression&  clear() noexcept;
 
   bool  is_operand() const noexcept{return m_kind == kind::operand;}
-  bool  is_unary()   const noexcept{return m_kind == kind::unary;}
+  bool  is_prefix_unary()   const noexcept{return m_kind == kind::prefix_unary;}
+  bool  is_postfix_unary()   const noexcept{return m_kind == kind::postfix_unary;}
   bool  is_binary()  const noexcept{return m_kind == kind::binary;}
 
-  value  evaluate(context&  ctx) const noexcept;
+  void  print() const noexcept;
 
 };
 

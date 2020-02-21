@@ -301,7 +301,7 @@ process(const operation&  op) noexcept
   else
     if(op.is_seek())
     {
-      seek(dst,get_value(opls[1].get_pointer()),opls[2].get_identifier());
+      seek(dst,get_value(opls[1].get_pointer()),opls[2].get_string());
     }
 }
 

@@ -20,8 +20,11 @@ assign(const operand&   rhs) noexcept
 
         switch(m_kind)
         {
+      case(kind::boolean_literal): new(&m_data) bool(rhs.m_data.b);break;
       case(kind::identifier     ): new(&m_data) std::string(rhs.m_data.s);break;
-      case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
+      case(kind::string_literal ): new(&m_data) std::string(rhs.m_data.s);break;
+      case(kind::integer_literal): new(&m_data) uint64_t(rhs.m_data.i);break;
+      case(kind::fpn_literal    ): new(&m_data) double(rhs.m_data.f);break;
       case(kind::pointer_literal): new(&m_data) multi_pointer(rhs.m_data.p);break;
         }
     }
@@ -43,12 +46,67 @@ assign(operand&&  rhs) noexcept
 
         switch(m_kind)
         {
+      case(kind::boolean_literal): new(&m_data) bool(rhs.m_data.b);break;
       case(kind::identifier     ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
-      case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
+      case(kind::string_literal ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
+      case(kind::integer_literal): new(&m_data) uint64_t(std::move(rhs.m_data.i));break;
+      case(kind::fpn_literal    ): new(&m_data) double(std::move(rhs.m_data.f));break;
       case(kind::pointer_literal): new(&m_data) multi_pointer(std::move(rhs.m_data.p));break;
         }
     }
 
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(undefined  u) noexcept
+{
+  clear();
+
+  m_kind = kind::undefined_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(nullptr_t  n) noexcept
+{
+  clear();
+
+  m_kind = kind::null_pointer_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(bool  b) noexcept
+{
+  clear();
+
+  new(&m_data) bool(b);
+
+  m_kind = kind::boolean_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(identifier&&  id) noexcept
+{
+  clear();
+
+  new(&m_data) std::string(id.release());
+
+  m_kind = kind::identifier;
 
   return *this;
 }
@@ -62,7 +120,7 @@ assign(std::string_view  sv) noexcept
 
   new(&m_data) std::string(sv);
 
-  m_kind = kind::identifier;
+  m_kind = kind::string_literal;
 
   return *this;
 }
@@ -70,13 +128,27 @@ assign(std::string_view  sv) noexcept
 
 operand&
 operand::
-assign(int64_t  i) noexcept
+assign(uint64_t  i) noexcept
 {
   clear();
 
-  new(&m_data) int64_t(i);
+  new(&m_data) uint64_t(i);
 
   m_kind = kind::integer_literal;
+
+  return *this;
+}
+
+
+operand&
+operand::
+assign(double  f) noexcept
+{
+  clear();
+
+  new(&m_data) double(f);
+
+  m_kind = kind::fpn_literal;
 
   return *this;
 }
@@ -103,8 +175,13 @@ clear() noexcept
     switch(m_kind)
     {
   case(kind::null): break;
+  case(kind::undefined_literal): break;
+  case(kind::null_pointer_literal): break;
+  case(kind::boolean_literal): break;
   case(kind::identifier     ): m_data.s.~basic_string();break;
+  case(kind::string_literal ): m_data.s.~basic_string();break;
   case(kind::integer_literal): /*m_data.i.~int()*/;break;
+  case(kind::fpn_literal): /*m_data.i.~int()*/;break;
   case(kind::pointer_literal): m_data.p.~multi_pointer();break;
     }
 
@@ -186,8 +263,12 @@ print(const context*  ctx, const function*  fn) const noexcept
     switch(m_kind)
     {
   case(kind::null): break;
+  case(kind::null_pointer_literal): printf("nullptr");break;
+  case(kind::undefined_literal): printf("undefined");break;
+  case(kind::boolean_literal): printf("%s",m_data.b? "true":"false");break;
+  case(kind::string_literal ): printf("\"%s\"",m_data.s.data());break;
   case(kind::identifier     ): printf("%s",m_data.s.data());break;
-  case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
+  case(kind::integer_literal): printf("%" PRIu64,m_data.i);break;
   case(kind::pointer_literal):
         if(ctx)
         {
