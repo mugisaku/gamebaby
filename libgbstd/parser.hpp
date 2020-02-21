@@ -160,10 +160,10 @@ public:
   bool  is_null()                             const noexcept{return m_kind == kind::null;}
   bool  is_integer()                          const noexcept{return m_kind == kind::integer;}
   bool  is_identifier()                       const noexcept{return m_kind == kind::identifier;}
-  bool  is_keyword(const char*  s)            const noexcept{return is_identifier() && (m_data.s == s);}
+  bool  is_keyword(std::string_view  sv)      const noexcept{return is_identifier() && (m_data.s == sv);}
   bool  is_single_quoted()                    const noexcept{return m_kind == kind::single_quoted;}
   bool  is_double_quoted()                    const noexcept{return m_kind == kind::double_quoted;}
-  bool  is_string()                           const noexcept{return is_identifier() || is_single_quoted() || is_double_quoted();}
+  bool  is_string()                           const noexcept{return is_single_quoted() || is_double_quoted();}
   bool  is_operator_code()                    const noexcept{return m_kind == kind::operator_code;}
   bool  is_operator_code(operator_code  opco) const noexcept{return is_operator_code() && (m_data.opco == opco);}
   bool  is_floating_point_number()            const noexcept{return m_kind == kind::floating_point_number;}
@@ -305,13 +305,16 @@ public:
   constexpr exprelem(char  k, std::string_view  sv) noexcept: m_kind(k), m_data(sv){}
   constexpr exprelem(char  k, operator_code  o) noexcept: m_kind(k), m_data(o){}
 
-  constexpr bool  is_integer()          const noexcept{return m_kind == 'i';}
-  constexpr bool  is_unsigned_integer() const noexcept{return m_kind == 'u';}
-  constexpr bool  is_real_number()      const noexcept{return m_kind == 'f';}
-  constexpr bool  is_string()           const noexcept{return m_kind == 's';}
-  constexpr bool  is_identifier()       const noexcept{return m_kind == 'I';}
-  constexpr bool  is_unary_operator()   const noexcept{return m_kind == 'U';}
-  constexpr bool  is_binary_operator()  const noexcept{return m_kind == 'B';}
+  constexpr bool  is_integer()                const noexcept{return m_kind == 'i';}
+  constexpr bool  is_unsigned_integer()       const noexcept{return m_kind == 'u';}
+  constexpr bool  is_real_number()            const noexcept{return m_kind == 'f';}
+  constexpr bool  is_string()                 const noexcept{return m_kind == 's';}
+  constexpr bool  is_identifier()             const noexcept{return m_kind == 'I';}
+  constexpr bool  is_operand()                const noexcept{return is_integer() || is_unsigned_integer() || is_real_number() || is_string() || is_identifier();}
+  constexpr bool  is_prefix_unary_operator()  const noexcept{return m_kind == 'p';}
+  constexpr bool  is_postfix_unary_operator() const noexcept{return m_kind == 'P';}
+  constexpr bool  is_binary_operator()        const noexcept{return m_kind == 'B';}
+  constexpr bool  is_operator()               const noexcept{return m_kind == 'o';}
 
   constexpr  int64_t             get_integer() const noexcept{return m_data.i;}
   constexpr uint64_t    get_unsigned_integer() const noexcept{return m_data.u;}
@@ -344,14 +347,16 @@ public:
 
   void  print() const noexcept
   {
-         if(is_real_number()     ){printf("%f",m_data.f);}
-    else if(is_unsigned_integer()){printf("%" PRIu64,m_data.u);}
-    else if(is_integer()         ){printf("%" PRIi64,m_data.i);}
-    else if(is_string()          ){printf("\"%s\"",m_data.sv.data());}
-    else if(is_identifier()      ){printf("%s",m_data.sv.data());}
-    else if(is_unary_operator()  ){printf("U%s",m_data.o.get_string());}
-    else if(is_binary_operator() ){printf("B%s",m_data.o.get_string());}
-    else                          {printf("<NULL>");}
+         if(is_real_number()           ){printf("%f",m_data.f);}
+    else if(is_unsigned_integer()      ){printf("%" PRIu64,m_data.u);}
+    else if(is_integer()               ){printf("%" PRIi64,m_data.i);}
+    else if(is_string()                ){printf("\"%s\"",m_data.sv.data());}
+    else if(is_identifier()            ){printf("%s",m_data.sv.data());}
+    else if(is_prefix_unary_operator() ){printf("p%s",m_data.o.get_string());}
+    else if(is_postfix_unary_operator()){printf("P%s",m_data.o.get_string());}
+    else if(is_binary_operator()       ){printf("B%s",m_data.o.get_string());}
+    else if(is_operator()              ){printf("%s",m_data.o.get_string());}
+    else                                {printf("<NULL>");}
   }
 
 };
@@ -364,20 +369,28 @@ exprrpn
 
   std::vector<exprelem>  m_stack;
 
+  void  finish(std::vector<exprelem>&&  opstack, std::vector<exprelem>&  dst) noexcept;
+
+  void   preprocess() noexcept;
+  void  postprocess() noexcept;
+
 public:
   exprrpn() noexcept{}
+  exprrpn(const exprrpn&) noexcept=delete;
   exprrpn(std::string_view  sv) noexcept{assign(sv);}
 
+  exprrpn&  operator=(const exprrpn&) noexcept=delete;
   exprrpn&  operator=(std::string_view  sv) noexcept{return assign(sv);}
 
   exprrpn&  assign(std::string_view  sv) noexcept;
 
+  const std::vector<exprelem>&  get_stack() const noexcept{return m_stack;}
+
+  void  print() const noexcept;
+
+  static exprelem  evaluate(const exprrpn&  rpn) noexcept;
 
 };
-
-
-
-exprelem  evaluate(const std::vector<exprelem>&  rpn) noexcept;
 
 
 }

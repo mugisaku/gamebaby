@@ -11,85 +11,125 @@ namespace gbstd{
 namespace{
 
 
-struct
-context
-{
-  token_block_view  m_view;
-
-  std::vector<exprelem>  m_operator_stack;
-
-  context() noexcept{}
-  context(const token_block&  blk) noexcept: m_view(blk){}
-
-};
 
 
 constexpr int
-get_precedence(operator_code  o) noexcept
+get_precedence(exprelem  e) noexcept
 {
-    if((o == "*") ||
-       (o == "/") ||
-       (o == "%"))
+  auto  o = e.get_operator_code();
+
+    if(e.is_prefix_unary_operator())
     {
-      return 20;
+        if((o == "++") ||
+           (o == "--") ||
+           (o == "*") ||
+           (o == "&") ||
+           (o == "+") ||
+           (o == "-") ||
+           (o == "!") ||
+           (o == "~"))
+        {
+          return 65;
+        }
     }
 
   else
-    if((o == "+") ||
-       (o == "-"))
+    if(e.is_postfix_unary_operator())
     {
-      return 19;
+        if((o == "++") ||
+           (o == "--"))
+        {
+          return 70;
+        }
     }
 
   else
-    if((o == "<<") ||
-       (o == ">>"))
+    if(e.is_binary_operator())
     {
-      return 18;
+        if(o == "::" )
+        {
+          return 80;
+        }
+
+      else
+        if((o == "." ) ||
+           (o == "->"))
+        {
+          return 70;
+        }
+
+      else
+        if((o == ".*") ||
+           (o == "->*"))
+        {
+          return 60;
+        }
+
+      else
+        if((o == "*") ||
+           (o == "/") ||
+           (o == "%"))
+        {
+          return 20;
+        }
+
+      else
+        if((o == "+") ||
+           (o == "-"))
+        {
+          return 19;
+        }
+
+      else
+        if((o == "<<") ||
+           (o == ">>"))
+        {
+          return 18;
+        }
+
+      else
+        if((o == "<" ) ||
+           (o == "<=") ||
+           (o == ">" ) ||
+           (o == ">="))
+        {
+          return 17;
+        }
+
+      else
+        if((o == "==") ||
+           (o == "!="))
+        {
+          return 16;
+        }
+
+      else if(o == "&" ){return 15;}
+      else if(o == "^" ){return 14;}
+      else if(o == "|" ){return 13;}
+      else if(o == "&&"){return 12;}
+      else if(o == "||"){return 11;}
+
+      else
+        if((o == "=") ||
+           (o == "+=") ||
+           (o == "-=") ||
+           (o == "*=") ||
+           (o == "/=") ||
+           (o == "%=") ||
+           (o == "&=") ||
+           (o == "|=") ||
+           (o == "^=") ||
+           (o == "<<=") ||
+           (o == ">>=") ||
+           (o == "="))
+        {
+          return 3;
+        }
+
+      else if(o == ","){return 1;}
     }
 
-  else
-    if((o == "<" ) ||
-       (o == "<=") ||
-       (o == ">" ) ||
-       (o == ">="))
-    {
-      return 17;
-    }
 
-  else
-    if((o == "==") ||
-       (o == "!="))
-    {
-      return 16;
-    }
-
-  else if(o == "&" ){return 15;}
-  else if(o == "^" ){return 14;}
-  else if(o == "|" ){return 13;}
-  else if(o == "&&"){return 12;}
-  else if(o == "||"){return 11;}
-
-  else
-    if((o == "=") ||
-       (o == "+=") ||
-       (o == "-=") ||
-       (o == "*=") ||
-       (o == "/=") ||
-       (o == "%=") ||
-       (o == "&=") ||
-       (o == "|=") ||
-       (o == "^=") ||
-       (o == "<<=") ||
-       (o == ">>=") ||
-       (o == "="))
-    {
-      return 3;
-    }
-
-  else if(o == ","){return 1;}
-
-report;
   return 0;
 }
 
@@ -181,8 +221,14 @@ boperate(double  l, double  r, operator_code  o) noexcept
 }
 
 
+}
+
+
+
+
 void
-finish(std::vector<exprelem>&  src, std::vector<exprelem>&  dst) noexcept
+exprrpn::
+finish(std::vector<exprelem>&&  src, std::vector<exprelem>&  dst) noexcept
 {
     while(src.size())
     {
@@ -193,38 +239,34 @@ finish(std::vector<exprelem>&  src, std::vector<exprelem>&  dst) noexcept
 }
 
 
-}
-
-
-
-
-std::vector<exprelem>
-make_rpn_stack(std::string_view  sv) noexcept
+void
+exprrpn::
+preprocess() noexcept
 {
-  printf("%s\n",sv.data());
+  std::vector<token_block_view>  view_stack({m_block});
 
-  token_block  blk(sv);
-
-  std::vector<context>  stack({blk});
-
-  std::vector<exprelem>  output_stack;
-
-  auto  ctx = &stack.back();
+  std::vector<operator_code>  close_stack;
 
   enum class kind{
-    null,operand,unary,binary,
+    null,operand,prefix_unary,postfix_unary,binary,
   } last_kind=kind::null;
 
 
     for(;;)
     {
-        while(ctx->m_view)
+        while(view_stack.size())
         {
-          auto&  bv = ctx->m_view;
+          auto&  bv = view_stack.back();
 
+            if(!bv)
+            {
+              break;
+            }
+
+          else
             if(bv->is_integer())
             {
-              output_stack.emplace_back(bv++->get_integer());
+              m_stack.emplace_back(bv++->get_integer());
 
               last_kind = kind::operand;
             }
@@ -232,7 +274,23 @@ make_rpn_stack(std::string_view  sv) noexcept
           else
             if(bv->is_floating_point_number())
             {
-              output_stack.emplace_back(bv++->get_floating_point_number());
+              m_stack.emplace_back(bv++->get_floating_point_number());
+
+              last_kind = kind::operand;
+            }
+
+          else
+            if(bv->is_string())
+            {
+              m_stack.emplace_back('s',bv++->get_string());
+
+              last_kind = kind::operand;
+            }
+
+          else
+            if(bv->is_identifier())
+            {
+              m_stack.emplace_back('I',bv++->get_string());
 
               last_kind = kind::operand;
             }
@@ -242,52 +300,63 @@ make_rpn_stack(std::string_view  sv) noexcept
             {
               auto  op = bv++->get_operator_code();
 
-                if(last_kind == kind::null)
+                if((last_kind == kind::null        ) ||
+                   (last_kind == kind::prefix_unary) ||
+                   (last_kind == kind::binary      ))
                 {
-                  ctx->m_operator_stack.emplace_back('U',op);
+                  m_stack.emplace_back('p',op);
 
-                  last_kind = kind::unary;
+                  last_kind = kind::prefix_unary;
                 }
 
               else
-                if(last_kind == kind::unary)
+                if(last_kind == kind::postfix_unary)
                 {
-                  output_stack.emplace_back(ctx->m_operator_stack.back());
+                  m_stack.emplace_back('B',op);
 
-                  ctx->m_operator_stack.pop_back();
-
-                  ctx->m_operator_stack.emplace_back('U',op);
+                  last_kind = kind::binary;
                 }
 
               else
                 if(last_kind == kind::operand)
                 {
-                    while(ctx->m_operator_stack.size())
+                    if((op == "++") ||
+                       (op == "--"))
                     {
-                      auto  prev_op = ctx->m_operator_stack.back().get_operator_code();
+                      m_stack.emplace_back('P',op);
 
-                        if(get_precedence(op) > get_precedence(prev_op))
-                        {
-                          break;
-                        }
-
-
-                      output_stack.emplace_back(ctx->m_operator_stack.back());
-
-                      ctx->m_operator_stack.pop_back();
+                      last_kind = kind::postfix_unary;
                     }
 
-                  
-                  ctx->m_operator_stack.emplace_back('B',op);
+                  else
+                    {
+                      m_stack.emplace_back('B',op);
+
+                      last_kind = kind::binary;
+                    }
                 }
             }
 
           else
             if(bv->is_block("(",")"))
             {
-              stack.emplace_back(bv++->get_block());
+              m_stack.emplace_back('o',operator_code("("));
 
-              ctx = &stack.back();
+              close_stack.emplace_back(")");
+
+              view_stack.emplace_back(bv++->get_block());
+
+              last_kind = kind::null;
+            }
+
+          else
+            if(bv->is_block("[","]"))
+            {
+              m_stack.emplace_back('o',operator_code("["));
+
+              close_stack.emplace_back("]");
+
+              view_stack.emplace_back(bv++->get_block());
 
               last_kind = kind::null;
             }
@@ -295,19 +364,18 @@ make_rpn_stack(std::string_view  sv) noexcept
           else
             {
               report;
-
-              return {};
+              return;
             }
         }
 
 
-        if(stack.size() > 1)
+        if(view_stack.size() > 1)
         {
-          finish(ctx->m_operator_stack,output_stack);
+          m_stack.emplace_back('o',close_stack.back());
 
-          stack.pop_back();
+          close_stack.pop_back();
 
-          ctx = &stack.back();
+          view_stack.pop_back();
 
           last_kind = kind::operand;
         }
@@ -317,25 +385,130 @@ make_rpn_stack(std::string_view  sv) noexcept
           break;
         }
     }
+print();
+}
 
 
-  finish(ctx->m_operator_stack,output_stack);
+void
+exprrpn::
+postprocess() noexcept
+{
+  std::vector<exprelem>  tmp;
 
-  return std::move(output_stack);
+  std::vector<std::vector<exprelem>>  operator_stack(1);
+  std::vector<operator_code>             close_stack;
+
+    for(auto&  e: m_stack)
+    {
+        if(e.is_operand())
+        {
+          tmp.emplace_back(e);
+        }
+
+      else
+        if(e.is_prefix_unary_operator()  ||
+           e.is_postfix_unary_operator() ||
+           e.is_binary_operator())
+        {
+          auto&  st = operator_stack.back();
+
+            while(st.size())
+            {
+              auto  prev_op = st.back();
+
+                if(get_precedence(e) > get_precedence(prev_op))
+                {
+                  break;
+                }
+
+
+              tmp.emplace_back(st.back());
+
+              st.pop_back();
+            }
+
+
+          st.emplace_back(e);
+        }
+
+      else
+        if(e.is_operator())
+        {
+          auto  o = e.get_operator_code();
+
+            if(o == "(")
+            {
+              close_stack.emplace_back(")");
+
+              operator_stack.emplace_back();
+            }
+
+          else
+            if(o == "[")
+            {
+              close_stack.emplace_back("]");
+
+              operator_stack.emplace_back();
+            }
+
+          else
+            if(o == close_stack.back())
+            {
+              close_stack.pop_back();
+
+              finish(std::move(operator_stack.back()),tmp);
+
+              operator_stack.pop_back();
+            }
+
+
+          tmp.emplace_back(e);
+        }
+
+      else
+        {
+          report;
+          return;
+        }
+    }
+
+
+  finish(std::move(operator_stack.back()),tmp);
+
+  m_stack = std::move(tmp);
+printf("\n");
+print();
+printf("\n");
+}
+
+
+exprrpn&
+exprrpn::
+assign(std::string_view  sv) noexcept
+{
+  printf("%s\n",sv.data());
+
+  m_block = sv;
+
+  m_stack.clear();
+
+   preprocess();
+  postprocess();
+
+  return *this;
 };
 
 
 exprelem
-evaluate(const std::vector<exprelem>&  rpn) noexcept
+exprrpn::
+evaluate(const exprrpn&  rpn) noexcept
 {
   std::vector<exprelem>  buf;
 
   int  num_operands = 0;
 
-    for(auto&  e: rpn)
+    for(auto&  e: rpn.get_stack())
     {
-e.print();
-printf(",");
         if(e.is_integer() || e.is_unsigned_integer() || e.is_real_number())
         {
           buf.emplace_back(e);
@@ -344,7 +517,7 @@ printf(",");
         }
 
       else
-        if(e.is_unary_operator())
+        if(e.is_prefix_unary_operator())
         {
             if(num_operands < 1)
             {
@@ -366,6 +539,35 @@ printf(",");
             }
 
           else
+            if(o.is_unsigned_integer())
+            {
+              o = exprelem(operate(o.get_unsigned_integer(),op));
+            }
+
+          else
+            if(o.is_integer())
+            {
+              o = exprelem(operate(o.get_integer(),op));
+            }
+
+
+          buf.back() = o;
+        }
+
+      else
+        if(e.is_postfix_unary_operator())
+        {
+            if(num_operands < 1)
+            {
+              report;
+
+              return {};
+            }
+
+
+          auto  op = e.get_operator_code();
+          auto  o  = buf.back();
+
             if(o.is_unsigned_integer())
             {
               o = exprelem(operate(o.get_unsigned_integer(),op));
@@ -472,6 +674,19 @@ printf(",");
   report;
 
   return exprelem();
+}
+
+
+void
+exprrpn::
+print() const noexcept
+{
+    for(auto&  e: m_stack)
+    {
+      e.print();
+
+      printf(",");
+    }
 }
 
 

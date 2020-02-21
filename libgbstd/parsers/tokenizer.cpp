@@ -122,6 +122,8 @@ read_operator_code() noexcept
 {
   constexpr operator_code  codes[] = {
     operator_code("..."),
+    operator_code(".*"),
+    operator_code("."),
     operator_code("<<="),
     operator_code("<<"),
     operator_code("<=>"),
@@ -136,6 +138,7 @@ read_operator_code() noexcept
     operator_code("+"),
     operator_code("--"),
     operator_code("-="),
+    operator_code("->*"),
     operator_code("->"),
     operator_code("-"),
     operator_code("*="),
@@ -163,7 +166,6 @@ read_operator_code() noexcept
     operator_code("!"),
     operator_code("?"),
     operator_code(","),
-    operator_code("."),
     operator_code(";"),
     operator_code("~"),
     operator_code("##"),

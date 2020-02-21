@@ -15,7 +15,7 @@ set(SOURCES
   sns/sns_timeline_node.cpp
   sns/sns_tester.cpp
   sns/sns_index_list.cpp
-  parsers/calculate.cpp
+  parsers/exprrpn.cpp
   parsers/token.cpp
   parsers/token_block.cpp
   parsers/tokenizer.cpp
