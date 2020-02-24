@@ -90,10 +90,8 @@ set(SOURCES
   vms/vm_function.cpp
   vms/vm_context.cpp
   vms/vm_operations_callback.cpp
-  vms/vm_operand.cpp
   vms/vm_expression.cpp
-  vms/vm_operation.cpp
-  vms/vm_codeline.cpp
+  vms/vm_statement.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

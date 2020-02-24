@@ -44,7 +44,24 @@ logical_not(context&  ctx, const value&  v) noexcept
 
 
 value
-get_size(context&  ctx, const value&  v) noexcept
+neg(context&  ctx, const value&  v) noexcept
+{
+  auto  deref_v = ctx.dereference(v);
+
+  auto&  ti = deref_v.get_type_info();
+
+    if(ti.is_like_boolean())
+    {
+      return ctx.make_value(!deref_v.get_integer());
+    }
+
+
+  return value();
+}
+
+
+value
+size(context&  ctx, const value&  v) noexcept
 {
   auto  deref_v = ctx.dereference(v);
 
@@ -55,7 +72,7 @@ get_size(context&  ctx, const value&  v) noexcept
 
 
 value
-get_address(context&  ctx, const value&  v) noexcept
+address(context&  ctx, const value&  v) noexcept
 {
     if(v.get_type_info().is_reference())
     {
@@ -67,22 +84,43 @@ get_address(context&  ctx, const value&  v) noexcept
 }
 
 
-
-
-callback
-get_callback(unary_opcodes  op) noexcept
+value
+dereference(context&  ctx, const value&  v) noexcept
 {
-  constexpr callback  table[] =
-  {
-    bit_not,
-    logical_not,
-    get_size,
-    get_address,
-  };
-
-
-  return table[static_cast<int>(op)];
+  return value();
 }
+
+
+value
+prefix_increment(context&  ctx, const value&  v) noexcept
+{
+  return value();
+}
+
+
+value
+prefix_decrement(context&  ctx, const value&  v) noexcept
+{
+  return value();
+}
+
+
+value
+postfix_increment(context&  ctx, const value&  v) noexcept
+{
+  return value();
+}
+
+
+value
+postfix_decrement(context&  ctx, const value&  v) noexcept
+{
+  return value();
+}
+
+
+
+
 }
 
 
@@ -621,34 +659,27 @@ bit_xor(context&  ctx, const value&  lv, const value&  rv) noexcept
 }
 
 
-callback
-get_callback(binary_opcodes  op) noexcept
-{
-  constexpr callback  table[] =
-  {
-    add        ,
-    sub        ,
-    mul        ,
-    div        ,
-    rem        ,
-    shl        ,
-    shr        ,
-    eq         ,
-    neq        ,
-    lt         ,
-    lteq       ,
-    gt         ,
-    gteq       ,
-    logical_or ,
-    logical_and,
-    bit_or     ,
-    bit_and    ,
-    bit_xor    ,
-  };
+value          add_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          sub_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          mul_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          div_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          rem_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          shl_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value          shr_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value       bit_or_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      bit_and_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      bit_xor_assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      comma(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      dot(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      arrow(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      scope_resolution(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      subscript(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      invoke(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
+value      assign(context&  ctx, const value&  lv, const value&  rv) noexcept{return value();}
 
 
-  return table[static_cast<int>(op)];
-}
+
+
 }
 
 

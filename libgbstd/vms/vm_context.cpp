@@ -155,9 +155,9 @@ frame
   frame(const function&  fn, uint32_t  bi) noexcept:
   m_function(fn), m_base_index(bi){}
 
-  operator bool() const noexcept{return m_pc < m_function.get_number_of_codelines();}
+  operator bool() const noexcept{return /*m_pc < m_function.get_number_of_codelines()*/ 1;}
 
-  const codeline&  operator*() noexcept{return m_function[m_pc++];}
+//  const statement&  operator*() noexcept{return m_function[m_pc++];}
 
 };
 
@@ -205,6 +205,7 @@ store(const value&  dst, const value&  src) noexcept
 }
 
 
+/*
 void
 context::
 process(const branch_instruction&   br) noexcept
@@ -218,6 +219,7 @@ process(const branch_instruction&   br) noexcept
       m_current_frame->m_pc = destv.get_integer();
     }
 }
+*/
 
 
 void
@@ -239,6 +241,7 @@ print_debug() const noexcept
 }
 
 
+/*
 void
 context::
 process(const return_instruction&  ret) noexcept
@@ -304,6 +307,7 @@ process(const operation&  op) noexcept
       seek(dst,get_value(opls[1].get_pointer()),opls[2].get_string());
     }
 }
+*/
 
 
 void
@@ -316,6 +320,7 @@ seek(variable&  dst, value&&  src, std::string_view  name) noexcept
 
 
 
+/*
 value
 context::
 operate(unary_opcodes  op, const operand&  o) noexcept
@@ -338,7 +343,8 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
 
   return binary_operations::get_callback(op)(*this,lv,rv);
 
-/*
+  if(0)
+  {
   printf("ERROR: context::operate_binary unknown operation.\n");
 
   printf("left value: ");
@@ -350,17 +356,17 @@ operate(binary_opcodes  op, const operand&  l, const operand&  r) noexcept
   rv.print();
 
   printf("\n");
-*/
-
+  }
   return value(get_void_type_info());
 }
+*/
 
 
 
 
 void
 context::
-push_frame(major_address  st_p, const function&  fn, int  argc, const operand*  argv) noexcept
+push_frame(major_address  st_p, const function&  fn, int  argc, const expression*  argv) noexcept
 {
   int  new_base_index = m_variable_table.size();
 
@@ -458,6 +464,7 @@ START:
 
 
 //printf("%s pc: %4d\n",m_current_frame->m_function.get_name().data(),m_current_frame->m_pc);
+/*
   auto&  codeln = **m_current_frame;
 
     if(codeln.is_store_instruction())
@@ -487,7 +494,7 @@ START:
     {
       process(codeln.get_operation());
     }
-
+*/
 
   return true;
 }

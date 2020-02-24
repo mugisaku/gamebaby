@@ -362,6 +362,18 @@ preprocess() noexcept
             }
 
           else
+            if(bv->is_block("{","}"))
+            {
+              m_stack.emplace_back('o',operator_code("{"));
+
+              close_stack.emplace_back("}");
+
+              view_stack.emplace_back(bv++->get_block());
+
+              last_kind = kind::null;
+            }
+
+          else
             {
               report;
               return;
@@ -447,6 +459,14 @@ postprocess() noexcept
             if(o == "[")
             {
               close_stack.emplace_back("]");
+
+              operator_stack.emplace_back();
+            }
+
+          else
+            if(o == "{")
+            {
+              close_stack.emplace_back("}");
 
               operator_stack.emplace_back();
             }
