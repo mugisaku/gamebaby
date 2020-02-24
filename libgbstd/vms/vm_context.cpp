@@ -27,7 +27,7 @@ create_function(std::string_view  sig, std::string_view  name) noexcept
 {
   auto  ti = m_type_collection.create_from_string(sig);
 
-  m_function_table.emplace_back(*this,major_address('f',m_function_table.size()),*ti,name);
+//  m_function_table.emplace_back(*this,major_address('f',m_function_table.size()),*ti,name);
 
   return m_function_table.back();
 }

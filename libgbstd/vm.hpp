@@ -475,6 +475,7 @@ return_statement
   expression  m_expression;
 
 public:
+  void  print() const noexcept{}
 
 };
 
@@ -490,6 +491,8 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
+  void  print() const noexcept{}
+
 };
 
 
@@ -504,6 +507,8 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
+  void  print() const noexcept{}
+
 };
 
 
@@ -513,6 +518,7 @@ block_statement
   std::vector<std::unique_ptr<statement>>  m_statement_list;
 
 public:
+  void  print() const noexcept{}
 
 };
 
@@ -522,7 +528,7 @@ condition_statement
 {
   expression  m_expression;
 
-  std::unique_ptr<statement>  m_statement;
+//  std::unique_ptr<statement>  m_statement;
 
 public:
 
@@ -534,9 +540,10 @@ if_string_statement
 {
   std::vector<condition_statement>  m_if_list;
 
-  std::unique_ptr<statement>  m_else_statement;
+//  std::unique_ptr<statement>  m_else_statement;
 
 public:
+  void  print() const noexcept{}
 
 };
 
@@ -554,6 +561,8 @@ public:
   const std::string&  get_name() const noexcept{return m_name;}
 
   const expression&  get_expression() const noexcept{return m_expression;}
+
+  void  print() const noexcept{}
 
 };
 
@@ -589,21 +598,44 @@ statement
 public:
   statement() noexcept{}
   statement(const statement&   rhs) noexcept=delete;
-//  statement(      statement&&  rhs) noexcept{assign(std::move(rhs));}
-//  statement(function&  fn) noexcept: m_function(&fn){assign(kw,std::move(e));}
+  statement(      statement&&  rhs) noexcept{assign(std::move(rhs));}
+  statement(function&  fn, return_statement&&      st) noexcept: m_function(&fn){assign(std::move(st));}
+  statement(function&  fn, label_statement&&       st) noexcept: m_function(&fn){assign(std::move(st));}
+  statement(function&  fn, jump_statement&&        st) noexcept: m_function(&fn){assign(std::move(st));}
+  statement(function&  fn, if_string_statement&&   st) noexcept: m_function(&fn){assign(std::move(st));}
+  statement(function&  fn, block_statement&&       st) noexcept: m_function(&fn){assign(std::move(st));}
+  statement(function&  fn, expression_statement&&  st) noexcept: m_function(&fn){assign(std::move(st));}
  ~statement(){clear();}
 
   statement&  operator=(const statement&   rhs) noexcept=delete;
-//  statement&  operator=(      statement&&  rhs) noexcept=default;
+  statement&  operator=(      statement&&  rhs) noexcept{return assign(std::move(rhs));}
 
-//  statement&  assign(std::string_view  kw, expression&&  e) noexcept;
+  statement&  assign(statement&&  rhs) noexcept;
+  statement&  assign(return_statement&&       st) noexcept;
+  statement&  assign( label_statement&&       st) noexcept;
+  statement&  assign( jump_statement&&        st) noexcept;
+  statement&  assign( if_string_statement&&   st) noexcept;
+  statement&  assign( block_statement&&       st) noexcept;
+  statement&  assign( expression_statement&&  st) noexcept;
 
   void  clear() noexcept;
 
   function&  get_function() const noexcept{return *m_function;}
 
-  bool  is_null()     const noexcept{return m_kind == kind::null;}
-  bool  is_return()   const noexcept{return m_kind == kind::return_;}
+  bool  is_null()       const noexcept{return m_kind == kind::null;}
+  bool  is_return()     const noexcept{return m_kind == kind::return_;}
+  bool  is_label()      const noexcept{return m_kind == kind::label;;}
+  bool  is_jump()       const noexcept{return m_kind == kind::jump;}
+  bool  is_if_string()  const noexcept{return m_kind == kind::if_string;}
+  bool  is_block()      const noexcept{return m_kind == kind::block;}
+  bool  is_expression() const noexcept{return m_kind == kind::expression;}
+
+  const return_statement&      get_return()     const noexcept{return m_data.ret;}
+  const label_statement&       get_label()      const noexcept{return m_data.lb;;}
+  const jump_statement&        get_jump()       const noexcept{return m_data.jmp;}
+  const if_string_statement&   get_if_string()  const noexcept{return m_data.ifs;}
+  const block_statement&       get_block()      const noexcept{return m_data.blk;}
+  const expression_statement&  get_expression() const noexcept{return m_data.expr;}
 
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
