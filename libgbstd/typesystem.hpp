@@ -61,6 +61,21 @@ public:
 
 
 class
+fpn_type_info
+{
+  int  m_size;
+
+public:
+  constexpr fpn_type_info(int  sz) noexcept: m_size(sz){}
+
+  constexpr int  get_size() const noexcept{return m_size;}
+
+  std::string  make_id() const noexcept{return std::string("f")+std::to_string(8*m_size);}
+
+};
+
+
+class
 boolean_type_info
 {
   int  m_size;
@@ -364,6 +379,8 @@ public:
 
   type_derivation&  clear() noexcept;
 
+  const type_info&  get_base_type() const noexcept{return m_base;}
+
   const type_info&      get_function_type(parameter_list&&  parals) noexcept;
   const type_info&      get_array_type(int  n) noexcept;
   const type_info&  get_reference_type(int  w) noexcept;
@@ -387,6 +404,7 @@ type_info
     reference,
     integer,
     unsigned_integer,
+    fpn,
     function,
     struct_,
     union_,
@@ -396,6 +414,7 @@ type_info
   union data{
              integer_type_info   int_ti;
     unsigned_integer_type_info  uint_ti;
+                 fpn_type_info   fpn_ti;
 
     boolean_type_info           bool_ti;
     generic_pointer_type_info   gptr_ti;
@@ -443,6 +462,7 @@ public:
   type_info(reference_type_info         ti) noexcept: m_kind(kind::reference       ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) reference_type_info(ti);}
   type_info(         integer_type_info  ti) noexcept: m_kind(kind::integer         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) integer_type_info(ti);}
   type_info(unsigned_integer_type_info  ti) noexcept: m_kind(kind::unsigned_integer), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) unsigned_integer_type_info(ti);}
+  type_info(fpn_type_info               ti) noexcept: m_kind(kind::fpn             ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) fpn_type_info(ti);}
   type_info(struct_type_info&&          ti) noexcept: m_kind(kind::struct_         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) struct_type_info(std::move(ti));}
   type_info(union_type_info&&           ti) noexcept: m_kind(kind::union_          ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) union_type_info(std::move(ti));}
   type_info(enum_type_info&&            ti) noexcept: m_kind(kind::enum_           ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) enum_type_info(std::move(ti));}
@@ -466,6 +486,8 @@ public:
   const          integer_type_info&           get_integer_type_info() const noexcept{return m_data.int_ti;}
   const unsigned_integer_type_info&  get_unsigned_integer_type_info() const noexcept{return m_data.uint_ti;}
 
+  const fpn_type_info&  get_fpn_type_info() const noexcept{return m_data.fpn_ti;}
+
   const   pointer_type_info&    get_pointer_type_info() const noexcept{return m_data.ptr_ti;}
   const reference_type_info&  get_reference_type_info() const noexcept{return m_data.ref_ti;}
 
@@ -484,6 +506,7 @@ public:
   bool  is_generic_pointer()  const noexcept{return m_kind == kind::generic_pointer;}
   bool  is_integer()          const noexcept{return m_kind == kind::integer;}
   bool  is_unsigned_integer() const noexcept{return m_kind == kind::unsigned_integer;}
+  bool  is_fpn()              const noexcept{return m_kind == kind::fpn;}
   bool  is_pointer()          const noexcept{return m_kind == kind::pointer;}
   bool  is_reference()        const noexcept{return m_kind == kind::reference;}
   bool  is_array()            const noexcept{return m_kind == kind::array;}
@@ -509,6 +532,16 @@ extern const type_info          null;
 extern const type_info     undefined;
 extern const type_info  null_pointer;
 extern const type_info         void_;
+extern const type_info            s8;
+extern const type_info            u8;
+extern const type_info           s16;
+extern const type_info           u16;
+extern const type_info           s32;
+extern const type_info           u32;
+extern const type_info           s64;
+extern const type_info           u64;
+extern const type_info           f32;
+extern const type_info           f64;
 }
 
 
@@ -540,109 +573,6 @@ public:
 
 
 class
-memory_sharer
-{
-  uint8_t*  m_data=nullptr;
-
-  uint32_t  m_offset=0;
-  uint32_t  m_length=0;
-
-  void  unrefer() noexcept;
-
-  uint64_t&  get_reference_count() const noexcept;
-
-  uint8_t*  get_memory_pointer() const noexcept;
-
-public:
-  constexpr memory_sharer() noexcept{}
-  memory_sharer(uint32_t  length) noexcept{assign(length);}
-  memory_sharer(const memory_sharer&   rhs) noexcept{assign(rhs);}
-  memory_sharer(      memory_sharer&&  rhs) noexcept{assign(std::move(rhs));}
-  memory_sharer(const memory_sharer&  base, int  offset) noexcept{assign(base,offset);}
-  memory_sharer(const memory_sharer&  base, int  offset, int  length) noexcept{assign(base,offset,length);}
- ~memory_sharer(){unrefer();}
-
-  constexpr operator bool() const noexcept{return m_data;}
-
-  uint8_t&  operator[](int  i) const noexcept{return get_memory_pointer()[m_offset+i];}
-
-  memory_sharer&  operator=(const memory_sharer&   rhs) noexcept{return assign(rhs);}
-  memory_sharer&  operator=(      memory_sharer&&  rhs) noexcept{return assign(std::move(rhs));}
-  memory_sharer&  operator=(uint32_t  length) noexcept{return assign(length);}
-
-  memory_sharer&  assign(const memory_sharer&   rhs) noexcept;
-  memory_sharer&  assign(      memory_sharer&&  rhs) noexcept;
-  memory_sharer&  assign(uint32_t  length) noexcept;
-  memory_sharer&  assign(const memory_sharer&  base, int  offset) noexcept;
-  memory_sharer&  assign(const memory_sharer&  base, int  offset, int  length) noexcept;
-
-   int8_t&  get_s8(int  i=0) const noexcept{return reinterpret_cast<int8_t&>((*this)[m_offset+i]);}
-  uint8_t&  get_u8(int  i=0) const noexcept{return                           (*this)[m_offset+i] ;}
-
-   int16_t&  get_s16(int  i=0) const noexcept{return reinterpret_cast< int16_t&>((*this)[(m_offset&~1)+(2*i)]);}
-  uint16_t&  get_u16(int  i=0) const noexcept{return reinterpret_cast<uint16_t&>((*this)[(m_offset&~1)+(2*i)]);}
-
-   int32_t&  get_s32(int  i=0) const noexcept{return reinterpret_cast< int32_t&>((*this)[(m_offset&~3)+(4*i)]);}
-  uint32_t&  get_u32(int  i=0) const noexcept{return reinterpret_cast<uint32_t&>((*this)[(m_offset&~3)+(4*i)]);}
-
-   int64_t&  get_s64(int  i=0) const noexcept{return reinterpret_cast< int64_t&>((*this)[(m_offset&~7)+(8*i)]);}
-  uint64_t&  get_u64(int  i=0) const noexcept{return reinterpret_cast<uint64_t&>((*this)[(m_offset&~7)+(8*i)]);}
-
-  constexpr uint32_t  get_offset() const noexcept{return m_offset;}
-  constexpr uint32_t  get_length() const noexcept{return m_length;}
-
-  uint64_t  get_count() const noexcept{return get_reference_count();}
-
-  memory_sharer  clone() const noexcept;
-
-  memory_sharer&  copy(const memory_sharer&  src) noexcept;
-
-  memory_sharer  operator+(int  n) const noexcept{return {*this, n};}
-  memory_sharer  operator-(int  n) const noexcept{return {*this,-n};}
-
-};
-
-
-class
-value
-{
-  const type_info*  m_type_info=&type_infos::undefined;
-
-  memory_sharer  m_memory;
-
-public:
-  constexpr value() noexcept{}
-  value(const type_info&  ti) noexcept{assign(ti);}
-  value(const type_info&  ti,  int64_t  i) noexcept{assign(ti,i);}
-  value(const type_info&  ti, uint64_t  u) noexcept{assign(ti,u);}
-
-  constexpr operator bool() const noexcept{return m_type_info;}
-
-  value&  assign(const type_info&  ti             ) noexcept;
-  value&  assign(const type_info&  ti,  int64_t  i) noexcept;
-  value&  assign(const type_info&  ti, uint64_t  u) noexcept{return assign(ti,static_cast<int64_t>(u));}
-
-  const type_info&  get_type_info() const noexcept{return *m_type_info;}
-  type_derivation&  get_type_derivation() const noexcept{return m_type_info->get_derivation();}
-
-        memory_sharer&  get_memory()       noexcept{return m_memory;}
-  const memory_sharer&  get_memory() const noexcept{return m_memory;}
-
-  int64_t   get_integer()          const noexcept;
-  uint64_t  get_unsigned_integer() const noexcept;
-
-  void  set_integer(          int64_t  i) const noexcept;
-  void  set_unsigned_integer(uint64_t  u) const noexcept;
-
-  value  get_element(int  i) const noexcept;
-  value  get_member(std::string_view  name) const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
-class
 type_collection
 {
   using alias = std::pair<std::string,std::string>;
@@ -650,28 +580,10 @@ type_collection
   std::vector<type_entry>  m_entry_table;
   std::vector<alias>       m_alias_table;
 
-  std::vector<std::unique_ptr<type_info>>  m_info_table;
-
-  int  m_pointer_size=4;
-  int  m_boolean_size=1;
-  int  m_enum_size=4;
-
 public:
   type_collection() noexcept{}
 
-  int  get_pointer_size() const noexcept{return m_pointer_size;}
-  int  get_boolean_size() const noexcept{return m_boolean_size;}
-  int  get_enum_size()    const noexcept{return m_enum_size;}
-
-  type_collection&  set_pointer_size(int  sz) noexcept{  m_pointer_size = sz;  return *this;}
-  type_collection&  set_boolean_size(int  sz) noexcept{  m_boolean_size = sz;  return *this;}
-  type_collection&  set_enum_size(int  sz)    noexcept{  m_enum_size    = sz;  return *this;}
-
-  void  push_c_like_types() noexcept;
-
-  const type_info&  push(std::string_view  name, const type_info&  ti) noexcept;
-  const type_info&  push(std::string_view  name, std::unique_ptr<type_info>&&  ti) noexcept;
-  const type_info&  push(                        std::unique_ptr<type_info>&&  ti) noexcept;
+  const type_entry&  push(std::string_view  name, const type_info&  ti) noexcept;
 
   const type_info*  find_by_id(  std::string_view    id) const noexcept;
   const type_info*  find_by_name(std::string_view  name) const noexcept;
@@ -679,8 +591,6 @@ public:
   const type_entry*  find_entry(const type_info&  ti) const noexcept;
 
   bool  make_alias(std::string_view  target_name, std::string_view  new_name) noexcept;
-
-  const type_info*  create_from_string(std::string_view  sv) noexcept;
 
   void  print() const noexcept;
 

@@ -527,7 +527,17 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_identifier())
     {
-      printf("%s is not resolved",m_data.s.data());
+      auto  sym = ctx.find_symbol(m_data.s);
+
+        if(sym)
+        {
+          return value(sym->get_type_info()->get_reference_type_info(),static_cast<uint64_t>(sym->get_address()));
+        }
+
+      else
+        {
+          printf("%s is not found.",m_data.s.data());
+        }
     }
 
   else
@@ -536,7 +546,9 @@ evaluate(context&  ctx) const noexcept
       auto   op = m_data.un.get_opcode();
       auto&  o  = m_data.un.get_operand();
 
-      auto  v = o.evaluate(ctx);
+      auto  ov = o.evaluate(ctx);
+
+      auto  v = ctx.dereference(ov);
 
       using namespace unary_operations;
 
@@ -546,7 +558,7 @@ evaluate(context&  ctx) const noexcept
       else if(op == "~" ){v = bit_not(ctx,v);}
       else if(op == "-" ){v = neg(ctx,v);}
       else if(op == "*" ){v = dereference(ctx,v);}
-      else if(op == "&" ){v = unary_operations::address(ctx,v);}
+      else if(op == "&" ){v = unary_operations::address(ctx,ov);}
       else if(op == "sz"){v = size(ctx,v);}
       else               {v = value();}
 
@@ -559,7 +571,9 @@ evaluate(context&  ctx) const noexcept
       auto   op = m_data.un.get_opcode();
       auto&  o  = m_data.un.get_operand();
 
-      auto  v = o.evaluate(ctx);
+      auto  ov = o.evaluate(ctx);
+
+      auto  v = ctx.dereference(ov);
 
       using namespace unary_operations;
 
@@ -578,8 +592,11 @@ evaluate(context&  ctx) const noexcept
       auto&  l = m_data.bin.get_left();
       auto&  r = m_data.bin.get_right();
 
-      auto  rv = r.evaluate(ctx);
-      auto  lv = l.evaluate(ctx);
+      auto  orv = r.evaluate(ctx);
+      auto  olv = l.evaluate(ctx);
+
+      auto  lv = ctx.dereference(olv);
+      auto  rv = ctx.dereference(orv);
 
       using namespace binary_operations;
 

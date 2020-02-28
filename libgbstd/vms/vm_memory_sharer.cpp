@@ -1,10 +1,9 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vm.hpp"
 
 
 
 
 namespace gbstd{
-namespace typesystem{
 
 
 
@@ -106,6 +105,26 @@ assign(uint32_t  length) noexcept
 
 memory_sharer&
 memory_sharer::
+assign(const void*  ptr) noexcept
+{
+  unrefer();
+
+  auto  sz = sizeof(ptr);
+
+  m_data = (uint8_t*)calloc(1,sizeof(uint64_t)+sz);
+
+  std::memcpy(get_memory_pointer(),ptr,sz);
+
+  m_length = sz;
+
+  get_reference_count() = 1;
+
+  return *this;
+}
+
+
+memory_sharer&
+memory_sharer::
 assign(const memory_sharer&  base, int  offset) noexcept
 {
   assign(base);
@@ -156,7 +175,7 @@ copy(const memory_sharer&  src) noexcept
 
 
 
-}}
+}
 
 
 

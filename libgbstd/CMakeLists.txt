@@ -81,17 +81,20 @@ set(SOURCES
   typesystems/type_derivation.cpp
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
-  typesystems/type_collection__create.cpp
   typesystems/parameter_list.cpp
   typesystems/function_signature.cpp
-  typesystems/memory_sharer.cpp
-  typesystems/value.cpp
-  vms/vm_variable.cpp
+  vms/vm_memory_sharer.cpp
+  vms/vm_value.cpp
   vms/vm_function.cpp
+  vms/vm_symbol_table.cpp
   vms/vm_context.cpp
+  vms/vm_context__frame.cpp
+  vms/vm_context__create_type.cpp
   vms/vm_operations_callback.cpp
   vms/vm_expression.cpp
+  vms/vm_block_statement.cpp
   vms/vm_statement.cpp
+  vms/vm_statement_cursor.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

@@ -1,12 +1,23 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vm.hpp"
 
 
 
 
 namespace gbstd{
-namespace typesystem{
 
 
+
+
+value&
+value::
+assign(const void*  ptr) noexcept
+{
+  m_memory = memory_sharer(ptr);
+
+  m_type_info = nullptr;
+
+  return *this;
+}
 
 
 value&
@@ -328,7 +339,7 @@ print() const noexcept
 
 
 
-}}
+}
 
 
 

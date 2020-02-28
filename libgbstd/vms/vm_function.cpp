@@ -24,15 +24,21 @@ set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept
 }
 
 
-
-
-function&
+void
 function::
-append_declaration(std::string_view  type_name, std::string_view  var_name) noexcept
+make_definition(const token_block&  blk) noexcept
 {
-  m_declaration_list.emplace_back(*m_context.get_type_collection().find_by_name(type_name),var_name);
+  token_block_view  bv(blk);
+}
 
-  return *this;
+
+void
+function::
+make_definition(std::string_view  sv) noexcept
+{
+  token_block  blk(sv);
+
+  make_definition(blk);
 }
 
 
@@ -167,21 +173,11 @@ finalize() noexcept
 }
 
 
-value
-function::
-get_value() const noexcept
-{
-  auto&  tc = m_context.get_type_collection();
-
-  return m_type_info.get_derivation().get_reference_type(tc.get_pointer_size());
-}
-
-
 void
 function::
-print() const noexcept
+print(const context&  ctx) const noexcept
 {
-  auto&  tc = m_context.get_type_collection();
+  auto&  tc = ctx.get_type_collection();
 
   auto&  sig = m_type_info.get_function_signature();
 
@@ -200,12 +196,13 @@ print() const noexcept
 
 
   printf(")\n%s\n{\n",m_name.data());
+/*
 
     for(auto&  decl: m_declaration_list)
     {
       printf("  %s  %s\n",tc.find_entry(*decl.get_type_info())->get_name().data(),decl.get_name().data());
     }
-
+*/
 
   printf("\n");
 

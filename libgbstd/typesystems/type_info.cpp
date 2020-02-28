@@ -56,6 +56,9 @@ get_size() const noexcept
   case(kind::unsigned_integer):
       return m_data.uint_ti.get_size();
       break;
+  case(kind::fpn):
+      return m_data.fpn_ti.get_size();
+      break;
   case(kind::array):
       return m_data.arr_ti.get_size();
       break;
@@ -124,6 +127,16 @@ const type_info          null{};
 const type_info  undefined{undefined_type_info()};
 const type_info  null_pointer{null_pointer_type_info()};
 const type_info         void_{void_type_info()};
+const type_info            s8{         integer_type_info(1)};
+const type_info            u8{unsigned_integer_type_info(1)};
+const type_info           s16{         integer_type_info(2)};
+const type_info           u16{unsigned_integer_type_info(2)};
+const type_info           s32{         integer_type_info(4)};
+const type_info           u32{unsigned_integer_type_info(4)};
+const type_info           s64{         integer_type_info(8)};
+const type_info           u64{unsigned_integer_type_info(8)};
+const type_info           f32{fpn_type_info(4)};
+const type_info           f64{fpn_type_info(8)};
 }
 
 
