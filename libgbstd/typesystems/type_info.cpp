@@ -26,7 +26,10 @@ clear() noexcept
 
   m_id.clear();
 
-  m_derivation->clear();
+  m_holder->m_reference_type_info.reset();
+  m_holder->m_pointer_type_info.reset();
+  m_holder->m_array_type_info_list.clear();
+  m_holder->m_function_type_info_list.clear();
 
   return *this;
 }
@@ -106,6 +109,83 @@ get_align() const noexcept
 
 
 
+const type_info&
+type_info::
+form_function_type(parameter_list&&  parals) const noexcept
+{
+  auto  id = parals.make_id();
+
+    for(auto&  fn: m_holder->m_function_type_info_list)
+    {
+        if(fn.get_function_signature().get_parameter_list().make_id() == id)
+        {
+          return fn;
+        }
+    }
+
+
+
+  m_holder->m_function_type_info_list.emplace_back(function_signature(*this,std::move(parals)));
+
+  return m_holder->m_function_type_info_list.back();
+}
+
+
+const type_info&
+type_info::
+form_array_type(int  n) const noexcept
+{
+    for(auto&  arr: m_holder->m_array_type_info_list)
+    {
+        if(arr.get_array_type_info().get_number_of_elements() == n)
+        {
+          return arr;
+        }
+    }
+
+
+  m_holder->m_array_type_info_list.emplace_back(array_type_info(*this,n));
+
+  return m_holder->m_array_type_info_list.back();
+}
+
+
+const type_info&
+type_info::
+form_reference_type(int  w) const noexcept
+{
+    if(is_reference())
+    {
+      return *this;
+    }
+
+
+    if(!m_holder->m_reference_type_info)
+    {
+      m_holder->m_reference_type_info = std::make_unique<type_info>(reference_type_info(*this,w));
+    }
+
+
+   return *m_holder->m_reference_type_info;
+}
+
+
+const type_info&
+type_info::
+form_pointer_type(int  w) const noexcept
+{
+    if(!m_holder->m_pointer_type_info)
+    {
+      m_holder->m_pointer_type_info = std::make_unique<type_info>(pointer_type_info(*this,w));
+    }
+
+
+   return *m_holder->m_pointer_type_info;
+}
+
+
+
+
 void
 type_info::
 print() const noexcept
@@ -119,24 +199,6 @@ type_info::
 print_detail() const noexcept
 {
   printf(" id: \"%s\", size: %d, align: %d, ",get_id().data(),get_size(),get_align());
-}
-
-
-namespace type_infos{
-const type_info          null{};
-const type_info  undefined{undefined_type_info()};
-const type_info  null_pointer{null_pointer_type_info()};
-const type_info         void_{void_type_info()};
-const type_info            s8{         integer_type_info(1)};
-const type_info            u8{unsigned_integer_type_info(1)};
-const type_info           s16{         integer_type_info(2)};
-const type_info           u16{unsigned_integer_type_info(2)};
-const type_info           s32{         integer_type_info(4)};
-const type_info           u32{unsigned_integer_type_info(4)};
-const type_info           s64{         integer_type_info(8)};
-const type_info           u64{unsigned_integer_type_info(8)};
-const type_info           f32{fpn_type_info(4)};
-const type_info           f64{fpn_type_info(8)};
 }
 
 

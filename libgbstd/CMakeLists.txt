@@ -78,13 +78,13 @@ set(SOURCES
   typesystems/union_type_info.cpp
   typesystems/enum_type_info.cpp
   typesystems/type_info.cpp
-  typesystems/type_derivation.cpp
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
   typesystems/parameter_list.cpp
   typesystems/function_signature.cpp
-  vms/vm_memory_sharer.cpp
-  vms/vm_value.cpp
+  vms/vm_memory.cpp
+  vms/vm_object.cpp
+  vms/vm_object__assign.cpp
   vms/vm_function.cpp
   vms/vm_symbol_table.cpp
   vms/vm_context.cpp

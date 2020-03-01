@@ -364,32 +364,6 @@ class type_info;
 
 
 class
-type_derivation
-{
-  const type_info&  m_base;
-
-  std::vector<std::unique_ptr<type_info>>  m_array_type_info_list;
-  std::vector<std::unique_ptr<type_info>>  m_function_type_info_list;
-
-  std::unique_ptr<type_info>    m_pointer_type_info;
-  std::unique_ptr<type_info>  m_reference_type_info;
-
-public:
-  type_derivation(const type_info&  ti) noexcept: m_base(ti){}
-
-  type_derivation&  clear() noexcept;
-
-  const type_info&  get_base_type() const noexcept{return m_base;}
-
-  const type_info&      get_function_type(parameter_list&&  parals) noexcept;
-  const type_info&      get_array_type(int  n) noexcept;
-  const type_info&  get_reference_type(int  w) noexcept;
-  const type_info&    get_pointer_type(int  w) noexcept;
-
-};
-
-
-class
 type_info
 {
   enum class kind{
@@ -436,38 +410,42 @@ type_info
 
   std::string  m_id;
 
-  class derivation_wrapper{
-    type_derivation*  m_pointer;
-  public:
-  derivation_wrapper(type_info&  ti) noexcept: m_pointer(new type_derivation(ti)){}
- ~derivation_wrapper(){delete m_pointer;}
+  struct derivation{
+    std::list<type_info>  m_array_type_info_list;
+    std::list<type_info>  m_function_type_info_list;
 
-  type_derivation&  operator*()  const noexcept{return *m_pointer;}
-  type_derivation*  operator->() const noexcept{return  m_pointer;}
-
+    std::unique_ptr<type_info>    m_pointer_type_info;
+    std::unique_ptr<type_info>  m_reference_type_info;
   };
 
-  derivation_wrapper  m_derivation;
+  class holder{
+    derivation*  m_pointer;
+  public:
+    holder() noexcept: m_pointer(new derivation){}
+   ~holder(){delete m_pointer;}
+
+    derivation*  operator->() const noexcept{return m_pointer;}
+  } m_holder;
 
 public:
-  type_info()noexcept: m_kind(kind::null), m_id("null"), m_derivation(*this){}
+  type_info()noexcept: m_kind(kind::null), m_id("null"){}
   type_info(const type_info&   rhs) noexcept=delete;
   type_info(const type_info&&  rhs) noexcept=delete;
-  type_info(void_type_info)                 noexcept: m_kind(kind::void_           ), m_id("void"),          m_derivation(*this){}
-  type_info(undefined_type_info)            noexcept: m_kind(kind::undefined       ), m_id("undefined"),     m_derivation(*this){}
-  type_info(null_pointer_type_info)         noexcept: m_kind(kind::null_pointer    ), m_id("nullptr"),       m_derivation(*this){}
-  type_info(boolean_type_info           ti) noexcept: m_kind(kind::boolean         ), m_id("bool"),          m_derivation(*this){new(&m_data) boolean_type_info(ti);}
-  type_info(generic_pointer_type_info   ti) noexcept: m_kind(kind::generic_pointer ), m_id("geneptr"),       m_derivation(*this){new(&m_data) generic_pointer_type_info(ti);}
-  type_info(pointer_type_info           ti) noexcept: m_kind(kind::pointer         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) pointer_type_info(ti);}
-  type_info(reference_type_info         ti) noexcept: m_kind(kind::reference       ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) reference_type_info(ti);}
-  type_info(         integer_type_info  ti) noexcept: m_kind(kind::integer         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) integer_type_info(ti);}
-  type_info(unsigned_integer_type_info  ti) noexcept: m_kind(kind::unsigned_integer), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) unsigned_integer_type_info(ti);}
-  type_info(fpn_type_info               ti) noexcept: m_kind(kind::fpn             ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) fpn_type_info(ti);}
-  type_info(struct_type_info&&          ti) noexcept: m_kind(kind::struct_         ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) struct_type_info(std::move(ti));}
-  type_info(union_type_info&&           ti) noexcept: m_kind(kind::union_          ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) union_type_info(std::move(ti));}
-  type_info(enum_type_info&&            ti) noexcept: m_kind(kind::enum_           ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) enum_type_info(std::move(ti));}
-  type_info(array_type_info&&           ti) noexcept: m_kind(kind::array           ), m_id(ti.make_id()),    m_derivation(*this){new(&m_data) array_type_info(std::move(ti));}
-  type_info(function_signature&&     fnsig) noexcept: m_kind(kind::function        ), m_id(fnsig.make_id()), m_derivation(*this){new(&m_data) function_signature(std::move(fnsig));}
+  type_info(void_type_info)                 noexcept: m_kind(kind::void_           ), m_id("void")          {}
+  type_info(undefined_type_info)            noexcept: m_kind(kind::undefined       ), m_id("undefined")     {}
+  type_info(null_pointer_type_info)         noexcept: m_kind(kind::null_pointer    ), m_id("nullptr")       {}
+  type_info(boolean_type_info           ti) noexcept: m_kind(kind::boolean         ), m_id("bool")          {new(&m_data) boolean_type_info(ti);}
+  type_info(generic_pointer_type_info   ti) noexcept: m_kind(kind::generic_pointer ), m_id("geneptr")       {new(&m_data) generic_pointer_type_info(ti);}
+  type_info(pointer_type_info           ti) noexcept: m_kind(kind::pointer         ), m_id(ti.make_id())    {new(&m_data) pointer_type_info(ti);}
+  type_info(reference_type_info         ti) noexcept: m_kind(kind::reference       ), m_id(ti.make_id())    {new(&m_data) reference_type_info(ti);}
+  type_info(         integer_type_info  ti) noexcept: m_kind(kind::integer         ), m_id(ti.make_id())    {new(&m_data) integer_type_info(ti);}
+  type_info(unsigned_integer_type_info  ti) noexcept: m_kind(kind::unsigned_integer), m_id(ti.make_id())    {new(&m_data) unsigned_integer_type_info(ti);}
+  type_info(fpn_type_info               ti) noexcept: m_kind(kind::fpn             ), m_id(ti.make_id())    {new(&m_data) fpn_type_info(ti);}
+  type_info(struct_type_info&&          ti) noexcept: m_kind(kind::struct_         ), m_id(ti.make_id())    {new(&m_data) struct_type_info(std::move(ti));}
+  type_info(union_type_info&&           ti) noexcept: m_kind(kind::union_          ), m_id(ti.make_id())    {new(&m_data) union_type_info(std::move(ti));}
+  type_info(enum_type_info&&            ti) noexcept: m_kind(kind::enum_           ), m_id(ti.make_id())    {new(&m_data) enum_type_info(std::move(ti));}
+  type_info(array_type_info&&           ti) noexcept: m_kind(kind::array           ), m_id(ti.make_id())    {new(&m_data) array_type_info(std::move(ti));}
+  type_info(function_signature&&     fnsig) noexcept: m_kind(kind::function        ), m_id(fnsig.make_id()) {new(&m_data) function_signature(std::move(fnsig));}
  ~type_info(){clear();}
 
   bool  operator==(const type_info&  rhs) const noexcept{return m_id == rhs.m_id;}
@@ -519,30 +497,18 @@ public:
   bool  is_kind_of_pointer() const noexcept{return is_pointer() || is_null_pointer() || is_generic_pointer();}
   bool  is_like_boolean()    const noexcept{return is_boolean() || is_kind_of_integer() || is_kind_of_pointer();}
 
-  type_derivation&  get_derivation() const noexcept{return *m_derivation;}
+  bool  is_word()   const noexcept{return is_kind_of_integer() || is_kind_of_pointer() || is_fpn() || is_boolean();}
+  bool  is_memory() const noexcept{return is_array() || is_struct() || is_union();}
+
+  const type_info&   form_function_type(parameter_list&&  parals) const noexcept;
+  const type_info&      form_array_type(int  n) const noexcept;
+  const type_info&  form_reference_type(int  w) const noexcept;
+  const type_info&    form_pointer_type(int  w) const noexcept;
 
   void  print() const noexcept;
   void  print_detail() const noexcept;
 
 };
-
-
-namespace type_infos{
-extern const type_info          null;
-extern const type_info     undefined;
-extern const type_info  null_pointer;
-extern const type_info         void_;
-extern const type_info            s8;
-extern const type_info            u8;
-extern const type_info           s16;
-extern const type_info           u16;
-extern const type_info           s32;
-extern const type_info           u32;
-extern const type_info           s64;
-extern const type_info           u64;
-extern const type_info           f32;
-extern const type_info           f64;
-}
 
 
 inline std::string    pointer_type_info::make_id() const noexcept{return m_base_type_info.get_id()+"p";}

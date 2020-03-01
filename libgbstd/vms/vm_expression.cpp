@@ -515,29 +515,43 @@ make_expression(std::string_view  sv) noexcept
 
 
 
-value
+object
 expression::
 evaluate(context&  ctx) const noexcept
 {
     if(is_integer_literal())
     {
-      return ctx.make_value(m_data.i);
+      return object(m_data.i);
+    }
+
+  else
+    if(is_boolean_literal())
+    {
+      return object(m_data.b);
+    }
+
+  else
+    if(is_null_pointer_literal())
+    {
+      return object(nullptr);
+    }
+
+  else
+    if(is_fpn_literal())
+    {
+      return object(m_data.f);
+    }
+
+  else
+    if(is_string_literal())
+    {
+      return object(m_data.s);
     }
 
   else
     if(is_identifier())
     {
-      auto  sym = ctx.find_symbol(m_data.s);
-
-        if(sym)
-        {
-          return value(sym->get_type_info()->get_reference_type_info(),static_cast<uint64_t>(sym->get_address()));
-        }
-
-      else
-        {
-          printf("%s is not found.",m_data.s.data());
-        }
+      return ctx.get_object(m_data.s);
     }
 
   else
@@ -548,7 +562,7 @@ evaluate(context&  ctx) const noexcept
 
       auto  ov = o.evaluate(ctx);
 
-      auto  v = ctx.dereference(ov);
+      auto  v = ov.dereference();
 
       using namespace unary_operations;
 
@@ -557,10 +571,10 @@ evaluate(context&  ctx) const noexcept
       else if(op == "!" ){v = logical_not(ctx,v);}
       else if(op == "~" ){v = bit_not(ctx,v);}
       else if(op == "-" ){v = neg(ctx,v);}
-      else if(op == "*" ){v = dereference(ctx,v);}
+      else if(op == "*" ){v = v.dereference();}
       else if(op == "&" ){v = unary_operations::address(ctx,ov);}
       else if(op == "sz"){v = size(ctx,v);}
-      else               {v = value();}
+      else               {v = object();}
 
       return std::move(v);
     }
@@ -573,13 +587,13 @@ evaluate(context&  ctx) const noexcept
 
       auto  ov = o.evaluate(ctx);
 
-      auto  v = ctx.dereference(ov);
+      auto  v = ov.dereference();
 
       using namespace unary_operations;
 
            if(op == "++"){v = postfix_increment(ctx,v);}
       else if(op == "--"){v = postfix_decrement(ctx,v);}
-      else               {v = value();}
+      else               {v = object();}
 
       return v;
     }
@@ -595,8 +609,8 @@ evaluate(context&  ctx) const noexcept
       auto  orv = r.evaluate(ctx);
       auto  olv = l.evaluate(ctx);
 
-      auto  lv = ctx.dereference(olv);
-      auto  rv = ctx.dereference(orv);
+      auto  lv = olv.dereference();
+      auto  rv = orv.dereference();
 
       using namespace binary_operations;
 
@@ -637,13 +651,13 @@ evaluate(context&  ctx) const noexcept
       else if(o == "->" ){lv = arrow(           ctx,lv,rv);}
       else if(o == "(?)"){lv = invoke(          ctx,lv,rv);}
       else if(o == "[?]"){lv = subscript(       ctx,lv,rv);}
-      else               {lv = value();}
+      else               {lv = object();}
       
       return std::move(lv);
     }
 
 
-  return value();
+  return object();
 }
 
 

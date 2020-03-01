@@ -214,7 +214,7 @@ read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) 
 
             if((blk->size() == 1) && blk[0].is_integer())
             {
-              ti = &ti->get_derivation().get_array_type(blk[0].get_integer());
+              ti = &ti->form_array_type(blk[0].get_integer());
             }
 
           else
@@ -228,7 +228,7 @@ read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) 
       else
         if(bv->is_operator_code("*"))
         {
-          ti = &ti->get_derivation().get_pointer_type(gbstd::type_infos::pointer_size);
+          ti = &ti->form_pointer_type(gbstd::type_infos::pointer_size);
 
           ++bv;
         }
@@ -236,7 +236,7 @@ read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) 
       else
         if(bv->is_operator_code("&"))
         {
-          ti = &ti->get_derivation().get_reference_type(gbstd::type_infos::pointer_size);
+          ti = &ti->form_reference_type(gbstd::type_infos::pointer_size);
 
           ++bv;
         }
@@ -316,7 +316,7 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
         {
             if(bv->is_block("(",")"))
             {
-              return &ti->get_derivation().get_function_type(read_parameter_list(ctx,bv++->get_block()));
+              return &ti->form_function_type(read_parameter_list(ctx,bv++->get_block()));
             }
         }
 

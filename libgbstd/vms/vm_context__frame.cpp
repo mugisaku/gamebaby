@@ -198,7 +198,7 @@ void
 context::
 process(const return_statement&  st) noexcept
 {
-  auto  val = dereference(st.get_expression().evaluate(*this));
+  auto  val = st.get_expression().evaluate(*this);
 
   pop_frame();
 
@@ -318,6 +318,22 @@ find_symbol(std::string_view  name) const noexcept
 
 
   return m_global_symbol_table.find(name);
+}
+
+
+object
+context::
+get_object(std::string_view  name) const noexcept
+{
+  auto  sym = find_symbol(name);
+
+    if(sym)
+    {
+      return object(m_memory,sym->get_address(),*sym->get_type_info());
+    }
+
+
+  return object();
 }
 
 

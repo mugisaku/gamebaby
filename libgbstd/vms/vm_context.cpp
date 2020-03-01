@@ -9,6 +9,20 @@ namespace gbstd{
 
 
 namespace type_infos{
+const type_info  null{};
+const type_info  undefined{typesystem::undefined_type_info()};
+const type_info  null_pointer{typesystem::null_pointer_type_info()};
+const type_info         void_{typesystem::void_type_info()};
+const type_info            s8{         typesystem::integer_type_info(1)};
+const type_info            u8{typesystem::unsigned_integer_type_info(1)};
+const type_info           s16{         typesystem::integer_type_info(2)};
+const type_info           u16{typesystem::unsigned_integer_type_info(2)};
+const type_info           s32{         typesystem::integer_type_info(4)};
+const type_info           u32{typesystem::unsigned_integer_type_info(4)};
+const type_info           s64{         typesystem::integer_type_info(8)};
+const type_info           u64{typesystem::unsigned_integer_type_info(8)};
+const type_info           f32{typesystem::fpn_type_info(4)};
+const type_info           f64{typesystem::fpn_type_info(8)};
 const type_info          boolean{typesystem::boolean_type_info(boolean_size)};
 const type_info  generic_pointer{typesystem::generic_pointer_type_info(pointer_size)};
 }
@@ -74,20 +88,6 @@ print() const noexcept
 
 
 
-value
-context::
-dereference(const value&  v) noexcept
-{
-    if(v.get_type_info().is_reference())
-    {
-      return value(v.get_type_info().get_derivation().get_base_type(),v.get_unsigned_integer());
-    }
-
-
-  return v;
-}
-
-
 void
 context::
 run() noexcept
@@ -111,7 +111,7 @@ finalize() noexcept
 
     for(auto  fn: m_function_table)
     {
-      auto&  ti = fn->get_type_info().get_derivation().get_pointer_type(sizeof(function*));
+      auto&  ti = fn->get_type_info().form_pointer_type(sizeof(function*));
 
       m_global_symbol_table.push(declaration(ti,fn->get_name()),'f');
     }
