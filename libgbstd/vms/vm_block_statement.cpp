@@ -16,7 +16,7 @@ push(statement&&  st) noexcept
     {
       auto&  e = st.get_expression();
 
-      m_declaration_list.emplace_back(*e.get_type_info(),e.get_name());
+      m_declaration_list.emplace_back(*e.get_type_info(),e.get_name(),0);
     }
 
 

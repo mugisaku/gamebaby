@@ -515,37 +515,39 @@ make_expression(std::string_view  sv) noexcept
 
 
 
-object
+tepid_object
 expression::
 evaluate(context&  ctx) const noexcept
 {
+  auto&  mem = ctx.get_memory();
+
     if(is_integer_literal())
     {
-      return object(m_data.i);
+      return {m_data.i,mem};
     }
 
   else
     if(is_boolean_literal())
     {
-      return object(m_data.b);
+      return {m_data.b,mem};
     }
 
   else
     if(is_null_pointer_literal())
     {
-      return object(nullptr);
+      return {nullptr,mem};
     }
 
   else
     if(is_fpn_literal())
     {
-      return object(m_data.f);
+      return {m_data.f,mem};
     }
 
   else
     if(is_string_literal())
     {
-      return object(m_data.s);
+      return {cold_object(m_data.s),mem};
     }
 
   else
@@ -560,23 +562,18 @@ evaluate(context&  ctx) const noexcept
       auto   op = m_data.un.get_opcode();
       auto&  o  = m_data.un.get_operand();
 
-      auto  ov = o.evaluate(ctx);
+      auto  ho = o.evaluate(ctx);
 
-      auto  v = ov.dereference();
+      using namespace operations;
 
-      using namespace unary_operations;
-
-           if(op == "++"){v = prefix_increment(ctx,v);}
-      else if(op == "--"){v = prefix_decrement(ctx,v);}
-      else if(op == "!" ){v = logical_not(ctx,v);}
-      else if(op == "~" ){v = bit_not(ctx,v);}
-      else if(op == "-" ){v = neg(ctx,v);}
-      else if(op == "*" ){v = v.dereference();}
-      else if(op == "&" ){v = unary_operations::address(ctx,ov);}
-      else if(op == "sz"){v = size(ctx,v);}
-      else               {v = object();}
-
-      return std::move(v);
+           if(op == "++"){return {prefix_increment(ho)};}
+      else if(op == "--"){return {prefix_decrement(ho)};}
+      else if(op == "!" ){return {logical_not(ho),mem};}
+      else if(op == "~" ){return {bit_not(ho),mem};}
+      else if(op == "-" ){return {neg(ho),mem};}
+      else if(op == "*" ){return ho;}
+      else if(op == "&" ){return {cold_object(),mem};}
+      else if(op == "sz"){return {size(ho),mem};}
     }
 
   else
@@ -585,17 +582,12 @@ evaluate(context&  ctx) const noexcept
       auto   op = m_data.un.get_opcode();
       auto&  o  = m_data.un.get_operand();
 
-      auto  ov = o.evaluate(ctx);
+      auto  ho = o.evaluate(ctx);
 
-      auto  v = ov.dereference();
+      using namespace operations;
 
-      using namespace unary_operations;
-
-           if(op == "++"){v = postfix_increment(ctx,v);}
-      else if(op == "--"){v = postfix_decrement(ctx,v);}
-      else               {v = object();}
-
-      return v;
+           if(op == "++"){return {postfix_increment(ho),mem};}
+      else if(op == "--"){return tepid_object(postfix_decrement(ho),mem);}
     }
 
   else
@@ -603,61 +595,52 @@ evaluate(context&  ctx) const noexcept
     {
       auto  o = m_data.bin.get_opcode();
 
-      auto&  l = m_data.bin.get_left();
-      auto&  r = m_data.bin.get_right();
+      auto  lho = m_data.bin.get_left().evaluate(ctx);
+      auto  rho = m_data.bin.get_right().evaluate(ctx);
 
-      auto  orv = r.evaluate(ctx);
-      auto  olv = l.evaluate(ctx);
+      using namespace operations;
 
-      auto  lv = olv.dereference();
-      auto  rv = orv.dereference();
-
-      using namespace binary_operations;
-
-           if(o == "+"  ){lv = add(             ctx,lv,rv);}
-      else if(o == "+=" ){lv = add_assign(      ctx,lv,rv);}
-      else if(o == "-"  ){lv = sub(             ctx,lv,rv);}
-      else if(o == "-=" ){lv = sub_assign(      ctx,lv,rv);}
-      else if(o == "*"  ){lv = mul(             ctx,lv,rv);}
-      else if(o == "*=" ){lv = mul_assign(      ctx,lv,rv);}
-      else if(o == "/"  ){lv = div(             ctx,lv,rv);}
-      else if(o == "/=" ){lv = div_assign(      ctx,lv,rv);}
-      else if(o == "%"  ){lv = rem(             ctx,lv,rv);}
-      else if(o == "%=" ){lv = rem_assign(      ctx,lv,rv);}
-      else if(o == "<<" ){lv = shl(             ctx,lv,rv);}
-      else if(o == "<<="){lv = shl_assign(      ctx,lv,rv);}
-      else if(o == ">>" ){lv = shr(             ctx,lv,rv);}
-      else if(o == ">>="){lv = shr_assign(      ctx,lv,rv);}
-      else if(o == "="  ){lv = binary_operations::assign(          ctx,lv,rv);}
-      else if(o == "==" ){lv = eq(              ctx,lv,rv);}
-      else if(o == "==="){lv = eq(              ctx,lv,rv);}
-      else if(o == "!=" ){lv = neq(             ctx,lv,rv);}
-      else if(o == "!=="){lv = neq(             ctx,lv,rv);}
-      else if(o == "<"  ){lv = lt(              ctx,lv,rv);}
-      else if(o == "<=" ){lv = lteq(            ctx,lv,rv);}
-      else if(o == ">"  ){lv = gt(              ctx,lv,rv);}
-      else if(o == ">=" ){lv = gteq(            ctx,lv,rv);}
-      else if(o == "|"  ){lv = bit_or(          ctx,lv,rv);}
-      else if(o == "|=" ){lv = bit_or_assign(   ctx,lv,rv);}
-      else if(o == "&"  ){lv = bit_and(         ctx,lv,rv);}
-      else if(o == "&=" ){lv = bit_and_assign(  ctx,lv,rv);}
-      else if(o == "^"  ){lv = bit_xor(         ctx,lv,rv);}
-      else if(o == "^=" ){lv = bit_xor_assign(  ctx,lv,rv);}
-      else if(o == "||" ){lv = logical_or(      ctx,lv,rv);}
-      else if(o == "&&" ){lv = logical_and(     ctx,lv,rv);}
-      else if(o == "::" ){lv = scope_resolution(ctx,lv,rv);}
-      else if(o == ","  ){lv = comma(           ctx,lv,rv);}
-      else if(o == "."  ){lv = dot(             ctx,lv,rv);}
-      else if(o == "->" ){lv = arrow(           ctx,lv,rv);}
-      else if(o == "(?)"){lv = invoke(          ctx,lv,rv);}
-      else if(o == "[?]"){lv = subscript(       ctx,lv,rv);}
-      else               {lv = object();}
-      
-      return std::move(lv);
+           if(o == "+"  ){return {add(             lho,rho),mem};}
+      else if(o == "+=" ){return {add_assign(      lho,rho),mem};}
+      else if(o == "-"  ){return {sub(             lho,rho),mem};}
+      else if(o == "-=" ){return {sub_assign(      lho,rho),mem};}
+      else if(o == "*"  ){return {mul(             lho,rho),mem};}
+      else if(o == "*=" ){return {mul_assign(      lho,rho),mem};}
+      else if(o == "/"  ){return {div(             lho,rho),mem};}
+      else if(o == "/=" ){return {div_assign(      lho,rho),mem};}
+      else if(o == "%"  ){return {rem(             lho,rho),mem};}
+      else if(o == "%=" ){return {rem_assign(      lho,rho),mem};}
+      else if(o == "<<" ){return {shl(             lho,rho),mem};}
+      else if(o == "<<="){return {shl_assign(      lho,rho),mem};}
+      else if(o == ">>" ){return {shr(             lho,rho),mem};}
+      else if(o == ">>="){return {shr_assign(      lho,rho),mem};}
+      else if(o == "="  ){return {operations::assign(          lho,rho),mem};}
+      else if(o == "==" ){return {eq(              lho,rho),mem};}
+      else if(o == "==="){return {eq(              lho,rho),mem};}
+      else if(o == "!=" ){return {neq(             lho,rho),mem};}
+      else if(o == "!=="){return {neq(             lho,rho),mem};}
+      else if(o == "<"  ){return {lt(              lho,rho),mem};}
+      else if(o == "<=" ){return {lteq(            lho,rho),mem};}
+      else if(o == ">"  ){return {gt(              lho,rho),mem};}
+      else if(o == ">=" ){return {gteq(            lho,rho),mem};}
+      else if(o == "|"  ){return {bit_or(          lho,rho),mem};}
+      else if(o == "|=" ){return {bit_or_assign(   lho,rho),mem};}
+      else if(o == "&"  ){return {bit_and(         lho,rho),mem};}
+      else if(o == "&=" ){return {bit_and_assign(  lho,rho),mem};}
+      else if(o == "^"  ){return {bit_xor(         lho,rho),mem};}
+      else if(o == "^=" ){return {bit_xor_assign(  lho,rho),mem};}
+      else if(o == "||" ){return {logical_or(      lho,rho),mem};}
+      else if(o == "&&" ){return {logical_and(     lho,rho),mem};}
+      else if(o == "::" ){return {scope_resolution(lho,rho),mem};}
+      else if(o == ","  ){return {comma(           lho,rho),mem};}
+      else if(o == "."  ){return {dot(             lho,rho),mem};}
+      else if(o == "->" ){return {arrow(           lho,rho),mem};}
+      else if(o == "(?)"){return {invoke(          lho,rho),mem};}
+      else if(o == "[?]"){return {subscript(       lho,rho),mem};}
     }
 
 
-  return object();
+  return tepid_object();
 }
 
 

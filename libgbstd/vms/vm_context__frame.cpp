@@ -16,14 +16,12 @@ frame
 
   const function&  m_function;
 
-  symbol_table  m_symbol_table;
-
   address_t  m_store_pointer;
 
   statement_cursor m_cursor;
 
-  frame(const function&  fn, address_t  bp) noexcept:
-  m_function(fn), m_symbol_table(bp),  m_cursor(fn.get_block()){}
+  frame(const function&  fn) noexcept:
+  m_function(fn), m_cursor(fn.get_block()){}
 
   void  print() const noexcept
   {
@@ -39,14 +37,6 @@ frame
   }
 
 };
-
-
-address_t
-context::
-get_bp() const noexcept
-{
-  return m_current_frame->m_symbol_table.get_base_address();
-}
 
 
 bool
@@ -93,8 +83,6 @@ void
 context::
 push_frame(address_t  st_p, const function&  fn, int  argc, const expression*  argv) noexcept
 {
-  auto  bp = m_current_frame->m_symbol_table.get_end_address();
-
   auto  paras = fn.get_type_info().get_function_signature().get_parameter_list().begin();
   auto  names = fn.get_argument_name_list().begin();
 
@@ -139,7 +127,7 @@ push_frame(address_t  st_p, const function&  fn, int  argc, const expression*  a
     }
 
 
-  auto  new_frame = new frame(fn,bp);
+  auto  new_frame = new frame(fn);
 
   new_frame->m_previous = m_current_frame            ;
                           m_current_frame = new_frame;
@@ -173,7 +161,7 @@ exit_block() noexcept
 
     while(n--)
     {
-      m_current_frame->m_symbol_table.pop();
+      m_runtime_symbol_table.pop();
     }
 }
 
@@ -246,7 +234,7 @@ process(const block_statement&  st) noexcept
 
     for(auto&  decl: st.get_declaration_list())
     {
-      m_current_frame->m_symbol_table.push(declaration(decl),0);
+      m_runtime_symbol_table.push(declaration(decl),&m_current_frame->m_function);
     }
 }
 
@@ -292,7 +280,7 @@ process(const expression_statement&  st) noexcept
 
   auto&  s = st.get_name();
 
-  auto  sym = find_symbol(s);
+  auto  sym = m_runtime_symbol_table.find(s);
 
     if(sym)
     {
@@ -305,35 +293,19 @@ process(const expression_statement&  st) noexcept
 }
 
 
-const symbol*
-context::
-find_symbol(std::string_view  name) const noexcept
-{
-  auto  sym = m_current_frame->m_symbol_table.find(name);
-
-    if(sym)
-    {
-      return sym;
-    }
-
-
-  return m_global_symbol_table.find(name);
-}
-
-
-object
+tepid_object
 context::
 get_object(std::string_view  name) const noexcept
 {
-  auto  sym = find_symbol(name);
+  auto  sym = m_runtime_symbol_table.find(name);
 
     if(sym)
     {
-      return object(m_memory,sym->get_address(),*sym->get_type_info());
+      return hot_object(m_memory,sym->get_type_info()->form_reference_type(type_infos::pointer_size),sym->get_address());
     }
 
 
-  return object();
+  return {};
 }
 
 

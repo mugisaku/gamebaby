@@ -74,14 +74,23 @@ extern const type_info  generic_pointer;
 class
 memory
 {
-  uint8_t*  m_data=nullptr;
+  union{
+    uint8_t*  m_byte_array;
+     int64_t  m_word;
 
-  uint32_t&  get_reference_count() const noexcept;
+  };
+
+  struct property;
+
+  property*  m_property=nullptr;
 
   void  unrefer() noexcept;
 
+        uint8_t*  get_base_pointer()       noexcept{return (get_size() > sizeof(int64_t))? m_byte_array:reinterpret_cast<      uint8_t*>(&m_word);}
+  const uint8_t*  get_base_pointer() const noexcept{return (get_size() > sizeof(int64_t))? m_byte_array:reinterpret_cast<const uint8_t*>(&m_word);}
+
 public:
-  memory(uint32_t  sz=0) noexcept{allocate(sz);}
+  memory(uint32_t  sz=sizeof(int64_t)) noexcept{allocate(sz);}
   memory(const memory&   rhs) noexcept{assign(rhs);}
   memory(      memory&&  rhs) noexcept{assign(std::move(rhs));}
  ~memory(){unrefer();}
@@ -89,111 +98,220 @@ public:
   memory&  operator=(const memory&   rhs) noexcept{return assign(rhs);}
   memory&  operator=(      memory&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  uint8_t&  operator[](int  i) const noexcept;
+  uint8_t&  operator[](int  i) noexcept{return get_base_pointer()[i];}
 
   void  allocate(uint32_t  sz) noexcept;
 
-  pointer_wrapper< int8_t>  get_s8ptr(address_t  addr) const noexcept{return reinterpret_cast<int8_t*>(&m_data[addr]);}
-  pointer_wrapper<uint8_t>  get_u8ptr(address_t  addr) const noexcept{return &m_data[addr];}
+  pointer_wrapper< int8_t>  get_s8ptr(address_t  addr) noexcept{return reinterpret_cast<int8_t*>(get_base_pointer()+addr);}
+  pointer_wrapper<uint8_t>  get_u8ptr(address_t  addr) noexcept{return get_base_pointer()+addr;}
 
-  pointer_wrapper< int16_t>  get_s16ptr(address_t  addr) const noexcept{return reinterpret_cast< int16_t*>(&m_data[addr]);}
-  pointer_wrapper<uint16_t>  get_u16ptr(address_t  addr) const noexcept{return reinterpret_cast<uint16_t*>(&m_data[addr]);}
+  pointer_wrapper< int16_t>  get_s16ptr(address_t  addr) noexcept{return reinterpret_cast< int16_t*>(get_base_pointer()+addr);}
+  pointer_wrapper<uint16_t>  get_u16ptr(address_t  addr) noexcept{return reinterpret_cast<uint16_t*>(get_base_pointer()+addr);}
 
-  pointer_wrapper< int32_t>  get_s32ptr(address_t  addr) const noexcept{return reinterpret_cast< int32_t*>(&m_data[addr]);}
-  pointer_wrapper<uint32_t>  get_u32ptr(address_t  addr) const noexcept{return reinterpret_cast<uint32_t*>(&m_data[addr]);}
+  pointer_wrapper< int32_t>  get_s32ptr(address_t  addr) noexcept{return reinterpret_cast< int32_t*>(get_base_pointer()+addr);}
+  pointer_wrapper<uint32_t>  get_u32ptr(address_t  addr) noexcept{return reinterpret_cast<uint32_t*>(get_base_pointer()+addr);}
 
-  pointer_wrapper< int64_t>  get_s64ptr(address_t  addr) const noexcept{return reinterpret_cast< int64_t*>(&m_data[addr]);}
-  pointer_wrapper<uint64_t>  get_u64ptr(address_t  addr) const noexcept{return reinterpret_cast<uint64_t*>(&m_data[addr]);}
+  pointer_wrapper< int64_t>  get_s64ptr(address_t  addr) noexcept{return reinterpret_cast< int64_t*>(get_base_pointer()+addr);}
+  pointer_wrapper<uint64_t>  get_u64ptr(address_t  addr) noexcept{return reinterpret_cast<uint64_t*>(get_base_pointer()+addr);}
+
+  pointer_wrapper<float>   get_f32ptr(address_t  addr) noexcept{return reinterpret_cast< float*>(get_base_pointer()+addr);}
+  pointer_wrapper<double>  get_f64ptr(address_t  addr) noexcept{return reinterpret_cast<double*>(get_base_pointer()+addr);}
+
+  const  int8_t*  get_s8ptr(address_t  addr) const noexcept{return reinterpret_cast<const int8_t*>(get_base_pointer()+addr);}
+  const uint8_t*  get_u8ptr(address_t  addr) const noexcept{return get_base_pointer()+addr;}
+
+  const  int16_t*  get_s16ptr(address_t  addr) const noexcept{return reinterpret_cast<const  int16_t*>(get_base_pointer()+addr);}
+  const uint16_t*  get_u16ptr(address_t  addr) const noexcept{return reinterpret_cast<const uint16_t*>(get_base_pointer()+addr);}
+
+  const  int32_t*  get_s32ptr(address_t  addr) const noexcept{return reinterpret_cast<const  int32_t*>(get_base_pointer()+addr);}
+  const uint32_t*  get_u32ptr(address_t  addr) const noexcept{return reinterpret_cast<const uint32_t*>(get_base_pointer()+addr);}
+
+  const  int64_t*  get_s64ptr(address_t  addr) const noexcept{return reinterpret_cast<const  int64_t*>(get_base_pointer()+addr);}
+  const uint64_t*  get_u64ptr(address_t  addr) const noexcept{return reinterpret_cast<const uint64_t*>(get_base_pointer()+addr);}
+
+  const float*   get_f32ptr(address_t  addr) const noexcept{return reinterpret_cast<const  float*>(get_base_pointer()+addr);}
+  const double*  get_f64ptr(address_t  addr) const noexcept{return reinterpret_cast<const double*>(get_base_pointer()+addr);}
 
   memory&  assign(const memory&   rhs) noexcept;
   memory&  assign(      memory&&  rhs) noexcept;
+
+  memory&  read(address_t  dst_addr, const memory&  src, address_t  src_addr, uint32_t  size) noexcept;
 
   uint32_t   get_size() const noexcept;
 
 };
 
 
+class   hot_object;
+class tepid_object;
+class  cold_object;
 
 
 class
-object
+cold_object
 {
-  union{
-    memory  m_memory;
-
-     int64_t   m_word;
-    uint64_t  m_uword;
-      double  m_fword;
-  };
-
-  address_t  m_address=0;
+  memory  m_memory;
 
   const type_info*  m_type_info=nullptr;
 
 public:
-  object() noexcept{}
-  object(const object&   rhs) noexcept{assign(rhs);}
-  object(      object&&  rhs) noexcept{assign(std::move(rhs));}
-  object(bool  b) noexcept{assign(b);}
-  object(  int8_t  i) noexcept{assign(i);}
-  object( uint8_t  u) noexcept{assign(u);}
-  object( int16_t  i) noexcept{assign(i);}
-  object(uint16_t  u) noexcept{assign(u);}
-  object( int32_t  i) noexcept{assign(i);}
-  object(uint32_t  u) noexcept{assign(u);}
-  object( int64_t  i) noexcept{assign(i);}
-  object(uint64_t  u) noexcept{assign(u);}
-  object(float   f) noexcept{assign(f);}
-  object(double  f) noexcept{assign(f);}
-  object(nullptr_t  ptr) noexcept{assign(ptr);}
-  object(std::string_view  sv) noexcept{assign(sv);}
-  object(const memory&  mem, address_t  addr, const type_info&  ti) noexcept{assign(mem,addr,ti);}
- ~object() noexcept{clear();}
+  cold_object() noexcept{}
+  cold_object(tepid_object&&  o) noexcept{assign(std::move(o));}
+  cold_object(const type_info&  ti, address_t  addr) noexcept{assign(ti,addr);}
+  cold_object(bool  b) noexcept{assign(b);}
+  cold_object(  int8_t  i) noexcept{assign(i);}
+  cold_object( uint8_t  u) noexcept{assign(u);}
+  cold_object( int16_t  i) noexcept{assign(i);}
+  cold_object(uint16_t  u) noexcept{assign(u);}
+  cold_object( int32_t  i) noexcept{assign(i);}
+  cold_object(uint32_t  u) noexcept{assign(u);}
+  cold_object( int64_t  i) noexcept{assign(i);}
+  cold_object(uint64_t  u) noexcept{assign(u);}
+  cold_object(float   f) noexcept{assign(f);}
+  cold_object(double  f) noexcept{assign(f);}
+  cold_object(nullptr_t  ptr) noexcept{assign(ptr);}
+  cold_object(std::string_view  sv) noexcept{assign(sv);}
 
   operator bool() const noexcept{return m_type_info;}
 
-  object&  operator=(const object&   rhs) noexcept{return assign(rhs);}
-  object&  operator=(      object&&  rhs) noexcept{return assign(std::move(rhs));}
+  cold_object&  assign(tepid_object&&  o) noexcept;
+  cold_object&  assign(const type_info&  ti, address_t  addr) noexcept;
+  cold_object&  assign(bool  b) noexcept;
+  cold_object&  assign(  int8_t  i) noexcept;
+  cold_object&  assign( uint8_t  u) noexcept;
+  cold_object&  assign( int16_t  i) noexcept;
+  cold_object&  assign(uint16_t  u) noexcept;
+  cold_object&  assign( int32_t  i) noexcept;
+  cold_object&  assign(uint32_t  u) noexcept;
+  cold_object&  assign( int64_t  i) noexcept;
+  cold_object&  assign(uint64_t  u) noexcept;
+  cold_object&  assign(float   f) noexcept;
+  cold_object&  assign(double  f) noexcept;
+  cold_object&  assign(nullptr_t  ptr) noexcept;
+  cold_object&  assign(std::string_view  sv) noexcept;
 
-  object&  assign(const object&   rhs) noexcept;
-  object&  assign(      object&&  rhs) noexcept;
-  object&  assign(bool  b) noexcept;
-  object&  assign(  int8_t  i) noexcept;
-  object&  assign( uint8_t  u) noexcept;
-  object&  assign( int16_t  i) noexcept;
-  object&  assign(uint16_t  u) noexcept;
-  object&  assign( int32_t  i) noexcept;
-  object&  assign(uint32_t  u) noexcept;
-  object&  assign( int64_t  i) noexcept;
-  object&  assign(uint64_t  u) noexcept;
-  object&  assign(float   f) noexcept;
-  object&  assign(double  f) noexcept;
-  object&  assign(nullptr_t  ptr) noexcept;
-  object&  assign(std::string_view  sv) noexcept;
-  object&  assign(const memory&  mem, address_t  addr, const type_info&  ti) noexcept;
+        memory&  get_memory()       noexcept{return m_memory;}
+  const memory&  get_memory() const noexcept{return m_memory;}
 
-  void  clear() noexcept;
+  const type_info&  get_type_info() const noexcept{return *m_type_info;}
 
+   int64_t  get_integer()          const noexcept{return *m_memory.get_s64ptr(0);}
+  uint64_t  get_unsigned_integer() const noexcept{return *m_memory.get_u64ptr(0);}
+
+  double  get_fpn() const noexcept{return *m_memory.get_f64ptr(0);}
+
+  int  get_size() const noexcept{return m_type_info->get_size();}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+tepid_object: public cold_object
+{
+  memory  m_base_memory;
+
+public:
+  tepid_object() noexcept{}
+  tepid_object(hot_object&&   ho) noexcept;
+  tepid_object(cold_object&&  co, const memory&  base_mem) noexcept;
+
+        memory&  get_base_memory()       noexcept{return m_base_memory;}
+  const memory&  get_base_memory() const noexcept{return m_base_memory;}
+
+};
+
+
+class
+hot_object
+{
+  memory  m_memory;
+
+  const type_info*  m_type_info=nullptr;
+
+  address_t  m_address=0;
+
+public:
+  hot_object() noexcept{}
+  hot_object(const tepid_object&  o) noexcept;
+  hot_object(const memory&  mem, const type_info&  ti, address_t  addr) noexcept:
+  m_memory(mem), m_type_info(&ti), m_address(addr){}
+
+        memory&  get_memory()       noexcept{return m_memory;}
   const memory&  get_memory() const noexcept{return m_memory;}
 
   const type_info&  get_type_info() const noexcept{return *m_type_info;}
 
   address_t  get_address() const noexcept{return m_address;}
 
-   int64_t  get_integer()          const noexcept{return m_word;}
-  uint64_t  get_unsigned_integer() const noexcept{return m_uword;}
+  int  get_size() const noexcept{return m_type_info->get_size();}
 
-  double  get_fpn() const noexcept{return m_fword;}
+   int64_t  get_integer()          const noexcept{return *m_memory.get_s64ptr(m_address);}
+  uint64_t  get_unsigned_integer() const noexcept{return *m_memory.get_u64ptr(m_address);}
 
-  object  dereference() const noexcept;
+  double  get_fpn() const noexcept{return *m_memory.get_f64ptr(m_address);}
 
-  object  get_struct_member(std::string_view  name) const noexcept;
-  object  get_union_member(std::string_view  name) const noexcept;
-  object  get_element(int  i) const noexcept;
+  hot_object  get_struct_member(std::string_view  name) const noexcept;
+  hot_object  get_union_member(std::string_view  name) const noexcept;
+  hot_object  get_element(int  i) const noexcept;
 
-  void  print() const noexcept;
-
+  void  write(cold_object  co) const noexcept;
+	
 };
+
+
+
+
+namespace operations{
+cold_object      bit_not(cold_object  co) noexcept;
+cold_object  logical_not(cold_object  co) noexcept;
+cold_object          neg(cold_object  co) noexcept;
+cold_object         size(cold_object  co) noexcept;
+cold_object      address(cold_object  co) noexcept;
+hot_object   dereference(cold_object  co) noexcept;
+hot_object      prefix_increment(hot_object  ho) noexcept;
+hot_object      prefix_decrement(hot_object  ho) noexcept;
+cold_object      postfix_increment(hot_object  ho) noexcept;
+cold_object      postfix_decrement(hot_object  ho) noexcept;
+
+
+cold_object          add(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          add_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          sub(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          sub_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          mul(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          mul_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          div(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          div_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          rem(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          rem_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          shl(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          shl_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object          shr(       cold_object  lco, cold_object  rco) noexcept;
+cold_object          shr_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object           eq(cold_object  lco, cold_object  rco) noexcept;
+cold_object          neq(cold_object  lco, cold_object  rco) noexcept;
+cold_object           lt(cold_object  lco, cold_object  rco) noexcept;
+cold_object         lteq(cold_object  lco, cold_object  rco) noexcept;
+cold_object           gt(cold_object  lco, cold_object  rco) noexcept;
+cold_object         gteq(cold_object  lco, cold_object  rco) noexcept;
+cold_object   logical_or(cold_object  lco, cold_object  rco) noexcept;
+cold_object  logical_and(cold_object  lco, cold_object  rco) noexcept;
+cold_object       bit_or(       cold_object  lco, cold_object  rco) noexcept;
+cold_object       bit_or_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object      bit_and(       cold_object  lco, cold_object  rco) noexcept;
+cold_object      bit_and_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object      bit_xor(       cold_object  lco, cold_object  rco) noexcept;
+cold_object      bit_xor_assign(cold_object  lco, cold_object  rco) noexcept;
+cold_object      comma(cold_object  lco, cold_object  rco) noexcept;
+cold_object      dot(  cold_object  lco, cold_object  rco) noexcept;
+cold_object      arrow(cold_object  lco, cold_object  rco) noexcept;
+cold_object      scope_resolution(cold_object  lco, cold_object  rco) noexcept;
+cold_object      subscript(cold_object  lco, cold_object  rco) noexcept;
+cold_object      invoke(cold_object  lco, cold_object  rco) noexcept;
+cold_object      assign(cold_object  lco, cold_object  rco) noexcept;
+}
 
 
 
@@ -382,7 +500,7 @@ public:
   bool  is_postfix_unary() const noexcept{return m_kind == kind::postfix_unary;}
   bool  is_binary()        const noexcept{return m_kind == kind::binary;}
 
-  object  evaluate(context&  ctx) const noexcept;
+  tepid_object  evaluate(context&  ctx) const noexcept;
 
   void  print() const noexcept;
 
@@ -390,58 +508,6 @@ public:
 
 
 expression  make_expression(std::string_view  sv) noexcept;
-
-
-namespace unary_operations{
-object      bit_not(context&  ctx, const object&  v) noexcept;
-object  logical_not(context&  ctx, const object&  v) noexcept;
-object          neg(context&  ctx, const object&  v) noexcept;
-object         size(context&  ctx, const object&  v) noexcept;
-object      address(context&  ctx, const object&  v) noexcept;
-object      prefix_increment(context&  ctx, const object&  v) noexcept;
-object      prefix_decrement(context&  ctx, const object&  v) noexcept;
-object      postfix_increment(context&  ctx, const object&  v) noexcept;
-object      postfix_decrement(context&  ctx, const object&  v) noexcept;
-}
-
-
-namespace binary_operations{
-object          add(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          add_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          sub(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          sub_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          mul(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          mul_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          div(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          div_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          rem(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          rem_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          shl(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          shl_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          shr(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          shr_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object           eq(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object          neq(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object           lt(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object         lteq(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object           gt(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object         gteq(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object   logical_or(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object  logical_and(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object       bit_or(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object       bit_or_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      bit_and(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      bit_and_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      bit_xor(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      bit_xor_assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      comma(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      dot(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      arrow(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      scope_resolution(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      subscript(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      invoke(context&  ctx, const object&  lv, const object&  rv) noexcept;
-object      assign(context&  ctx, const object&  lv, const object&  rv) noexcept;
-}
 
 
 
@@ -453,13 +519,18 @@ declaration
 
   std::string  m_name;
 
+  int  m_attribute=0;
+
 public:
-  declaration(                      std::string_view  nam="") noexcept:                   m_name(nam){}
-  declaration(const type_info&  ti, std::string_view  nam   ) noexcept: m_type_info(&ti), m_name(nam){}
+  declaration() noexcept{}
+  declaration(const type_info&  ti, std::string_view  nam, int  attr) noexcept:
+  m_type_info(&ti), m_name(nam), m_attribute(attr){}
 
   const type_info*  get_type_info() const noexcept{return m_type_info;}
 
   const std::string&  get_name() const noexcept{return m_name;}
+
+  int  get_attribute() const noexcept{return m_attribute;}
 
   uint32_t  get_size()  const noexcept{return m_type_info? m_type_info->get_size() :0;}
   uint32_t  get_align() const noexcept{return m_type_info? m_type_info->get_align():0;}
@@ -470,14 +541,15 @@ public:
 class
 symbol: public declaration
 {
-  int  m_id;
+  const function*  m_function=nullptr;
 
   address_t  m_address;
 
 public:
-  symbol(declaration&&  decl, int  id, address_t  addr) noexcept: declaration(std::move(decl)), m_id(id), m_address(addr){}
+  symbol(declaration&&  decl, const function*  fn, address_t  addr) noexcept:
+  declaration(std::move(decl)), m_function(fn), m_address(addr){}
 
-  int  get_id() const noexcept{return m_id;}
+  const function*  get_function() const noexcept{return m_function;}
 
   address_t  get_address() const noexcept{return m_address;}
 
@@ -501,7 +573,7 @@ public:
   address_t  get_base_address() const noexcept{return m_base_address;}
   address_t  get_end_address()  const noexcept{return m_end_address;}
 
-  symbol&  push(const declaration&  decl, int  id) noexcept;
+  symbol&  push(const declaration&  decl, const function*  fn) noexcept;
 
   void  pop() noexcept;
 
@@ -527,7 +599,8 @@ context
 
   std::vector<std::unique_ptr<type_info>>  m_type_info_table;
 
-  symbol_table  m_global_symbol_table;
+  symbol_table   m_global_symbol_table;
+  symbol_table  m_runtime_symbol_table;
 
   std::vector<const function*>  m_function_table;
 
@@ -572,16 +645,18 @@ public:
         symbol_table&  get_global_symbol_table()       noexcept{return m_global_symbol_table;}
   const symbol_table&  get_global_symbol_table() const noexcept{return m_global_symbol_table;}
 
-  const symbol*  find_symbol(std::string_view  name) const noexcept;
+        symbol_table&  get_runtime_symbol_table()       noexcept{return m_runtime_symbol_table;}
+  const symbol_table&  get_runtime_symbol_table() const noexcept{return m_runtime_symbol_table;}
 
-  object  get_object(std::string_view  name) const noexcept;
+  tepid_object  get_object(std::string_view  name) const noexcept;
 
   const memory&  get_memory() const noexcept{return m_memory;}
 
   address_t  get_bp() const noexcept;
 
-  bool  step() noexcept;
-  void   run() noexcept;
+  void  reset() noexcept;
+  bool   step() noexcept;
+  void    run() noexcept;
 
   context&  finalize() noexcept;
 

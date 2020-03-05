@@ -4,220 +4,223 @@
 
 
 namespace gbstd{
+namespace operations{
 
 
 
 
-namespace unary_operations{
-object
-bit_not(context&  ctx, const object&  v) noexcept
+cold_object
+bit_not(cold_object  co) noexcept
 {
-  auto  deref_v = (v);
-
-  auto&  ti = deref_v.get_type_info();
+  auto&  ti = co.get_type_info();
 
     if(ti.is_kind_of_integer())
     {
-      return object(~deref_v.get_integer());
+      return cold_object(~co.get_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-logical_not(context&  ctx, const object&  v) noexcept
+cold_object
+logical_not(cold_object  co) noexcept
 {
-  auto  deref_v = (v);
-
-  auto&  ti = deref_v.get_type_info();
+  auto&  ti = co.get_type_info();
 
     if(ti.is_like_boolean())
     {
-      return object(!deref_v.get_integer());
+      return cold_object(!co.get_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-neg(context&  ctx, const object&  v) noexcept
+cold_object
+neg(cold_object  co) noexcept
 {
-  auto  deref_v = (v);
+  auto&  ti = co.get_type_info();
 
-  auto&  ti = deref_v.get_type_info();
-
-    if(ti.is_like_boolean())
+    if(ti.is_kind_of_integer())
     {
-      return object(!deref_v.get_integer());
+      return cold_object(!co.get_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-size(context&  ctx, const object&  v) noexcept
+cold_object
+size(cold_object  co) noexcept
 {
-  auto  deref_v = (v);
+  auto&  ti = co.get_type_info();
 
-  auto&  ti = deref_v.get_type_info();
-
-  return object(static_cast<uint64_t>(ti.get_size()));
+  return cold_object(static_cast<uint64_t>(ti.get_size()));
 }
 
 
-object
-address(context&  ctx, const object&  v) noexcept
+cold_object
+address(hot_object  ho) noexcept
 {
-    if(v.get_type_info().is_reference())
+    if(ho.get_type_info().is_reference())
     {
-      return object(v.get_unsigned_integer());
+      auto&  ptr_ti = ho.get_type_info().get_reference_type_info().get_base_type_info().form_pointer_type(type_infos::pointer_size);
+
+      return cold_object(ptr_ti,ho.get_address());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-prefix_increment(context&  ctx, const object&  v) noexcept
+hot_object
+dereference(cold_object  co) noexcept
 {
-  return object();
+    if(co.get_type_info().is_pointer())
+    {
+      auto&  ref_ti = co.get_type_info().get_pointer_type_info().get_base_type_info().form_reference_type(type_infos::pointer_size);
+
+//      return hot_object(co.get_memory(),ref_ti,co.get_address());
+    }
+
+
+  return hot_object();
 }
 
 
-object
-prefix_decrement(context&  ctx, const object&  v) noexcept
+hot_object
+prefix_increment(hot_object  ho) noexcept
 {
-  return object();
+  return hot_object();
 }
 
 
-object
-postfix_increment(context&  ctx, const object&  v) noexcept
+hot_object
+prefix_decrement(hot_object  ho) noexcept
 {
-  return object();
+  return hot_object();
 }
 
 
-object
-postfix_decrement(context&  ctx, const object&  v) noexcept
+cold_object
+postfix_increment(hot_object  ho) noexcept
 {
-  return object();
+  return cold_object();
 }
 
 
-
-
-}
-
-
-
-
-namespace binary_operations{
-object
-add(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+postfix_decrement(hot_object  ho) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  return cold_object();
+}
+
+
+
+
+cold_object
+add(cold_object  lco, cold_object  rco) noexcept
+{
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
-      auto  li = lv.get_integer();
+      auto  li = lco.get_integer();
 
         if(rti.is_integer())
         {
-          return object(li+rv.get_integer());
+          return cold_object(li+rco.get_integer());
         }
 
       else
         if(rti.is_unsigned_integer())
         {
-          return object(li+rv.get_unsigned_integer());
+          return cold_object(li+rco.get_unsigned_integer());
         }
     }
 
   else
     if(lti.is_unsigned_integer())
     {
-      auto  li = lv.get_unsigned_integer();
+      auto  li = lco.get_unsigned_integer();
 
         if(rti.is_integer())
         {
-          return object(li+rv.get_integer());
+          return cold_object(li+rco.get_integer());
         }
 
       else
         if(rti.is_unsigned_integer())
         {
-          return object(li+rv.get_unsigned_integer());
+          return cold_object(li+rco.get_unsigned_integer());
         }
     }
 
   else
     if(lti.is_pointer())
     {
-      auto  li = lv.get_unsigned_integer();
+      auto  li = lco.get_unsigned_integer();
       auto  sz = lti.get_pointer_type_info().get_base_type_info().get_size();
 
         if(rti.is_integer())
         {
-          return object(li+(sz*rv.get_integer()));
+          return cold_object(li+(sz*rco.get_integer()));
         }
 
       else
         if(rti.is_unsigned_integer())
         {
-          return object(li+(sz*rv.get_unsigned_integer()));
+          return cold_object(li+(sz*rco.get_unsigned_integer()));
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-sub(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+sub(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
-      auto  li = lv.get_integer();
+      auto  li = lco.get_integer();
 
         if(rti.is_integer())
         {
-          return object(li-rv.get_integer());
+          return cold_object(li-rco.get_integer());
         }
 
       else
         if(rti.is_unsigned_integer())
         {
-          return object(li-rv.get_unsigned_integer());
+          return cold_object(li-rco.get_unsigned_integer());
         }
     }
 
   else
     if(lti.is_unsigned_integer())
     {
-      auto  li = lv.get_unsigned_integer();
+      auto  li = lco.get_unsigned_integer();
 
         if(rti.is_integer())
         {
-          return object(li-rv.get_integer());
+          return cold_object(li-rco.get_integer());
         }
 
       else
         if(rti.is_unsigned_integer())
         {
-          return object(li-rv.get_unsigned_integer());
+          return cold_object(li-rco.get_unsigned_integer());
         }
     }
 
@@ -228,43 +231,43 @@ sub(context&  ctx, const object&  lv, const object&  rv) noexcept
 
         if(rti.is_pointer() && (lti == rti))
         {
-          return object((lv.get_integer()-rv.get_integer())/sz);
+          return cold_object((lco.get_integer()-rco.get_integer())/sz);
         }
 
       else
         {
-          auto  li = lv.get_unsigned_integer();
+          auto  li = lco.get_unsigned_integer();
 
             if(rti.is_integer())
             {
-              return object(li-(sz*rv.get_integer()));
+              return cold_object(li-(sz*rco.get_integer()));
             }
 
           else
             if(rti.is_unsigned_integer())
             {
-              return object(li-(sz*rv.get_unsigned_integer()));
+              return cold_object(li-(sz*rco.get_unsigned_integer()));
             }
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-mul(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+mul(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_integer()
-                       *rv.get_integer());
+          return cold_object( lco.get_integer()
+                            *rco.get_integer());
         }
     }
 
@@ -273,28 +276,28 @@ mul(context&  ctx, const object&  lv, const object&  rv) noexcept
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_unsigned_integer()
-                       *rv.get_unsigned_integer());
+          return cold_object( lco.get_unsigned_integer()
+                            *rco.get_unsigned_integer());
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-div(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+div(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_integer()
-                       /rv.get_integer());
+          return cold_object( lco.get_integer()
+                            /rco.get_integer());
         }
     }
 
@@ -303,28 +306,28 @@ div(context&  ctx, const object&  lv, const object&  rv) noexcept
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_unsigned_integer()
-                       /rv.get_unsigned_integer());
+          return cold_object( lco.get_unsigned_integer()
+                            /rco.get_unsigned_integer());
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-rem(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+rem(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_integer()
-                       %rv.get_integer());
+          return cold_object( lco.get_integer()
+                            %rco.get_integer());
         }
     }
 
@@ -333,58 +336,28 @@ rem(context&  ctx, const object&  lv, const object&  rv) noexcept
     {
         if(rti.is_integer() || rti.is_unsigned_integer())
         {
-          return object( lv.get_unsigned_integer()
-                       %rv.get_unsigned_integer());
+          return cold_object( lco.get_unsigned_integer()
+                            %rco.get_unsigned_integer());
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-shl(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+shl(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer())
     {
         if(rti.is_kind_of_integer())
         {
-          return object(  lv.get_integer()
-                       <<rv.get_unsigned_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_kind_of_integer())
-        {
-          return object(  lv.get_unsigned_integer()
-                       <<rv.get_unsigned_integer());
-        }
-    }
-
-
-  return object();
-}
-
-
-object
-shr(context&  ctx, const object&  lv, const object&  rv) noexcept
-{
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
-
-    if(lti.is_integer())
-    {
-        if(rti.is_kind_of_integer())
-        {
-          return object(  lv.get_integer()
-                       >>rv.get_unsigned_integer());
+          return cold_object(  lco.get_integer()
+                            <<rco.get_unsigned_integer());
         }
     }
 
@@ -393,292 +366,312 @@ shr(context&  ctx, const object&  lv, const object&  rv) noexcept
     {
         if(rti.is_kind_of_integer())
         {
-          return object(  lv.get_unsigned_integer()
-                       >>rv.get_unsigned_integer());
+          return cold_object(  lco.get_unsigned_integer()
+                            <<rco.get_unsigned_integer());
         }
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-eq(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+shr(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
-  auto  li = lv.get_integer();
-  auto  ri = rv.get_integer();
+    if(lti.is_integer())
+    {
+        if(rti.is_kind_of_integer())
+        {
+          return cold_object(  lco.get_integer()
+                            >>rco.get_unsigned_integer());
+        }
+    }
+
+  else
+    if(lti.is_unsigned_integer())
+    {
+        if(rti.is_kind_of_integer())
+        {
+          return cold_object(  lco.get_unsigned_integer()
+                            >>rco.get_unsigned_integer());
+        }
+    }
+
+
+  return cold_object();
+}
+
+
+cold_object
+eq(cold_object  lco, cold_object  rco) noexcept
+{
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
+
+  auto  li = lco.get_integer();
+  auto  ri = rco.get_integer();
 
     if((lti.is_integer()          && rti.is_integer()         ) ||
        (lti.is_unsigned_integer() && rti.is_unsigned_integer()))
     {
-      return object(li == ri);
+      return cold_object(li == ri);
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(li == ri);
+      return cold_object(li == ri);
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-neq(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+neq(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
-  auto  li = lv.get_integer();
-  auto  ri = rv.get_integer();
+  auto  li = lco.get_integer();
+  auto  ri = rco.get_integer();
 
     if((lti.is_integer()          && rti.is_integer()         ) ||
        (lti.is_unsigned_integer() && rti.is_unsigned_integer()))
     {
-      return object(li != ri);
+      return cold_object(li != ri);
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(li != ri);
+      return cold_object(li != ri);
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-lt(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+lt(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer() && rti.is_integer())
     {
-      return object(lv.get_integer() < rv.get_integer());
+      return cold_object(lco.get_integer() < rco.get_integer());
     }
 
   else
     if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
     {
-      return object(lv.get_unsigned_integer() < rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() < rco.get_unsigned_integer());
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(lv.get_unsigned_integer() < rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() < rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-lteq(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+lteq(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer() && rti.is_integer())
     {
-      return object(lv.get_integer() <= rv.get_integer());
+      return cold_object(lco.get_integer() <= rco.get_integer());
     }
 
   else
     if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
     {
-      return object(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() <= rco.get_unsigned_integer());
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(lv.get_unsigned_integer() <= rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() <= rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-gt(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+gt(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer() && rti.is_integer())
     {
-      return object(lv.get_integer() > rv.get_integer());
+      return cold_object(lco.get_integer() > rco.get_integer());
     }
 
   else
     if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
     {
-      return object(lv.get_unsigned_integer() > rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() > rco.get_unsigned_integer());
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(lv.get_unsigned_integer() > rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() > rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-gteq(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+gteq(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_integer() && rti.is_integer())
     {
-      return object(lv.get_integer() >= rv.get_integer());
+      return cold_object(lco.get_integer() >= rco.get_integer());
     }
 
   else
     if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
     {
-      return object(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() >= rco.get_unsigned_integer());
     }
 
   else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return object(lv.get_unsigned_integer() >= rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer() >= rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-logical_or(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+logical_or(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_like_boolean() && rti.is_like_boolean())
     {
-      return object(   lv.get_integer()
-                   || rv.get_integer());
+      return cold_object(lco.get_integer() || rco.get_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-logical_and(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+logical_and(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_like_boolean() && rti.is_like_boolean())
     {
-      return object(   lv.get_integer()
-                   && rv.get_integer());
+      return cold_object(lco.get_integer() && rco.get_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-bit_or(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+bit_or(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
     {
-      return object( lv.get_unsigned_integer()
-                   |rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer()|rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-bit_and(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+bit_and(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
     {
-      return object( lv.get_unsigned_integer()
-                   &rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer()&rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object
-bit_xor(context&  ctx, const object&  lv, const object&  rv) noexcept
+cold_object
+bit_xor(cold_object  lco, cold_object  rco) noexcept
 {
-  auto&  lti = lv.get_type_info();
-  auto&  rti = rv.get_type_info();
+  auto&  lti = lco.get_type_info();
+  auto&  rti = rco.get_type_info();
 
     if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
     {
-      return object( lv.get_unsigned_integer()
-                   ^rv.get_unsigned_integer());
+      return cold_object(lco.get_unsigned_integer()^rco.get_unsigned_integer());
     }
 
 
-  return object();
+  return cold_object();
 }
 
 
-object          add_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          sub_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          mul_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          div_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          rem_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          shl_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object          shr_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object       bit_or_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      bit_and_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      bit_xor_assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      comma(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      dot(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      arrow(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      scope_resolution(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      subscript(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      invoke(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
-object      assign(context&  ctx, const object&  lv, const object&  rv) noexcept{return object();}
+cold_object          add_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          sub_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          mul_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          div_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          rem_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          shl_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object          shr_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object       bit_or_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      bit_and_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      bit_xor_assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      comma(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      dot(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      arrow(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      scope_resolution(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      subscript(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      invoke(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
+cold_object      assign(cold_object  lco, cold_object  rco) noexcept{return cold_object();}
 
 
 
 
-}
-
-
-
-
-}
+}}
 
 
 

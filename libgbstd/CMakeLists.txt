@@ -83,8 +83,9 @@ set(SOURCES
   typesystems/parameter_list.cpp
   typesystems/function_signature.cpp
   vms/vm_memory.cpp
-  vms/vm_object.cpp
-  vms/vm_object__assign.cpp
+  vms/vm_tepid_object.cpp
+  vms/vm_cold_object.cpp
+  vms/vm_hot_object.cpp
   vms/vm_function.cpp
   vms/vm_symbol_table.cpp
   vms/vm_context.cpp

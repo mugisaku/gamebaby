@@ -90,6 +90,16 @@ print() const noexcept
 
 void
 context::
+reset() noexcept
+{
+  m_runtime_symbol_table = m_global_symbol_table;
+
+
+}
+
+
+void
+context::
 run() noexcept
 {
     while(step())
@@ -111,9 +121,7 @@ finalize() noexcept
 
     for(auto  fn: m_function_table)
     {
-      auto&  ti = fn->get_type_info().form_pointer_type(sizeof(function*));
-
-      m_global_symbol_table.push(declaration(ti,fn->get_name()),'f');
+      m_global_symbol_table.push(declaration(fn->get_type_info(),fn->get_name(),0),nullptr);
     }
 
 

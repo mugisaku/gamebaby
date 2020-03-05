@@ -10,13 +10,13 @@ namespace gbstd{
 
 symbol&
 symbol_table::
-push(const declaration&  decl, int  id) noexcept
+push(const declaration&  decl, const function*  fn) noexcept
 {
   constexpr auto  align = sizeof(int64_t);
 
   uint32_t  addr = m_end_address+(align-1)/align*align;
 
-  m_content.emplace_back(declaration(decl),id,addr);
+  m_content.emplace_back(declaration(decl),fn,addr);
 
 
   auto  ti = decl.get_type_info();
