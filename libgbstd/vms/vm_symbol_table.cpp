@@ -12,9 +12,9 @@ symbol&
 symbol_table::
 push(const declaration&  decl, const function*  fn) noexcept
 {
-  constexpr auto  align = sizeof(int64_t);
+  auto  align = decl.get_type_info()->get_align();
 
-  uint32_t  addr = m_end_address+(align-1)/align*align;
+  uint32_t  addr = (m_end_address+(align-1))/align*align;
 
   m_content.emplace_back(declaration(decl),fn,addr);
 
@@ -95,6 +95,22 @@ find(std::string_view  name) const noexcept
 }
 
 
+hot_object
+symbol_table::
+make_object(std::string_view  name, const memory&  mem) const noexcept
+{
+  auto  sym = find(name);
+
+    if(sym)
+    {
+      return hot_object(mem,sym->get_type_info()->form_reference_type(type_infos::pointer_size),sym->get_address());
+    }
+
+
+  return {};
+}
+
+
 bool
 symbol_table::
 reallocate() noexcept
@@ -102,6 +118,35 @@ reallocate() noexcept
   uint32_t  offset = 0;
 
   return true;
+}
+
+
+void
+symbol_table::
+print(const memory&  mem) const noexcept
+{
+    for(auto&  sym: m_content)
+    {
+      auto  ti = sym.get_type_info();
+
+      auto  addr = sym.get_address();
+
+      printf("%s %s(%6d)",ti? ti->get_id().data():"no type",sym.get_name().data(),addr);
+
+        if(ti)
+        {
+          printf(":");
+
+          hot_object  ho(mem,*ti,addr);
+
+          tepid_object  to(ho);
+
+          to.print();
+        }
+
+
+      printf("\n");
+    }
 }
 
 

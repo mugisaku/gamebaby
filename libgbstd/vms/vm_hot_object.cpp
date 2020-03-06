@@ -11,7 +11,7 @@ namespace gbstd{
 hot_object::
 hot_object(const tepid_object&  o) noexcept:
 m_memory(o.get_base_memory()),
-m_type_info(&o.get_type_info()),
+m_type_info(&o.get_type_info().form_reference_type(type_infos::pointer_size)),
 m_address(o.get_unsigned_integer())
 {
 }
@@ -75,11 +75,195 @@ get_element(int  i) const noexcept
 }
 
 
-void
+tepid_object
 hot_object::
-write(cold_object  co) const noexcept
+write(cold_object  co) noexcept
 {
+  auto&  hti = m_type_info->strip_reference_type();
+  auto&  cti = co.get_type_info();
 
+  auto  sz = hti.get_size();
+
+    if(cti.is_integer())
+    {
+      auto  i = co.get_integer();
+
+        if(hti.is_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< int8_t>(m_address) = i;}
+          else if(sz == 2){*m_memory.get_pointer<int16_t>(m_address) = i;}
+          else if(sz == 4){*m_memory.get_pointer<int32_t>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<int64_t>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_unsigned_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< uint8_t>(m_address) = i;}
+          else if(sz == 2){*m_memory.get_pointer<uint16_t>(m_address) = i;}
+          else if(sz == 4){*m_memory.get_pointer<uint32_t>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<uint64_t>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_fpn())
+        {
+               if(sz == 4){*m_memory.get_pointer< float>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<double>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_boolean())
+        {
+          *m_memory.get_pointer<boolean_t>(m_address) = i;
+        }
+
+      else
+        if(hti.is_null_pointer())
+        {
+        }
+
+      else
+        if(hti.is_generic_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = i;
+        }
+
+      else
+        if(hti.is_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = i;
+        }
+    }
+
+  else
+    if(cti.is_unsigned_integer())
+    {
+      auto  i = co.get_unsigned_integer();
+
+        if(hti.is_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< int8_t>(m_address) = i;}
+          else if(sz == 2){*m_memory.get_pointer<int16_t>(m_address) = i;}
+          else if(sz == 4){*m_memory.get_pointer<int32_t>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<int64_t>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_unsigned_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< uint8_t>(m_address) = i;}
+          else if(sz == 2){*m_memory.get_pointer<uint16_t>(m_address) = i;}
+          else if(sz == 4){*m_memory.get_pointer<uint32_t>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<uint64_t>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_fpn())
+        {
+               if(sz == 4){*m_memory.get_pointer< float>(m_address) = i;}
+          else if(sz == 8){*m_memory.get_pointer<double>(m_address) = i;}
+        }
+
+      else
+        if(hti.is_boolean())
+        {
+          *m_memory.get_pointer<boolean_t>(m_address) = i;
+        }
+
+      else
+        if(hti.is_null_pointer())
+        {
+        }
+
+      else
+        if(hti.is_generic_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = i;
+        }
+
+      else
+        if(hti.is_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = i;
+        }
+    }
+
+  else
+    if(cti.is_fpn())
+    {
+      auto  f = co.get_fpn();
+
+        if(hti.is_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< int8_t>(m_address) = f;}
+          else if(sz == 2){*m_memory.get_pointer<int16_t>(m_address) = f;}
+          else if(sz == 4){*m_memory.get_pointer<int32_t>(m_address) = f;}
+          else if(sz == 8){*m_memory.get_pointer<int64_t>(m_address) = f;}
+        }
+
+      else
+        if(hti.is_unsigned_integer())
+        {
+               if(sz == 1){*m_memory.get_pointer< uint8_t>(m_address) = f;}
+          else if(sz == 2){*m_memory.get_pointer<uint16_t>(m_address) = f;}
+          else if(sz == 4){*m_memory.get_pointer<uint32_t>(m_address) = f;}
+          else if(sz == 8){*m_memory.get_pointer<uint64_t>(m_address) = f;}
+        }
+
+      else
+        if(hti.is_fpn())
+        {
+               if(sz == 4){*m_memory.get_pointer< float>(m_address) = f;}
+          else if(sz == 8){*m_memory.get_pointer<double>(m_address) = f;}
+        }
+
+      else
+        if(hti.is_boolean())
+        {
+          *m_memory.get_pointer<boolean_t>(m_address) = f;
+        }
+
+      else
+        if(hti.is_null_pointer())
+        {
+        }
+
+      else
+        if(hti.is_generic_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = f;
+        }
+
+      else
+        if(hti.is_pointer())
+        {
+          *m_memory.get_pointer<address_t>(m_address) = f;
+        }
+    }
+
+  else
+    if(cti.is_boolean())
+    {
+    }
+
+  else
+    if(cti.is_null_pointer())
+    {
+    }
+
+  else
+    if(cti.is_generic_pointer())
+    {
+    }
+
+  else
+    if(cti.is_pointer())
+    {
+    }
+
+
+  return tepid_object(*this);
 }
 
 

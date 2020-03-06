@@ -293,22 +293,6 @@ process(const expression_statement&  st) noexcept
 }
 
 
-tepid_object
-context::
-get_object(std::string_view  name) const noexcept
-{
-  auto  sym = m_runtime_symbol_table.find(name);
-
-    if(sym)
-    {
-      return hot_object(m_memory,sym->get_type_info()->form_reference_type(type_infos::pointer_size),sym->get_address());
-    }
-
-
-  return {};
-}
-
-
 
 
 }

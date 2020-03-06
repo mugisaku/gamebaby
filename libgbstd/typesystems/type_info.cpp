@@ -186,6 +186,35 @@ form_pointer_type(int  w) const noexcept
 
 
 
+const type_info&
+type_info::
+strip_pointer_type() const noexcept
+{
+  return is_pointer()? get_pointer_type_info().get_base_type_info()
+        :*this;
+}
+
+
+const type_info&
+type_info::
+strip_reference_type() const noexcept
+{
+  return is_reference()? get_reference_type_info().get_base_type_info()
+        :*this;
+}
+
+
+const type_info&
+type_info::
+strip_array_type() const noexcept
+{
+  return is_array()? get_array_type_info().get_base_type_info()
+        :*this;
+}
+
+
+
+
 void
 type_info::
 print() const noexcept

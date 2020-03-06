@@ -8,207 +8,146 @@ namespace gbstd{
 
 
 
-constexpr auto  word_size = sizeof(int64_t);
-
-
-
-
-cold_object&
 cold_object::
-assign(tepid_object&&  o) noexcept
+cold_object(const hot_object&  o) noexcept
 {
-  static_cast<cold_object&>(*this) = std::move(o);
+  *this = cold_object(tepid_object(o));
+}
 
-    if(m_type_info->is_reference())
+
+cold_object::
+cold_object(const tepid_object&  o) noexcept
+{
+    if(o.get_type_info().is_reference())
     {
-      m_type_info = &m_type_info->get_reference_type_info().get_base_type_info();
+      m_type_info = &o.get_type_info().strip_reference_type();
 
-      auto  addr = get_unsigned_integer();
-      auto    sz = get_size();
+      auto  addr = o.get_unsigned_integer();
+      auto    sz = o.get_size();
 
       m_memory.allocate(sz);
 
-      auto  dst = m_memory.get_u8ptr(0);
+      auto  dst =            &*m_memory.get_pointer<int8_t>(0);
+      auto  src = &*o.get_base_memory().get_pointer<int8_t>(addr);
 
-      std::memcpy(&*dst,&*o.get_base_memory().get_u8ptr(addr),sz);
+      std::memcpy(dst,src,sz);
     }
 
-
-  return *this;
+  else
+    {
+      *this = static_cast<const cold_object&>(o);
+    }
 }
 
 
 
 
-cold_object&
 cold_object::
-assign(bool  b) noexcept
+cold_object(bool  b) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = b;
+  m_memory = boolean_t(b);
 
   m_type_info = &type_infos::boolean;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(int8_t  i) noexcept
+cold_object(int8_t  i) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_s64ptr(0) = i;
+  m_memory = i;
 
   m_type_info = &type_infos::s8;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(uint8_t  u) noexcept
+cold_object(uint8_t  u) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = u;
+  m_memory = u;
 
   m_type_info = &type_infos::u8;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(int16_t  i) noexcept
+cold_object(int16_t  i) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_s64ptr(0) = i;
+  m_memory = i;
 
   m_type_info = &type_infos::s16;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(uint16_t  u) noexcept
+cold_object(uint16_t  u) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = u;
+  m_memory = u;
 
   m_type_info = &type_infos::u16;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(int32_t  i) noexcept
+cold_object(int32_t  i) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_s64ptr(0) = i;
+  m_memory = i;
 
   m_type_info = &type_infos::s32;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(uint32_t  u) noexcept
+cold_object(uint32_t  u) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = u;
-
-  m_type_info = &type_infos::u32;
-
-  return *this;
+  m_memory = u;
 }
 
 
-cold_object&
 cold_object::
-assign(int64_t  i) noexcept
+cold_object(int64_t  i) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_s64ptr(0) = i;
+  m_memory = i;
 
   m_type_info = &type_infos::s64;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(uint64_t  u) noexcept
+cold_object(uint64_t  u) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = u;
-
-  m_type_info = &type_infos::u64;
-
-  return *this;
+  m_memory = u;
 }
 
 
-cold_object&
 cold_object::
-assign(float  f) noexcept
+cold_object(float  f) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_f64ptr(0) = f;
+  m_memory = f;
 
   m_type_info = &type_infos::f32;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(double  f) noexcept
+cold_object(double  f) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_f64ptr(0) = f;
+  m_memory = f;
 
   m_type_info = &type_infos::f64;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(nullptr_t  ptr) noexcept
+cold_object(nullptr_t  ptr) noexcept
 {
   m_memory = memory();
 
   m_type_info = &type_infos::null_pointer;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(std::string_view  sv) noexcept
+cold_object(std::string_view  sv) noexcept
 {
   auto  sz = sv.size();
 
@@ -219,22 +158,60 @@ assign(std::string_view  sv) noexcept
   std::memcpy(&m_memory[0],sv.data(),sz);
 
   m_memory[sz] = 0;
-
-  return *this;
 }
 
 
-cold_object&
 cold_object::
-assign(const type_info&  ti, address_t  addr) noexcept
+cold_object(const type_info&  ti, address_t  addr) noexcept
 {
-  m_memory.allocate(word_size);
-
-  *m_memory.get_u64ptr(0) = addr;
+  m_memory = addr;
 
   m_type_info = &ti;
+}
 
-  return *this;
+
+
+
+int64_t
+cold_object::
+get_integer() const noexcept
+{
+  auto  sz = get_size();
+
+       if(sz == 1){return *m_memory.get_pointer< int8_t>(0);}
+  else if(sz == 2){return *m_memory.get_pointer<int16_t>(0);}
+  else if(sz == 4){return *m_memory.get_pointer<int32_t>(0);}
+  else if(sz == 8){return *m_memory.get_pointer<int64_t>(0);}
+
+  return 0;
+}
+
+
+uint64_t
+cold_object::
+get_unsigned_integer() const noexcept
+{
+  auto  sz = get_size();
+
+       if(sz == 1){return *m_memory.get_pointer< uint8_t>(0);}
+  else if(sz == 2){return *m_memory.get_pointer<uint16_t>(0);}
+  else if(sz == 4){return *m_memory.get_pointer<uint32_t>(0);}
+  else if(sz == 8){return *m_memory.get_pointer<uint64_t>(0);}
+
+  return 0;
+}
+
+
+double
+cold_object::
+get_fpn() const noexcept
+{
+  auto  sz = get_size();
+
+       if(sz == 4){return *m_memory.get_pointer< float>(0);}
+  else if(sz == 8){return *m_memory.get_pointer<double>(0);}
+
+  return .0;
 }
 
 
@@ -265,6 +242,12 @@ print() const noexcept
         if(ti.is_unsigned_integer())
         {
           printf("uint(%" PRIu64 ")",get_unsigned_integer());
+        }
+
+      else
+        if(ti.is_fpn())
+        {
+          printf("fpn(%f)",get_fpn());
         }
 
       else

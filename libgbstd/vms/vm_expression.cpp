@@ -553,41 +553,37 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_identifier())
     {
-      return ctx.get_object(m_data.s);
+      return ctx.get_runtime_symbol_table().make_object(m_data.s,mem);
     }
 
   else
     if(is_prefix_unary())
     {
       auto   op = m_data.un.get_opcode();
-      auto&  o  = m_data.un.get_operand();
-
-      auto  ho = o.evaluate(ctx);
+      auto  obj = m_data.un.get_operand().evaluate(ctx);
 
       using namespace operations;
 
-           if(op == "++"){return {prefix_increment(ho)};}
-      else if(op == "--"){return {prefix_decrement(ho)};}
-      else if(op == "!" ){return {logical_not(ho),mem};}
-      else if(op == "~" ){return {bit_not(ho),mem};}
-      else if(op == "-" ){return {neg(ho),mem};}
-      else if(op == "*" ){return ho;}
-      else if(op == "&" ){return {cold_object(),mem};}
-      else if(op == "sz"){return {size(ho),mem};}
+           if(op == "++"){return prefix_increment(obj);}
+      else if(op == "--"){return prefix_decrement(obj);}
+      else if(op == "!" ){return {logical_not(obj),mem};}
+      else if(op == "~" ){return {bit_not(obj),mem};}
+      else if(op == "-" ){return {neg(obj),mem};}
+      else if(op == "*" ){return dereference(obj,mem);}
+      else if(op == "&" ){return {address(obj),mem};}
+      else if(op == "sz"){return {size(obj),mem};}
     }
 
   else
     if(is_postfix_unary())
     {
       auto   op = m_data.un.get_opcode();
-      auto&  o  = m_data.un.get_operand();
-
-      auto  ho = o.evaluate(ctx);
+      auto  obj = m_data.un.get_operand().evaluate(ctx);
 
       using namespace operations;
 
-           if(op == "++"){return {postfix_increment(ho),mem};}
-      else if(op == "--"){return tepid_object(postfix_decrement(ho),mem);}
+           if(op == "++"){return postfix_increment(obj);}
+      else if(op == "--"){return postfix_decrement(obj);}
     }
 
   else
@@ -595,48 +591,48 @@ evaluate(context&  ctx) const noexcept
     {
       auto  o = m_data.bin.get_opcode();
 
-      auto  lho = m_data.bin.get_left().evaluate(ctx);
-      auto  rho = m_data.bin.get_right().evaluate(ctx);
+      auto  lo = m_data.bin.get_left().evaluate(ctx);
+      auto  ro = m_data.bin.get_right().evaluate(ctx);
 
       using namespace operations;
 
-           if(o == "+"  ){return {add(             lho,rho),mem};}
-      else if(o == "+=" ){return {add_assign(      lho,rho),mem};}
-      else if(o == "-"  ){return {sub(             lho,rho),mem};}
-      else if(o == "-=" ){return {sub_assign(      lho,rho),mem};}
-      else if(o == "*"  ){return {mul(             lho,rho),mem};}
-      else if(o == "*=" ){return {mul_assign(      lho,rho),mem};}
-      else if(o == "/"  ){return {div(             lho,rho),mem};}
-      else if(o == "/=" ){return {div_assign(      lho,rho),mem};}
-      else if(o == "%"  ){return {rem(             lho,rho),mem};}
-      else if(o == "%=" ){return {rem_assign(      lho,rho),mem};}
-      else if(o == "<<" ){return {shl(             lho,rho),mem};}
-      else if(o == "<<="){return {shl_assign(      lho,rho),mem};}
-      else if(o == ">>" ){return {shr(             lho,rho),mem};}
-      else if(o == ">>="){return {shr_assign(      lho,rho),mem};}
-      else if(o == "="  ){return {operations::assign(          lho,rho),mem};}
-      else if(o == "==" ){return {eq(              lho,rho),mem};}
-      else if(o == "==="){return {eq(              lho,rho),mem};}
-      else if(o == "!=" ){return {neq(             lho,rho),mem};}
-      else if(o == "!=="){return {neq(             lho,rho),mem};}
-      else if(o == "<"  ){return {lt(              lho,rho),mem};}
-      else if(o == "<=" ){return {lteq(            lho,rho),mem};}
-      else if(o == ">"  ){return {gt(              lho,rho),mem};}
-      else if(o == ">=" ){return {gteq(            lho,rho),mem};}
-      else if(o == "|"  ){return {bit_or(          lho,rho),mem};}
-      else if(o == "|=" ){return {bit_or_assign(   lho,rho),mem};}
-      else if(o == "&"  ){return {bit_and(         lho,rho),mem};}
-      else if(o == "&=" ){return {bit_and_assign(  lho,rho),mem};}
-      else if(o == "^"  ){return {bit_xor(         lho,rho),mem};}
-      else if(o == "^=" ){return {bit_xor_assign(  lho,rho),mem};}
-      else if(o == "||" ){return {logical_or(      lho,rho),mem};}
-      else if(o == "&&" ){return {logical_and(     lho,rho),mem};}
-      else if(o == "::" ){return {scope_resolution(lho,rho),mem};}
-      else if(o == ","  ){return {comma(           lho,rho),mem};}
-      else if(o == "."  ){return {dot(             lho,rho),mem};}
-      else if(o == "->" ){return {arrow(           lho,rho),mem};}
-      else if(o == "(?)"){return {invoke(          lho,rho),mem};}
-      else if(o == "[?]"){return {subscript(       lho,rho),mem};}
+           if(o == "+"  ){return {add(             lo,ro),mem};}
+      else if(o == "-"  ){return {sub(             lo,ro),mem};}
+      else if(o == "*"  ){return {mul(             lo,ro),mem};}
+      else if(o == "/"  ){return {div(             lo,ro),mem};}
+      else if(o == "%"  ){return {rem(             lo,ro),mem};}
+      else if(o == "<<" ){return {shl(             lo,ro),mem};}
+      else if(o == ">>" ){return {shr(             lo,ro),mem};}
+      else if(o == "|"  ){return {bit_or(          lo,ro),mem};}
+      else if(o == "&"  ){return {bit_and(         lo,ro),mem};}
+      else if(o == "^"  ){return {bit_xor(         lo,ro),mem};}
+      else if(o == "+=" ){return add_assign(      lo,ro);}
+      else if(o == "-=" ){return sub_assign(      lo,ro);}
+      else if(o == "*=" ){return mul_assign(      lo,ro);}
+      else if(o == "/=" ){return div_assign(      lo,ro);}
+      else if(o == "%=" ){return rem_assign(      lo,ro);}
+      else if(o == "<<="){return shl_assign(      lo,ro);}
+      else if(o == ">>="){return shr_assign(      lo,ro);}
+      else if(o == "|=" ){return bit_or_assign(   lo,ro);}
+      else if(o == "&=" ){return bit_and_assign(  lo,ro);}
+      else if(o == "^=" ){return bit_xor_assign(  lo,ro);}
+      else if(o == "="  ){return operations::assign(          lo,ro);}
+      else if(o == "==" ){return {eq(              lo,ro),mem};}
+      else if(o == "==="){return {eq(              lo,ro),mem};}
+      else if(o == "!=" ){return {neq(             lo,ro),mem};}
+      else if(o == "!=="){return {neq(             lo,ro),mem};}
+      else if(o == "<"  ){return {lt(              lo,ro),mem};}
+      else if(o == "<=" ){return {lteq(            lo,ro),mem};}
+      else if(o == ">"  ){return {gt(              lo,ro),mem};}
+      else if(o == ">=" ){return {gteq(            lo,ro),mem};}
+      else if(o == "||" ){return {logical_or(      lo,ro),mem};}
+      else if(o == "&&" ){return {logical_and(     lo,ro),mem};}
+      else if(o == "::" ){}
+      else if(o == ","  ){return {comma(           lo,ro),mem};}
+      else if(o == "."  ){}
+      else if(o == "->" ){}
+      else if(o == "(?)"){}
+      else if(o == "[?]"){return {subscript(       lo,ro),mem};}
     }
 
 

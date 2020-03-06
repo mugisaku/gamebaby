@@ -505,6 +505,10 @@ public:
   const type_info&  form_reference_type(int  w) const noexcept;
   const type_info&    form_pointer_type(int  w) const noexcept;
 
+  const type_info&  strip_pointer_type() const noexcept;
+  const type_info&  strip_reference_type() const noexcept;
+  const type_info&  strip_array_type() const noexcept;
+
   void  print() const noexcept;
   void  print_detail() const noexcept;
 
