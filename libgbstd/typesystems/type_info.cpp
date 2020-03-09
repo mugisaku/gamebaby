@@ -14,11 +14,11 @@ clear() noexcept
 {
     switch(m_kind)
     {
-  case(kind::function): m_data.fnsig.~function_signature();break;
-  case(kind::array   ): m_data.arr_ti.~array_type_info();break;
-  case(kind::struct_ ): m_data.str_ti.~struct_type_info();break;
-  case(kind::union_  ): m_data.uni_ti.~union_type_info();break;
-  case(kind::enum_   ): m_data.enu_ti.~enum_type_info();break;
+  case(kind::function_pointer): m_data.fnptr_ti.~function_pointer_type_info();break;
+  case(kind::array           ): m_data.arr_ti.~array_type_info();break;
+  case(kind::struct_         ): m_data.str_ti.~struct_type_info();break;
+  case(kind::union_          ): m_data.uni_ti.~union_type_info();break;
+  case(kind::enum_           ): m_data.enu_ti.~enum_type_info();break;
     }
 
 
@@ -29,7 +29,6 @@ clear() noexcept
   m_holder->m_reference_type_info.reset();
   m_holder->m_pointer_type_info.reset();
   m_holder->m_array_type_info_list.clear();
-  m_holder->m_function_type_info_list.clear();
 
   return *this;
 }
@@ -46,6 +45,9 @@ get_size() const noexcept
       break;
   case(kind::generic_pointer):
       return m_data.gptr_ti.get_size();
+      break;
+  case(kind::function_pointer):
+      return m_data.fnptr_ti.get_size();
       break;
   case(kind::pointer):
       return m_data.ptr_ti.get_size();
@@ -107,28 +109,6 @@ get_align() const noexcept
 }
 
 
-
-
-const type_info&
-type_info::
-form_function_type(parameter_list&&  parals) const noexcept
-{
-  auto  id = parals.make_id();
-
-    for(auto&  fn: m_holder->m_function_type_info_list)
-    {
-        if(fn.get_function_signature().get_parameter_list().make_id() == id)
-        {
-          return fn;
-        }
-    }
-
-
-
-  m_holder->m_function_type_info_list.emplace_back(function_signature(*this,std::move(parals)));
-
-  return m_holder->m_function_type_info_list.back();
-}
 
 
 const type_info&

@@ -179,7 +179,7 @@ print(const context&  ctx) const noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  auto&  sig = m_type_info.get_function_signature();
+  auto&  sig = m_type_info.get_function_pointer_type_info().get_signature();
 
   auto  retti_ent = tc.find_entry(sig.get_return_type_info());
 

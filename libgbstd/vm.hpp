@@ -32,6 +32,7 @@ using typesystem::union_type_info;
 
 class function;
 class context;
+class symbol_table;
 class expression;
 class statement;
 class return_statement;
@@ -51,6 +52,7 @@ using boolean_t =  uint8_t;
 namespace type_infos{
 constexpr int  boolean_size = sizeof(boolean_t);
 constexpr int  pointer_size = sizeof(address_t);
+constexpr int  function_pointer_size = sizeof(function*);
 constexpr int     enum_size = 4;
 
 extern const type_info  s8;
@@ -251,12 +253,9 @@ cold_object  logical_not(cold_object  o) noexcept;
 cold_object          neg(cold_object  o) noexcept;
 cold_object         size(cold_object  o) noexcept;
 cold_object      address(hot_object  o) noexcept;
-hot_object   dereference(cold_object  o, const memory&  home_mem) noexcept;
-hot_object       prefix_increment(hot_object  o) noexcept;
-hot_object       prefix_decrement(hot_object  o) noexcept;
-hot_object      postfix_increment(hot_object  o) noexcept;
-hot_object      postfix_decrement(hot_object  o) noexcept;
-
+tepid_object   dereference(cold_object  o, const memory&  home_mem) noexcept;
+cold_object      postfix_increment(hot_object  o) noexcept;
+cold_object      postfix_decrement(hot_object  o) noexcept;
 
 cold_object      add(cold_object  lo, cold_object  ro) noexcept;
 cold_object      sub(cold_object  lo, cold_object  ro) noexcept;
@@ -269,17 +268,7 @@ cold_object   bit_or(cold_object  lo, cold_object  ro) noexcept;
 cold_object  bit_and(cold_object  lo, cold_object  ro) noexcept;
 cold_object  bit_xor(cold_object  lo, cold_object  ro) noexcept;
 
-tepid_object      add_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      sub_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      mul_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      div_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      rem_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      shl_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object      shr_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object   bit_or_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object  bit_and_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object  bit_xor_assign(hot_object  lo, cold_object  ro) noexcept;
-tepid_object          assign(hot_object  lo, cold_object  ro) noexcept;
+tepid_object  assign(hot_object  lo, cold_object  ro) noexcept;
 
 cold_object           eq(cold_object  lo, cold_object  ro) noexcept;
 cold_object          neq(cold_object  lo, cold_object  ro) noexcept;
@@ -290,8 +279,12 @@ cold_object         gteq(cold_object  lo, cold_object  ro) noexcept;
 cold_object   logical_or(cold_object  lo, cold_object  ro) noexcept;
 cold_object  logical_and(cold_object  lo, cold_object  ro) noexcept;
 
-cold_object      comma(cold_object  lo, cold_object  ro) noexcept;
-cold_object  subscript(cold_object  lo, cold_object  ro) noexcept;
+tepid_object  subscript(cold_object  lo, cold_object  ro, const memory&  mem) noexcept;
+tepid_object      arrow(cold_object  lo, const expression&  r, const memory&  mem) noexcept;
+tepid_object        dot( hot_object  lo, const expression&  r) noexcept;
+tepid_object     invoke(cold_object  lo, const expression&  r) noexcept;
+
+
 }
 
 
@@ -450,6 +443,8 @@ public:
   expression&  operator=(double  f) noexcept{return assign(f);}
   expression&  operator=(binary_operation&&  op) noexcept{return assign(std::move(op));}
 
+  operator bool() const noexcept{return m_kind != kind::null;}
+
   expression&  assign(const expression&   rhs) noexcept;
   expression&  assign(      expression&&  rhs) noexcept;
   expression&  assign(undefined  u) noexcept;
@@ -481,7 +476,9 @@ public:
   bool  is_postfix_unary() const noexcept{return m_kind == kind::postfix_unary;}
   bool  is_binary()        const noexcept{return m_kind == kind::binary;}
 
-  tepid_object  evaluate(context&  ctx) const noexcept;
+  tepid_object  evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept;
+
+  std::vector<const expression*>  get_argument_source_list() const noexcept;
 
   void  print() const noexcept;
 
@@ -579,31 +576,6 @@ public:
 
 
 class
-mini_context
-{
-  memory  m_memory;
-
-  symbol_table  m_symbol_table;
-
-public:
-  mini_context() noexcept: m_memory(1024){}
-
-  tepid_object  operator[](std::string_view  name) const noexcept{return m_symbol_table.make_object(name,m_memory);}
-
-        symbol_table&  get_symbol_table()       noexcept{return m_symbol_table;}
-  const symbol_table&  get_symbol_table() const noexcept{return m_symbol_table;}
-
-        memory&  get_memory()       noexcept{return m_memory;}
-  const memory&  get_memory() const noexcept{return m_memory;}
-
-  void  print() const noexcept{m_symbol_table.print(m_memory);}
-
-};
-
-
-
-
-class
 context
 {
   type_collection  m_type_collection;
@@ -658,6 +630,8 @@ public:
 
         symbol_table&  get_runtime_symbol_table()       noexcept{return m_runtime_symbol_table;}
   const symbol_table&  get_runtime_symbol_table() const noexcept{return m_runtime_symbol_table;}
+
+  const std::vector<const function*>&  get_function_table() const noexcept{return m_function_table;}
 
         memory&  get_memory()       noexcept{return m_memory;}
   const memory&  get_memory() const noexcept{return m_memory;}

@@ -57,7 +57,7 @@ neg(cold_object  o) noexcept
 cold_object
 size(cold_object  o) noexcept
 {
-  auto&  ti = o.get_type_info();
+  auto&  ti = o.get_type_info().strip_reference_type();
 
   return cold_object(static_cast<uint64_t>(ti.get_size()));
 }
@@ -78,7 +78,7 @@ address(hot_object  o) noexcept
 }
 
 
-hot_object
+tepid_object
 dereference(cold_object  o, const memory&  home_mem) noexcept
 {
     if(o.get_type_info().is_pointer())
@@ -93,31 +93,25 @@ dereference(cold_object  o, const memory&  home_mem) noexcept
 }
 
 
-hot_object
-prefix_increment(hot_object  o) noexcept
-{
-  return o;
-}
-
-
-hot_object
-prefix_decrement(hot_object  o) noexcept
-{
-  return o;
-}
-
-
-hot_object
+cold_object
 postfix_increment(hot_object  o) noexcept
 {
-  return o;
+  cold_object  co(o);
+
+  assign(o,add(o,1));
+
+  return co;
 }
 
 
-hot_object
+cold_object
 postfix_decrement(hot_object  o) noexcept
 {
-  return o;
+  cold_object  co(o);
+
+  assign(o,sub(o,1));
+
+  return co;
 }
 
 
@@ -650,18 +644,6 @@ bit_xor(cold_object  lo, cold_object  ro) noexcept
 }
 
 
-tepid_object      add_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    add(lo,ro));}
-tepid_object      sub_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    sub(lo,ro));}
-tepid_object      mul_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    mul(lo,ro));}
-tepid_object      div_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    div(lo,ro));}
-tepid_object      rem_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    rem(lo,ro));}
-tepid_object      shl_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    shl(lo,ro));}
-tepid_object      shr_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,    shr(lo,ro));}
-tepid_object   bit_or_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo, bit_or(lo,ro));}
-tepid_object  bit_and_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,bit_and(lo,ro));}
-tepid_object  bit_xor_assign(hot_object  lo, cold_object  ro) noexcept{return assign(lo,bit_xor(lo,ro));}
-
-
 tepid_object
 assign(hot_object  lo, cold_object  ro) noexcept
 {
@@ -671,8 +653,102 @@ assign(hot_object  lo, cold_object  ro) noexcept
 
 
 
-cold_object      comma(cold_object  lo, cold_object  ro) noexcept{return cold_object();}
-cold_object  subscript(cold_object  lo, cold_object  ro) noexcept{return cold_object();}
+tepid_object
+subscript(cold_object  lo, cold_object  ro, const memory&  mem) noexcept
+{
+  auto&  lti = lo.get_type_info();
+  auto&  rti = ro.get_type_info();
+
+    if(lti.is_pointer() && rti.is_kind_of_integer())
+    {
+      auto&  ti = lti.strip_pointer_type();
+
+      address_t  p = lo.get_unsigned_integer()+(ti.get_size()*ro.get_unsigned_integer());
+
+      return hot_object(mem,ti,p);
+    }
+
+  else
+    if(lti.is_kind_of_integer() && rti.is_pointer())
+    {
+      auto&  ti = rti.strip_pointer_type();
+
+      address_t  p = ro.get_unsigned_integer()+(ti.get_size()*lo.get_unsigned_integer());
+
+      return hot_object(mem,ti,p);
+    }
+
+
+  return tepid_object();
+}
+
+
+tepid_object
+arrow(cold_object  lo, const expression&  r, const memory&  mem) noexcept
+{
+  return dot(tepid_object(lo,mem),r);
+}
+
+
+tepid_object
+dot(hot_object  lo, const expression&  r) noexcept
+{
+    if(r.is_identifier())
+    {
+        if(lo.get_type_info().is_reference())
+        {
+          auto&  ti = lo.get_type_info().strip_reference_type();
+
+            if(ti.is_struct())
+            {
+              hot_object  ho(lo);
+
+              return ho.get_struct_member(r.get_string());
+            }
+
+          else
+            if(ti.is_union())
+            {
+              hot_object  ho(lo);
+
+              return ho.get_union_member(r.get_string());
+            }
+
+          else
+            {
+            }
+        }
+
+      else
+        {
+        }
+    }
+
+
+  return tepid_object();
+}
+
+
+tepid_object
+invoke(cold_object  lo, const expression&  r) noexcept
+{
+//    if(lo.get_type_info().is_function_pointer())
+    {
+//      auto&  fn = *reinterpret_cast<const function*>(lo.get_unsigned_integer());
+
+      auto  argsrcs = r.get_argument_source_list();
+
+        for(auto  argsrc: argsrcs)
+        {
+          argsrc->print();
+
+          printf("\n");
+        }
+    }
+
+
+  return tepid_object();
+}
 
 
 

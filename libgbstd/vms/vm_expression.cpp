@@ -517,10 +517,8 @@ make_expression(std::string_view  sv) noexcept
 
 tepid_object
 expression::
-evaluate(context&  ctx) const noexcept
+evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
 {
-  auto&  mem = ctx.get_memory();
-
     if(is_integer_literal())
     {
       return {m_data.i,mem};
@@ -553,37 +551,37 @@ evaluate(context&  ctx) const noexcept
   else
     if(is_identifier())
     {
-      return ctx.get_runtime_symbol_table().make_object(m_data.s,mem);
+      return symtbl.make_object(m_data.s,mem);
     }
 
   else
     if(is_prefix_unary())
     {
       auto   op = m_data.un.get_opcode();
-      auto  obj = m_data.un.get_operand().evaluate(ctx);
+      auto  obj = m_data.un.get_operand().evaluate(symtbl,mem);
 
       using namespace operations;
 
-           if(op == "++"){return prefix_increment(obj);}
-      else if(op == "--"){return prefix_decrement(obj);}
-      else if(op == "!" ){return {logical_not(obj),mem};}
-      else if(op == "~" ){return {bit_not(obj),mem};}
-      else if(op == "-" ){return {neg(obj),mem};}
+           if(op == "++"){return operations::assign(obj,add(obj,1));}
+      else if(op == "--"){return operations::assign(obj,sub(obj,1));}
       else if(op == "*" ){return dereference(obj,mem);}
-      else if(op == "&" ){return {address(obj),mem};}
-      else if(op == "sz"){return {size(obj),mem};}
+      else if(op == "!" ){return {logical_not(obj),mem};}
+      else if(op == "~" ){return {    bit_not(obj),mem};}
+      else if(op == "-" ){return {        neg(obj),mem};}
+      else if(op == "&" ){return {    address(obj),mem};}
+      else if(op == "sz"){return {       size(obj),mem};}
     }
 
   else
     if(is_postfix_unary())
     {
       auto   op = m_data.un.get_opcode();
-      auto  obj = m_data.un.get_operand().evaluate(ctx);
+      auto  obj = m_data.un.get_operand().evaluate(symtbl,mem);
 
       using namespace operations;
 
-           if(op == "++"){return postfix_increment(obj);}
-      else if(op == "--"){return postfix_decrement(obj);}
+           if(op == "++"){return {postfix_increment(obj),mem};}
+      else if(op == "--"){return {postfix_decrement(obj),mem};}
     }
 
   else
@@ -591,52 +589,127 @@ evaluate(context&  ctx) const noexcept
     {
       auto  o = m_data.bin.get_opcode();
 
-      auto  lo = m_data.bin.get_left().evaluate(ctx);
-      auto  ro = m_data.bin.get_right().evaluate(ctx);
+      auto  l = m_data.bin.get_left() ;
+      auto  r = m_data.bin.get_right();
 
       using namespace operations;
 
-           if(o == "+"  ){return {add(             lo,ro),mem};}
-      else if(o == "-"  ){return {sub(             lo,ro),mem};}
-      else if(o == "*"  ){return {mul(             lo,ro),mem};}
-      else if(o == "/"  ){return {div(             lo,ro),mem};}
-      else if(o == "%"  ){return {rem(             lo,ro),mem};}
-      else if(o == "<<" ){return {shl(             lo,ro),mem};}
-      else if(o == ">>" ){return {shr(             lo,ro),mem};}
-      else if(o == "|"  ){return {bit_or(          lo,ro),mem};}
-      else if(o == "&"  ){return {bit_and(         lo,ro),mem};}
-      else if(o == "^"  ){return {bit_xor(         lo,ro),mem};}
-      else if(o == "+=" ){return add_assign(      lo,ro);}
-      else if(o == "-=" ){return sub_assign(      lo,ro);}
-      else if(o == "*=" ){return mul_assign(      lo,ro);}
-      else if(o == "/=" ){return div_assign(      lo,ro);}
-      else if(o == "%=" ){return rem_assign(      lo,ro);}
-      else if(o == "<<="){return shl_assign(      lo,ro);}
-      else if(o == ">>="){return shr_assign(      lo,ro);}
-      else if(o == "|=" ){return bit_or_assign(   lo,ro);}
-      else if(o == "&=" ){return bit_and_assign(  lo,ro);}
-      else if(o == "^=" ){return bit_xor_assign(  lo,ro);}
+        if(o == "::")
+        {
+          //not yet implemented.
+        }
+
+      else
+        if(o == ".")
+        {
+          return dot(l.evaluate(symtbl,mem),r);
+        }
+
+      else
+        if(o == ".*")
+        {
+          //not yet implemented.
+        }
+
+      else
+        if(o == "->")
+        {
+          return arrow(l.evaluate(symtbl,mem),r,mem);
+        }
+
+      else
+        if(o == "->*")
+        {
+          //not yet implemented.
+        }
+
+      else
+        if(o == "(?)")
+        {
+          return invoke(l.evaluate(symtbl,mem),r);
+        }
+        
+
+      auto  lo = l.evaluate(symtbl,mem);
+      auto  ro = r.evaluate(symtbl,mem);
+
+           if(o == "+"  ){return {    add(lo,ro),mem};}
+      else if(o == "-"  ){return {    sub(lo,ro),mem};}
+      else if(o == "*"  ){return {    mul(lo,ro),mem};}
+      else if(o == "/"  ){return {    div(lo,ro),mem};}
+      else if(o == "%"  ){return {    rem(lo,ro),mem};}
+      else if(o == "<<" ){return {    shl(lo,ro),mem};}
+      else if(o == ">>" ){return {    shr(lo,ro),mem};}
+      else if(o == "|"  ){return { bit_or(lo,ro),mem};}
+      else if(o == "&"  ){return {bit_and(lo,ro),mem};}
+      else if(o == "^"  ){return {bit_xor(lo,ro),mem};}
+      else if(o == "+=" ){return operations::assign(lo,    add(lo,ro));}
+      else if(o == "-=" ){return operations::assign(lo,    sub(lo,ro));}
+      else if(o == "*=" ){return operations::assign(lo,    mul(lo,ro));}
+      else if(o == "/=" ){return operations::assign(lo,    div(lo,ro));}
+      else if(o == "%=" ){return operations::assign(lo,    rem(lo,ro));}
+      else if(o == "<<="){return operations::assign(lo,    shl(lo,ro));}
+      else if(o == ">>="){return operations::assign(lo,    shr(lo,ro));}
+      else if(o == "|=" ){return operations::assign(lo, bit_or(lo,ro));}
+      else if(o == "&=" ){return operations::assign(lo,bit_and(lo,ro));}
+      else if(o == "^=" ){return operations::assign(lo,bit_xor(lo,ro));}
       else if(o == "="  ){return operations::assign(          lo,ro);}
-      else if(o == "==" ){return {eq(              lo,ro),mem};}
-      else if(o == "==="){return {eq(              lo,ro),mem};}
-      else if(o == "!=" ){return {neq(             lo,ro),mem};}
-      else if(o == "!=="){return {neq(             lo,ro),mem};}
-      else if(o == "<"  ){return {lt(              lo,ro),mem};}
-      else if(o == "<=" ){return {lteq(            lo,ro),mem};}
-      else if(o == ">"  ){return {gt(              lo,ro),mem};}
-      else if(o == ">=" ){return {gteq(            lo,ro),mem};}
-      else if(o == "||" ){return {logical_or(      lo,ro),mem};}
-      else if(o == "&&" ){return {logical_and(     lo,ro),mem};}
-      else if(o == "::" ){}
-      else if(o == ","  ){return {comma(           lo,ro),mem};}
-      else if(o == "."  ){}
-      else if(o == "->" ){}
-      else if(o == "(?)"){}
-      else if(o == "[?]"){return {subscript(       lo,ro),mem};}
+      else if(o == "==" ){return {         eq(lo,ro),mem};}
+      else if(o == "==="){return {         eq(lo,ro),mem};}
+      else if(o == "!=" ){return {        neq(lo,ro),mem};}
+      else if(o == "!=="){return {        neq(lo,ro),mem};}
+      else if(o == "<"  ){return {         lt(lo,ro),mem};}
+      else if(o == "<=" ){return {       lteq(lo,ro),mem};}
+      else if(o == ">"  ){return {         gt(lo,ro),mem};}
+      else if(o == ">=" ){return {       gteq(lo,ro),mem};}
+      else if(o == "||" ){return { logical_or(lo,ro),mem};}
+      else if(o == "&&" ){return {logical_and(lo,ro),mem};}
+      else if(o == ","  ){return lo;}
+      else if(o == "[?]"){return subscript(lo,ro,mem);}
     }
 
 
   return tepid_object();
+}
+
+
+std::vector<const expression*>
+expression::
+get_argument_source_list() const noexcept
+{
+  std::vector<const expression*>  buf;
+
+  const expression*  e = this;
+
+    while(*e)
+    {
+        if(e->is_binary())
+        {
+          auto&  bin = e->m_data.bin;
+
+          auto  o = bin.get_opcode();
+
+            if(o == ",")
+            {
+              auto&  l = bin.get_left() ;
+              auto&  r = bin.get_right();
+
+              buf.emplace_back(&r);
+
+              e = &l;
+
+              continue;
+            }
+        }
+
+
+      buf.emplace_back(e);
+
+      break;
+    }
+
+
+  return std::move(buf);
 }
 
 

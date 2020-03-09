@@ -83,7 +83,9 @@ void
 context::
 push_frame(address_t  st_p, const function&  fn, int  argc, const expression*  argv) noexcept
 {
-  auto  paras = fn.get_type_info().get_function_signature().get_parameter_list().begin();
+  auto&  sig = fn.get_type_info().get_function_pointer_type_info().get_signature();
+
+  auto  paras = sig.get_parameter_list().begin();
   auto  names = fn.get_argument_name_list().begin();
 
     while(argc--)
@@ -186,7 +188,7 @@ void
 context::
 process(const return_statement&  st) noexcept
 {
-  auto  val = st.get_expression().evaluate(*this);
+  auto  val = st.get_expression().evaluate(m_runtime_symbol_table,m_memory);
 
   pop_frame();
 
@@ -276,7 +278,7 @@ void
 context::
 process(const expression_statement&  st) noexcept
 {
-  auto  v = st.get_expression().evaluate(*this);
+  auto  v = st.get_expression().evaluate(m_runtime_symbol_table,m_memory);
 
   auto&  s = st.get_name();
 

@@ -22,15 +22,25 @@ cold_object(const tepid_object&  o) noexcept
     {
       m_type_info = &o.get_type_info().strip_reference_type();
 
-      auto  addr = o.get_unsigned_integer();
-      auto    sz = o.get_size();
+        if(m_type_info->is_array())
+        {
+          m_type_info = &m_type_info->strip_array_type().form_pointer_type(type_infos::pointer_size);
 
-      m_memory.allocate(sz);
+          m_memory = address_t(o.get_unsigned_integer());
+        }
 
-      auto  dst =            &*m_memory.get_pointer<int8_t>(0);
-      auto  src = &*o.get_base_memory().get_pointer<int8_t>(addr);
+      else
+        {
+          auto  addr = o.get_unsigned_integer();
+          auto    sz = o.get_size();
 
-      std::memcpy(dst,src,sz);
+          m_memory.allocate(sz);
+
+          auto  dst =            &*m_memory.get_pointer<int8_t>(0);
+          auto  src = &*o.get_base_memory().get_pointer<int8_t>(addr);
+
+          std::memcpy(dst,src,sz);
+        }
     }
 
   else

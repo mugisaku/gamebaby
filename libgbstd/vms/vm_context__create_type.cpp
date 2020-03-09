@@ -316,7 +316,11 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
         {
             if(bv->is_block("(",")"))
             {
-              return &ti->form_function_type(read_parameter_list(ctx,bv++->get_block()));
+              function_signature  fnsig(*ti,read_parameter_list(ctx,bv++->get_block()));
+
+              function_pointer_type_info  fnptr_ti(std::move(fnsig),type_infos::pointer_size);
+
+              return &ctx.append_type_info(std::make_unique<type_info>(std::move(fnptr_ti)));
             }
         }
 
