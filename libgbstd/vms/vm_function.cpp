@@ -8,6 +8,33 @@ namespace gbstd{
 
 
 
+function::
+function() noexcept:
+m_block(*this)
+{
+}
+
+
+
+
+function&
+function::
+set_signature(function_signature&&  sig) noexcept
+{
+  m_type_info = std::make_unique<type_info>(function_pointer_type_info(std::move(sig),type_infos::function_pointer_size));
+
+  return *this;
+}
+
+
+const function_signature&
+function::
+get_signature() const noexcept
+{
+  return m_type_info->get_function_pointer_type_info().get_signature();
+}
+
+
 function&
 function::
 set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept
@@ -28,7 +55,78 @@ void
 function::
 make_definition(const token_block&  blk) noexcept
 {
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
+
+  block_statement  blkst(*this);
+
+    while(it)
+    {
+      auto&  tok = *it++;
+
+        if(tok.is_identifier())
+        {
+          auto&  first = tok.get_string();
+
+            if(first == "return")
+            {
+              blkst.push(statement(new return_statement()));
+            }
+
+          else
+            if(first == "jump")
+            {
+                if(it->is_identifier())
+                {
+                  blkst.push(statement(new jump_statement(it++->get_string())));
+                }
+
+              else
+                {
+                  report;
+                }
+            }
+
+          else
+            if((first ==     "break") ||
+               (first ==  "continue") ||
+               (first == "interrupt"))
+            {
+              blkst.push(statement(new control_statement(first)));
+            }
+
+          else
+            if(first == "if")
+            {
+            }
+
+          else
+            if(first == "while")
+            {
+            }
+
+          else
+            if(first == "for")
+            {
+            }
+
+          else
+            {
+            }
+        }
+
+      else
+        if(tok.is_operator_code(";"))
+        {
+        }
+
+      else
+        {
+          report;
+        }
+    }
+
+
+  m_block = std::move(blkst);
 }
 
 
@@ -179,7 +277,7 @@ print(const context&  ctx) const noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  auto&  sig = m_type_info.get_function_pointer_type_info().get_signature();
+  auto&  sig = get_signature();
 
   auto  retti_ent = tc.find_entry(sig.get_return_type_info());
 
@@ -195,7 +293,7 @@ print(const context&  ctx) const noexcept
     }
 
 
-  printf(")\n%s\n{\n",m_name.data());
+  printf(")\n{\n");
 /*
 
     for(auto&  decl: m_declaration_list)

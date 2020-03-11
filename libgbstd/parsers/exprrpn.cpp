@@ -241,9 +241,9 @@ finish(std::vector<exprelem>&&  src, std::vector<exprelem>&  dst) noexcept
 
 void
 exprrpn::
-preprocess() noexcept
+preprocess(token_iterator&  top_it) noexcept
 {
-  std::vector<token_block_view>  view_stack({m_block});
+  std::vector<token_iterator>  it_stack({top_it});
 
   std::vector<operator_code>  close_stack;
 
@@ -254,51 +254,59 @@ preprocess() noexcept
 
     for(;;)
     {
-        while(view_stack.size())
+        while(it_stack.size())
         {
-          auto&  bv = view_stack.back();
+          auto&  it = it_stack.back();
 
-            if(!bv)
+            if(!it)
             {
               break;
             }
 
           else
-            if(bv->is_integer())
+            if(it->is_integer())
             {
-              m_stack.emplace_back(bv++->get_integer());
+              m_stack.emplace_back(it++->get_integer());
 
               last_kind = kind::operand;
             }
 
           else
-            if(bv->is_floating_point_number())
+            if(it->is_floating_point_number())
             {
-              m_stack.emplace_back(bv++->get_floating_point_number());
+              m_stack.emplace_back(it++->get_floating_point_number());
 
               last_kind = kind::operand;
             }
 
           else
-            if(bv->is_string())
+            if(it->is_string())
             {
-              m_stack.emplace_back('s',bv++->get_string());
+              m_strings.emplace_back(it++->get_string());
+
+              m_stack.emplace_back('s',m_strings.back());
 
               last_kind = kind::operand;
             }
 
           else
-            if(bv->is_identifier())
+            if(it->is_identifier())
             {
-              m_stack.emplace_back('I',bv++->get_string());
+              m_stack.emplace_back('I',it++->get_string());
 
               last_kind = kind::operand;
             }
 
           else
-            if(bv->is_operator_code())
+            if(it->is_operator_code())
             {
-              auto  op = bv++->get_operator_code();
+              auto  op = it++->get_operator_code();
+
+                if(op == ";")
+                {
+                  break;
+                }
+
 
                 if((last_kind == kind::null        ) ||
                    (last_kind == kind::prefix_unary) ||
@@ -338,37 +346,37 @@ preprocess() noexcept
             }
 
           else
-            if(bv->is_block("(",")"))
+            if(it->is_block("(",")"))
             {
               m_stack.emplace_back('o',operator_code("("));
 
               close_stack.emplace_back(")");
 
-              view_stack.emplace_back(bv++->get_block());
+              it_stack.emplace_back(it++->get_block());
 
               last_kind = kind::null;
             }
 
           else
-            if(bv->is_block("[","]"))
+            if(it->is_block("[","]"))
             {
               m_stack.emplace_back('o',operator_code("["));
 
               close_stack.emplace_back("]");
 
-              view_stack.emplace_back(bv++->get_block());
+              it_stack.emplace_back(it++->get_block());
 
               last_kind = kind::null;
             }
 
           else
-            if(bv->is_block("{","}"))
+            if(it->is_block("{","}"))
             {
               m_stack.emplace_back('o',operator_code("{"));
 
               close_stack.emplace_back("}");
 
-              view_stack.emplace_back(bv++->get_block());
+              it_stack.emplace_back(it++->get_block());
 
               last_kind = kind::null;
             }
@@ -381,13 +389,13 @@ preprocess() noexcept
         }
 
 
-        if(view_stack.size() > 1)
+        if(it_stack.size() > 1)
         {
           m_stack.emplace_back('o',close_stack.back());
 
           close_stack.pop_back();
 
-          view_stack.pop_back();
+          it_stack.pop_back();
 
           last_kind = kind::operand;
         }
@@ -397,6 +405,9 @@ preprocess() noexcept
           break;
         }
     }
+
+
+  top_it = it_stack.back();
 //print();
 }
 
@@ -506,18 +517,29 @@ printf("\n");
 
 exprrpn&
 exprrpn::
+assign(token_iterator&  it) noexcept
+{
+  m_strings.clear();
+  m_stack.clear();
+
+   preprocess(it);
+  postprocess();
+
+  return *this;
+}
+
+
+exprrpn&
+exprrpn::
 assign(std::string_view  sv) noexcept
 {
 //  printf("%s\n",sv.data());
 
-  m_block = sv;
+  token_block  blk(sv);
 
-  m_stack.clear();
+  token_iterator  it(blk);
 
-   preprocess();
-  postprocess();
-
-  return *this;
+  return assign(it);
 };
 
 

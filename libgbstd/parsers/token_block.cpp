@@ -12,7 +12,7 @@ namespace gbstd{
 
 
 const token
-token_block_view::
+token_iterator::
 m_null;
 
 

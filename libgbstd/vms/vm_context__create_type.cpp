@@ -14,7 +14,7 @@ namespace{
 
 
 const type_info*
-read_type(context&  ctx, token_block_view&  bv) noexcept;
+read_type(context&  ctx, token_iterator&  it) noexcept;
 
 
 parameter_list
@@ -22,27 +22,27 @@ read_parameter_list(context&  ctx, const token_block&  blk) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
 
   parameter_list  ls;
 
-    while(bv)
+    while(it)
     {
-      auto  ti = read_type(ctx,bv);
+      auto  ti = read_type(ctx,it);
 
         if(ti)
         {
           ls.push(*ti);
 
-            if(bv->is_identifier())
+            if(it->is_identifier())
             {
-              ++bv;
+              ++it;
             }
 
 
-            if(bv->is_operator_code(","))
+            if(it->is_operator_code(","))
             {
-              ++bv;
+              ++it;
             }
         }
 
@@ -62,23 +62,23 @@ read_struct_type(context&  ctx, const token_block&  blk) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
 
   struct_type_info  sti;
 
-    while(bv)
+    while(it)
     {
-      auto  ti = read_type(ctx,bv);
+      auto  ti = read_type(ctx,it);
 
         if(ti)
         {
-            if(bv->is_identifier())
+            if(it->is_identifier())
             {
-              sti.push(*ti,bv++->get_string());
+              sti.push(*ti,it++->get_string());
 
-                if(bv->is_operator_code(";"))
+                if(it->is_operator_code(";"))
                 {
-                  ++bv;
+                  ++it;
                 }
             }
 
@@ -104,23 +104,23 @@ read_union_type(context&  ctx, const token_block&  blk) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
 
   union_type_info  uti;
 
-    while(bv)
+    while(it)
     {
-      auto  ti = read_type(ctx,bv);
+      auto  ti = read_type(ctx,it);
 
         if(ti)
         {
-            if(bv->is_identifier())
+            if(it->is_identifier())
             {
-              uti.push(*ti,bv++->get_string());
+              uti.push(*ti,it++->get_string());
 
-                if(bv->is_operator_code(";"))
+                if(it->is_operator_code(";"))
                 {
-                  ++bv;
+                  ++it;
                 }
             }
 
@@ -146,25 +146,25 @@ read_enum_type(context&  ctx, const token_block&  blk) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
 
   enum_type_info  eti(gbstd::type_infos::enum_size);
 
   int  next = 0;
 
-    while(bv)
+    while(it)
     {
-        if(bv->is_identifier())
+        if(it->is_identifier())
         {
-          auto&  id = bv++->get_string();
+          auto&  id = it++->get_string();
 
-            if(bv->is_operator_code("="))
+            if(it->is_operator_code("="))
             {
-              ++bv;
+              ++it;
 
-                if(bv->is_integer())
+                if(it->is_integer())
                 {
-                  next = bv++->get_integer();
+                  next = it++->get_integer();
 
                   eti.push(id,next++);
                 }
@@ -176,9 +176,9 @@ read_enum_type(context&  ctx, const token_block&  blk) noexcept
             }
 
             
-            if(bv->is_operator_code(","))
+            if(it->is_operator_code(","))
             {
-              ++bv;
+              ++it;
             }
         }
 
@@ -194,7 +194,7 @@ read_enum_type(context&  ctx, const token_block&  blk) noexcept
 
 
 const type_info*
-read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) noexcept
+read_derived_type(context&  ctx, token_iterator&  it, std::string_view  name) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
@@ -206,11 +206,11 @@ read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) 
     }
 
 
-    while(bv)
+    while(it)
     {
-        if(bv->is_block("[","]"))
+        if(it->is_block("[","]"))
         {
-          auto&  blk = bv++->get_block();
+          auto&  blk = it++->get_block();
 
             if((blk->size() == 1) && blk[0].is_integer())
             {
@@ -226,19 +226,19 @@ read_derived_type(context&  ctx, token_block_view&  bv, std::string_view  name) 
         }
 
       else
-        if(bv->is_operator_code("*"))
+        if(it->is_operator_code("*"))
         {
           ti = &ti->form_pointer_type(gbstd::type_infos::pointer_size);
 
-          ++bv;
+          ++it;
         }
 
       else
-        if(bv->is_operator_code("&"))
+        if(it->is_operator_code("&"))
         {
           ti = &ti->form_reference_type(gbstd::type_infos::pointer_size);
 
-          ++bv;
+          ++it;
         }
 
       else
@@ -254,23 +254,23 @@ END:
 
 
 const type_info*
-read_type(context&  ctx, token_block_view&  bv) noexcept
+read_type(context&  ctx, token_iterator&  it) noexcept
 {
   auto&  tc = ctx.get_type_collection();
 
-    if(!bv->is_identifier())
+    if(!it->is_identifier())
     {
       return nullptr;
     }
 
 
-  auto&  name = bv++->get_string();
+  auto&  name = it++->get_string();
 
     if(name == std::string_view("struct"))
     {
-        if(bv->is_block("{","}"))
+        if(it->is_block("{","}"))
         {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_struct_type(ctx,bv++->get_block())));
+          return &ctx.append_type_info(std::make_unique<type_info>(read_struct_type(ctx,it++->get_block())));
         }
 
       else
@@ -282,9 +282,9 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
   else
     if(name == std::string_view("union"))
     {
-        if(bv->is_block("{","}"))
+        if(it->is_block("{","}"))
         {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_union_type(ctx,bv++->get_block())));
+          return &ctx.append_type_info(std::make_unique<type_info>(read_union_type(ctx,it++->get_block())));
         }
 
       else
@@ -296,9 +296,9 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
   else
     if(name == std::string_view("enum"))
     {
-        if(bv->is_block("{","}"))
+        if(it->is_block("{","}"))
         {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_enum_type(ctx,bv++->get_block())));
+          return &ctx.append_type_info(std::make_unique<type_info>(read_enum_type(ctx,it++->get_block())));
         }
 
       else
@@ -310,13 +310,13 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
   else
     if(name == std::string_view("function"))
     {
-      auto  ti = read_type(ctx,bv);
+      auto  ti = read_type(ctx,it);
 
         if(ti)
         {
-            if(bv->is_block("(",")"))
+            if(it->is_block("(",")"))
             {
-              function_signature  fnsig(*ti,read_parameter_list(ctx,bv++->get_block()));
+              function_signature  fnsig(*ti,read_parameter_list(ctx,it++->get_block()));
 
               function_pointer_type_info  fnptr_ti(std::move(fnsig),type_infos::pointer_size);
 
@@ -329,7 +329,7 @@ read_type(context&  ctx, token_block_view&  bv) noexcept
     }
 
 
-  return read_derived_type(ctx,bv,name);
+  return read_derived_type(ctx,it,name);
 }
 
 
@@ -344,9 +344,9 @@ create_type_from_string(std::string_view  sv) noexcept
 {
   token_block  blk(sv);
 
-  token_block_view  bv(blk);
+  token_iterator  it(blk);
 
-  return read_type(*this,bv);
+  return read_type(*this,it);
 }
 
 

@@ -16,7 +16,7 @@ push(statement&&  st) noexcept
     {
       auto&  e = st.get_expression();
 
-      m_declaration_list.emplace_back(*e.get_type_info(),e.get_name(),0);
+      m_symbol_table.create(*e.get_type_info(),e.get_name(),0,m_function);
     }
 
 
@@ -24,21 +24,6 @@ push(statement&&  st) noexcept
 }
 
 
-const declaration*
-block_statement::
-find_declaration(std::string_view  name) const noexcept
-{
-    for(auto&  decl: m_declaration_list)
-    {
-        if(decl.get_name() == name)
-        {
-          return &decl;
-        }
-    }
-
-
-  return nullptr;
-}
 
 
 }

@@ -159,7 +159,7 @@ exit_block() noexcept
 {
   auto&  blk = m_current_frame->m_cursor.pop();
 
-  int  n = blk.get_declaration_list().size();
+  int  n = blk.get_symbol_table().get_number_of_symbols();
 
     while(n--)
     {
@@ -234,9 +234,9 @@ process(const block_statement&  st) noexcept
 {
   m_current_frame->m_cursor.push(st);
 
-    for(auto&  decl: st.get_declaration_list())
+    for(auto&  sym: st.get_symbol_table())
     {
-      m_runtime_symbol_table.push(declaration(decl),&m_current_frame->m_function);
+      m_runtime_symbol_table.push(sym);
     }
 }
 

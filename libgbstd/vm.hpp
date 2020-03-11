@@ -24,6 +24,8 @@ namespace gbstd{
 
 using typesystem::type_info;
 using typesystem::type_collection;
+using typesystem::function_signature;
+using typesystem::function_pointer_type_info;
 using typesystem::pointer_type_info;
 using typesystem::array_type_info;
 using typesystem::struct_type_info;
@@ -166,6 +168,7 @@ public:
   cold_object(float   f) noexcept;
   cold_object(double  f) noexcept;
   cold_object(nullptr_t  ptr) noexcept;
+  cold_object(const function&  fn) noexcept;
   cold_object(std::string_view  sv) noexcept;
 
   operator bool() const noexcept{return m_type_info;}
@@ -485,13 +488,12 @@ public:
 };
 
 
+expression  make_expression(token_iterator&  it) noexcept;
 expression  make_expression(std::string_view  sv) noexcept;
 
 
-
-
 class
-declaration
+symbol
 {
   const type_info*  m_type_info=nullptr;
 
@@ -499,60 +501,46 @@ declaration
 
   int  m_attribute=0;
 
-public:
-  declaration() noexcept{}
-  declaration(const type_info&  ti, std::string_view  nam, int  attr) noexcept:
-  m_type_info(&ti), m_name(nam), m_attribute(attr){}
+  const function*  m_function=nullptr;
 
-  const type_info*  get_type_info() const noexcept{return m_type_info;}
+  address_t  m_address=0;
+
+public:
+  symbol() noexcept{}
+  symbol(const type_info&  ti, std::string_view  name, int attr, const function*  fn) noexcept:
+  m_type_info(&ti), m_name(name), m_attribute(attr), m_function(fn){}
+
+  const type_info&  get_type_info() const noexcept{return *m_type_info;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
   int  get_attribute() const noexcept{return m_attribute;}
 
-  uint32_t  get_size()  const noexcept{return m_type_info? m_type_info->get_size() :0;}
-  uint32_t  get_align() const noexcept{return m_type_info? m_type_info->get_align():0;}
-
-};
-
-
-class
-symbol: public declaration
-{
-  const function*  m_function=nullptr;
-
-  address_t  m_address;
-
-public:
-  symbol(declaration&&  decl, const function*  fn, address_t  addr) noexcept:
-  declaration(std::move(decl)), m_function(fn), m_address(addr){}
-
   const function*  get_function() const noexcept{return m_function;}
 
-  address_t  get_address() const noexcept{return m_address;}
+  symbol&    set_address(address_t  addr)       noexcept{       m_address = addr;  return *this;}
+  address_t  get_address(               ) const noexcept{return m_address                      ;}
 
 };
 
-
-using declaration_list = std::vector<declaration>;
 
 class
 symbol_table
 {
-  address_t  m_base_address=0;
-  address_t   m_end_address=0;
-
   std::vector<symbol>  m_content;
 
+  address_t  m_end_address=0;
+
 public:
-  symbol_table(address_t  base_addr=0) noexcept:
-  m_base_address(base_addr), m_end_address(base_addr){}
+  symbol_table() noexcept{}
 
-  address_t  get_base_address() const noexcept{return m_base_address;}
-  address_t  get_end_address()  const noexcept{return m_end_address;}
+        symbol&  operator[](int  i)       noexcept{return m_content[i];}
+  const symbol&  operator[](int  i) const noexcept{return m_content[i];}
 
-  symbol&  push(const declaration&  decl, const function*  fn) noexcept;
-  symbol&  push(const type_info&  ti, std::string_view  name) noexcept{return push(declaration(ti,name,0),nullptr);}
+  address_t  get_end_address() const noexcept{return m_end_address;}
+
+  symbol&  create(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept;
+  symbol&    push(const symbol&  sym) noexcept;
 
   void  pop() noexcept;
 
@@ -561,7 +549,7 @@ public:
 
   int  get_number_of_symbols() const noexcept{return m_content.size();}
 
-  hot_object  make_object(std::string_view  name, const memory&  mem) const noexcept;
+  hot_object  make_object(std::string_view  name, const memory&  mem                ) const noexcept;
 
   bool  reallocate() noexcept;
 
@@ -585,7 +573,7 @@ context
   symbol_table   m_global_symbol_table;
   symbol_table  m_runtime_symbol_table;
 
-  std::vector<const function*>  m_function_table;
+  std::list<function>  m_function_table;
 
   memory  m_memory;
 
@@ -621,17 +609,16 @@ public:
         type_collection&  get_type_collection()       noexcept{return m_type_collection;}
   const type_collection&  get_type_collection() const noexcept{return m_type_collection;}
 
-  void  append_function(const function&  fn) noexcept;
+  function&  create_function() noexcept;
 
   const type_info&  append_type_info(std::unique_ptr<type_info>&&  ti) noexcept;
 
         symbol_table&  get_global_symbol_table()       noexcept{return m_global_symbol_table;}
   const symbol_table&  get_global_symbol_table() const noexcept{return m_global_symbol_table;}
 
-        symbol_table&  get_runtime_symbol_table()       noexcept{return m_runtime_symbol_table;}
   const symbol_table&  get_runtime_symbol_table() const noexcept{return m_runtime_symbol_table;}
 
-  const std::vector<const function*>&  get_function_table() const noexcept{return m_function_table;}
+  const std::list<function>&  get_function_table() const noexcept{return m_function_table;}
 
         memory&  get_memory()       noexcept{return m_memory;}
   const memory&  get_memory() const noexcept{return m_memory;}
@@ -777,26 +764,22 @@ public:
 class
 block_statement
 {
-  address_t  m_base_address;
+  function*  m_function=nullptr;
 
-  declaration_list  m_declaration_list;
+  symbol_table  m_symbol_table;
 
   std::vector<std::unique_ptr<statement>>  m_statement_list;
 
 public:
-  block_statement(address_t  addr=0) noexcept: m_base_address(addr){}
+  block_statement(function&  fn) noexcept: m_function(&fn){}
 
   const statement&  operator[](int  i) const noexcept
   {return (i < m_statement_list.size())? *m_statement_list[i]:statements::null;}
 
-  void       set_base_address(address_t  v)       noexcept{       m_base_address = v;}
-  address_t  get_base_address(            ) const noexcept{return m_base_address    ;}
-
   void  push(statement&&  st) noexcept;
 
-  const declaration*  find_declaration(std::string_view  name) const noexcept;
-
-  const declaration_list&  get_declaration_list() const noexcept{return m_declaration_list;}
+        symbol_table&  get_symbol_table()       noexcept{return m_symbol_table;}
+  const symbol_table&  get_symbol_table() const noexcept{return m_symbol_table;}
 
   void  print() const noexcept{}
 
@@ -909,9 +892,7 @@ public:
 class
 function
 {
-  const type_info&  m_type_info;
-
-  std::string  m_name;
+  std::unique_ptr<type_info>  m_type_info;
 
   std::vector<std::string>  m_argument_name_list;
 
@@ -922,12 +903,12 @@ function
 //  void  resolve(operand&  o) const noexcept;
 
 public:
-  function(const type_info&  ti, std::string_view  name) noexcept:
-  m_type_info(ti), m_name(name){}
+  function() noexcept;
 
-  const std::string&  get_name() const noexcept{return m_name;}
+  const type_info&  get_type_info() const noexcept{return *m_type_info;}
 
-  const type_info&  get_type_info() const noexcept{return m_type_info;}
+  function&                  set_signature(function_signature&&  sig)       noexcept;
+  const function_signature&  get_signature(                         ) const noexcept;
 
   function&  set_argument_name_list(std::vector<std::string_view>&&  argnams) noexcept;
 

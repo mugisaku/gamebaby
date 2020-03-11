@@ -293,9 +293,9 @@ print() const noexcept
 
 
 expression
-make_expression(std::string_view  sv) noexcept
+make_expression(token_iterator&  it) noexcept
 {
-  exprrpn  rpn(sv);
+  exprrpn  rpn(it);
 
   std::vector<std::vector<expression>>  table(1);
 
@@ -510,6 +510,17 @@ make_expression(std::string_view  sv) noexcept
   report;
 
   return expression();
+}
+
+
+expression
+make_expression(std::string_view  sv) noexcept
+{
+  token_block  blk(sv);
+
+  token_iterator  it(blk);
+
+  return make_expression(it);
 }
 
 

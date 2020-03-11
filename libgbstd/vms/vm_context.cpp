@@ -61,11 +61,13 @@ clear() noexcept
 }
 
 
-void
+function&
 context::
-append_function(const function&  fn) noexcept
+create_function() noexcept
 {
-  m_function_table.emplace_back(&fn);
+  m_function_table.emplace_back();
+
+  return m_function_table.back();
 }
 
 
@@ -116,12 +118,6 @@ finalize() noexcept
 {
     for(auto&  sym: m_global_symbol_table)
     {
-    }
-
-
-    for(auto  fn: m_function_table)
-    {
-      m_global_symbol_table.push(declaration(fn->get_type_info(),fn->get_name(),0),nullptr);
     }
 
 

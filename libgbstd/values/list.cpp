@@ -17,36 +17,38 @@ assign(std::string_view  sv) noexcept
 
   auto  blk = tknz(sv);
 
-  return assign(blk);
+  token_iterator  it(blk);
+
+  return assign(it);
 }
 
 
 list&
 list::
-assign(token_block_view  bv) noexcept
+assign(token_iterator&  it) noexcept
 {
   clear();
 
-    while(bv)
+    while(it)
     {
-        if(bv[0].is_string() && bv[1].is_operator_code(":") && bv[2])
+        if(it[0].is_string() && it[1].is_operator_code(":") && it[2])
         {
-          push_back(object(bv[0].get_string(),bv[2]));
+          push_back(object(it[0].get_string(),it[2]));
 
-          bv += 3;
+          it += 3;
         }
 
       else
-        if(bv[0].is_operator_code(","))
+        if(it[0].is_operator_code(","))
         {
-          ++bv;
+          ++it;
         }
 
       else
         {
-          push_back(object(bv[0]));
+          push_back(object(it[0]));
 
-          ++bv;
+          ++it;
         }
     }
 

@@ -10,24 +10,29 @@ namespace gbstd{
 
 symbol&
 symbol_table::
-push(const declaration&  decl, const function*  fn) noexcept
+create(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept
 {
-  auto  align = decl.get_type_info()->get_align();
+  m_content.emplace_back(ti,name,attr,fn);
 
-  uint32_t  addr = (m_end_address+(align-1))/align*align;
+  auto&  bk = m_content.emplace_back();
 
-  m_content.emplace_back(declaration(decl),fn,addr);
+  auto  align = ti.get_align();
+
+  auto  addr = (m_end_address+(align-1))/align*align;
+
+  bk.set_address(addr);
+
+  m_end_address = addr+ti.get_size();
+
+  return bk;
+}
 
 
-  auto  ti = decl.get_type_info();
-
-    if(ti)
-    {
-      m_end_address = addr+ti->get_size();
-    }
-
-
-  return m_content.back();
+symbol&
+symbol_table::
+push(const symbol&  sym) noexcept
+{
+  return create(sym.get_type_info(),sym.get_name(),sym.get_attribute(),sym.get_function());
 }
 
 
@@ -41,7 +46,7 @@ pop() noexcept
     {
       auto&  last = m_content.back();
 
-      m_end_address = last.get_address()+last.get_size();
+      m_end_address = last.get_address()+last.get_type_info().get_size();
     }
 
   else
@@ -103,7 +108,7 @@ make_object(std::string_view  name, const memory&  mem) const noexcept
 
     if(sym)
     {
-      return hot_object(mem,sym->get_type_info()->form_reference_type(type_infos::pointer_size),sym->get_address());
+      return hot_object(mem,sym->get_type_info().form_reference_type(type_infos::pointer_size),sym->get_address());
     }
 
 
@@ -127,22 +132,19 @@ print(const memory&  mem) const noexcept
 {
     for(auto&  sym: m_content)
     {
-      auto  ti = sym.get_type_info();
+      auto&  ti = sym.get_type_info();
 
       auto  addr = sym.get_address();
 
-      printf("%s %s(%6d)",ti? ti->get_id().data():"no type",sym.get_name().data(),addr);
+      printf("%s %s(%6d)",ti.get_id().data(),sym.get_name().data(),addr);
 
-        if(ti)
-        {
-          printf(":");
+      printf(":");
 
-          hot_object  ho(mem,*ti,addr);
+      hot_object  ho(mem,ti,addr);
 
-          tepid_object  to(ho);
+      tepid_object  to(ho);
 
-          to.print();
-        }
+      to.print();
 
 
       printf("\n");

@@ -21,8 +21,8 @@ assign(const token&  tok) noexcept
   else if(tok.is_keyword("false")){assign(false);}
   else if(tok.is_integer()){assign(static_cast<int>(tok.get_integer()));}
   else if(tok.is_floating_point_number()){assign(tok.get_floating_point_number());}
-  else if(tok.is_block("{","}")){assign(list(tok.get_block()));}
-  else if(tok.is_block("[","]")){assign(array(tok.get_block()));}
+  else if(tok.is_block("{","}")){  token_iterator  it(tok.get_block());  assign( list(it));}
+  else if(tok.is_block("[","]")){  token_iterator  it(tok.get_block());  assign(array(it));}
   else if(tok.is_string()){assign(tok.get_string());}
   else {  printf("[object assign error]");  tok.print();}
 

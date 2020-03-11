@@ -26,33 +26,33 @@ load_source(std::string_view  sv) noexcept
 
   auto  root_blk = tknz(sv);
 
-  token_block_view  bv(root_blk);
+  token_iterator  it(root_blk);
 
-    while(bv)
+    while(it)
     {
       asm_element  el;
 
-        if(bv[0].is_operator_code("*"))
+        if(it[0].is_operator_code("*"))
         {
-          ++bv;
+          ++it;
 
           bool  neg = false;
 
-            if(bv[0].is_operator_code("!"))
+            if(it[0].is_operator_code("!"))
             {
               neg = true;
 
-              ++bv;
+              ++it;
             }
 
 
-            if((bv[0].is_identifier() || bv[0].is_single_quoted() || bv[0].is_double_quoted()) &&
-                bv[1].is_operator_code(",") &&
-               (bv[2].is_identifier() || bv[2].is_single_quoted() || bv[2].is_double_quoted()))
+            if((it[0].is_identifier() || it[0].is_single_quoted() || it[0].is_double_quoted()) &&
+                it[1].is_operator_code(",") &&
+               (it[2].is_identifier() || it[2].is_single_quoted() || it[2].is_double_quoted()))
             {
-              el = asm_element(neg? asm_kind::jz:asm_kind::jnz,bv[0].get_string(),bv[2].get_string());
+              el = asm_element(neg? asm_kind::jz:asm_kind::jnz,it[0].get_string(),it[2].get_string());
 
-              bv += 3;
+              it += 3;
             }
 
           else
@@ -63,24 +63,24 @@ load_source(std::string_view  sv) noexcept
         }
 
       else
-        if(bv[0].is_identifier()    ||
-           bv[0].is_single_quoted() ||
-           bv[0].is_double_quoted())
+        if(it[0].is_identifier()    ||
+           it[0].is_single_quoted() ||
+           it[0].is_double_quoted())
         {
-          auto&  s = bv[0].get_string();
+          auto&  s = it[0].get_string();
 
-            if(bv[1].is_operator_code(":"))
+            if(it[1].is_operator_code(":"))
             {
               el = asm_element(asm_kind::label,s,"");
 
-              bv += 2;
+              it += 2;
             }
 
           else
             {
               el = asm_element(asm_kind::invoke,s,"");
 
-              ++bv;
+              ++it;
             }
         }
 
@@ -92,11 +92,11 @@ load_source(std::string_view  sv) noexcept
         }
 
 
-        if(bv[0].is_operator_code("."))
+        if(it[0].is_operator_code("."))
         {
           el.set_interrupt_flag();
 
-          ++bv;
+          ++it;
         }
 
 

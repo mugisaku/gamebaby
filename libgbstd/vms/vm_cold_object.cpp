@@ -157,6 +157,15 @@ cold_object(nullptr_t  ptr) noexcept
 
 
 cold_object::
+cold_object(const function&  fn) noexcept
+{
+  m_memory = &fn;
+
+  m_type_info = &fn.get_type_info();
+}
+
+
+cold_object::
 cold_object(std::string_view  sv) noexcept
 {
   auto  sz = sv.size();

@@ -237,19 +237,19 @@ public:
 
 
 class
-token_block_view
+token_iterator
 {
   const token*  m_begin=nullptr;
   const token*  m_end  =nullptr;
 
   static const token  m_null;
 
-  token_block_view(const token*  begin, const token*  end) noexcept:
+  token_iterator(const token*  begin, const token*  end) noexcept:
   m_begin(begin), m_end(end){}
 
 public:
-  token_block_view() noexcept{}
-  token_block_view(const token_block&  blk) noexcept:
+  token_iterator() noexcept{}
+  token_iterator(const token_block&  blk) noexcept:
   m_begin(blk->data()), m_end(blk->data()+blk->size()){}
 
   operator bool() const noexcept{return m_begin < m_end;}
@@ -259,17 +259,17 @@ public:
   const token&  operator*()  const noexcept{return (m_begin < m_end)? *m_begin: m_null;}
   const token*  operator->() const noexcept{return (m_begin < m_end)?  m_begin:&m_null;}
 
-  token_block_view&  operator++(   ) noexcept{  ++m_begin;  return *this;}
-  token_block_view   operator++(int) noexcept{  auto  ret = *this;  ++m_begin;  return ret;}
+  token_iterator&  operator++(   ) noexcept{  ++m_begin;  return *this;}
+  token_iterator   operator++(int) noexcept{  auto  ret = *this;  ++m_begin;  return ret;}
 
-  token_block_view&  operator--(   ) noexcept{  --m_begin;  return *this;}
-  token_block_view   operator--(int) noexcept{  auto  ret = *this;  --m_begin;  return ret;}
+  token_iterator&  operator--(   ) noexcept{  --m_begin;  return *this;}
+  token_iterator   operator--(int) noexcept{  auto  ret = *this;  --m_begin;  return ret;}
 
-  token_block_view&  operator+=(int  n) noexcept{  m_begin += n;  return *this;}
-  token_block_view&  operator-=(int  n) noexcept{  m_begin -= n;  return *this;}
+  token_iterator&  operator+=(int  n) noexcept{  m_begin += n;  return *this;}
+  token_iterator&  operator-=(int  n) noexcept{  m_begin -= n;  return *this;}
 
-  token_block_view  operator+(int  n) const noexcept{return token_block_view(m_begin+n,m_end);}
-  token_block_view  operator-(int  n) const noexcept{return token_block_view(m_begin-n,m_end);}
+  token_iterator  operator+(int  n) const noexcept{return token_iterator(m_begin+n,m_end);}
+  token_iterator  operator-(int  n) const noexcept{return token_iterator(m_begin-n,m_end);}
 
   int  size() const noexcept{return m_end-m_begin;}
 
@@ -365,24 +365,27 @@ public:
 class
 exprrpn
 {
-  token_block  m_block;
+  std::vector<std::string>  m_strings;
 
   std::vector<exprelem>  m_stack;
 
   void  finish(std::vector<exprelem>&&  opstack, std::vector<exprelem>&  dst) noexcept;
 
-  void   preprocess() noexcept;
+  void   preprocess(token_iterator&  top_it) noexcept;
   void  postprocess() noexcept;
 
 public:
   exprrpn() noexcept{}
   exprrpn(const exprrpn&) noexcept=delete;
   exprrpn(std::string_view  sv) noexcept{assign(sv);}
+  exprrpn(token_iterator&  it) noexcept{assign(it);}
 
   exprrpn&  operator=(const exprrpn&) noexcept=delete;
   exprrpn&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+  exprrpn&  operator=(token_iterator&  it) noexcept{return assign(it);}
 
   exprrpn&  assign(std::string_view  sv) noexcept;
+  exprrpn&  assign(token_iterator&  it) noexcept;
 
   const std::vector<exprelem>&  get_stack() const noexcept{return m_stack;}
 

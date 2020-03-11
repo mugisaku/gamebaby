@@ -150,14 +150,14 @@ array
 public:
   array() noexcept{}
   array(std::string_view  sv) noexcept{assign(sv);}
-  array(token_block_view  bv) noexcept{assign(bv);}
+  array(token_iterator&  it) noexcept{assign(it);}
   array(std::initializer_list<object>  ls) noexcept{assign(ls);}
   array(const array&   rhs) noexcept{assign(rhs);}
   array(      array&&  rhs) noexcept{assign(std::move(rhs));}
  ~array(){clear();}
 
   array&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  array&  operator=(token_block_view  bv) noexcept{return assign(bv);}
+  array&  operator=(token_iterator&  it) noexcept{return assign(it);}
   array&  operator=(std::initializer_list<object>  ls) noexcept{return assign(ls);}
   array&  operator=(const array&   rhs) noexcept{return assign(rhs);}
   array&  operator=(      array&&  rhs) noexcept{return assign(std::move(rhs));}
@@ -166,7 +166,7 @@ public:
   object&  operator[](std::string_view  sv) const noexcept;
 
   array&  assign(std::string_view  sv) noexcept;
-  array&  assign(token_block_view  bv) noexcept;
+  array&  assign(token_iterator&  it) noexcept;
   array&  assign(std::initializer_list<object>  ls) noexcept;
   array&  assign(const array&   rhs) noexcept;
   array&  assign(      array&&  rhs) noexcept;
@@ -213,20 +213,20 @@ list
 public:
   list() noexcept{}
   list(std::string_view  sv) noexcept{assign(sv);}
-  list(token_block_view  bv) noexcept{assign(bv);}
+  list(token_iterator&  it) noexcept{assign(it);}
   list(std::initializer_list<object>  ls) noexcept{assign(ls);}
   list(const list&   rhs) noexcept{assign(rhs);}
   list(      list&&  rhs) noexcept{assign(std::move(rhs));}
  ~list(){clear();}
 
   list&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  list&  operator=(token_block_view  bv) noexcept{return assign(bv);}
+  list&  operator=(token_iterator&  it) noexcept{return assign(it);}
   list&  operator=(std::initializer_list<object>  ls) noexcept{return assign(ls);}
   list&  operator=(const list&   rhs) noexcept{return assign(rhs);}
   list&  operator=(      list&&  rhs) noexcept{return assign(std::move(rhs));}
 
   list&  assign(std::string_view  sv) noexcept;
-  list&  assign(token_block_view  bv) noexcept;
+  list&  assign(token_iterator&  it) noexcept;
   list&  assign(std::initializer_list<object>  ls) noexcept;
   list&  assign(const list&   rhs) noexcept;
   list&  assign(      list&&  rhs) noexcept;
