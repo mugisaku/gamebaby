@@ -14,7 +14,7 @@ create(const type_info&  ti, std::string_view  name, int  attr, const function* 
 {
   m_content.emplace_back(ti,name,attr,fn);
 
-  auto&  bk = m_content.emplace_back();
+  auto&  bk = m_content.back();
 
   auto  align = ti.get_align();
 
@@ -136,7 +136,7 @@ print(const memory&  mem) const noexcept
 
       auto  addr = sym.get_address();
 
-      printf("%s %s(%6d)",ti.get_id().data(),sym.get_name().data(),addr);
+      printf("%s %s(address: %6d)",ti.get_id().data(),sym.get_name().data(),addr);
 
       printf(":");
 
@@ -145,7 +145,6 @@ print(const memory&  mem) const noexcept
       tepid_object  to(ho);
 
       to.print();
-
 
       printf("\n");
     }

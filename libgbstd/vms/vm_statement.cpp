@@ -8,8 +8,30 @@ namespace gbstd{
 
 
 
-namespace statements{
-const statement  null;
+statement&
+statement::
+assign(const statement&  rhs) noexcept
+{
+    if(this != &rhs)
+    {
+      clear();
+
+      m_kind = rhs.m_kind;
+
+        switch(m_kind)
+        {
+      case(kind::return_   ): new(&m_data) return_statement(rhs.m_data.ret);break;
+      case(kind::label     ): new(&m_data) label_statement(rhs.m_data.lb);break;
+      case(kind::jump      ): new(&m_data) jump_statement(rhs.m_data.jmp);break;
+      case(kind::if_string ): new(&m_data) if_string_statement(rhs.m_data.ifs);break;
+      case(kind::block     ): new(&m_data) block_statement(rhs.m_data.blk);break;
+      case(kind::control   ): new(&m_data) control_statement(rhs.m_data.ctrl);break;
+      case(kind::expression): new(&m_data) expression_statement(rhs.m_data.expr);break;
+        }
+    }
+
+
+  return *this;
 }
 
 
@@ -21,8 +43,18 @@ assign(statement&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_kind   ,rhs.m_kind   );
-      std::swap(m_pointer,rhs.m_pointer);
+      std::swap(m_kind,rhs.m_kind);
+
+        switch(m_kind)
+        {
+      case(kind::return_   ): new(&m_data) return_statement(std::move(rhs.m_data.ret));break;
+      case(kind::label     ): new(&m_data) label_statement(std::move(rhs.m_data.lb));break;
+      case(kind::jump      ): new(&m_data) jump_statement(std::move(rhs.m_data.jmp));break;
+      case(kind::if_string ): new(&m_data) if_string_statement(std::move(rhs.m_data.ifs));break;
+      case(kind::block     ): new(&m_data) block_statement(std::move(rhs.m_data.blk));break;
+      case(kind::control   ): new(&m_data) control_statement(std::move(rhs.m_data.ctrl));break;
+      case(kind::expression): new(&m_data) expression_statement(std::move(rhs.m_data.expr));break;
+        }
     }
 
 
@@ -30,13 +62,15 @@ assign(statement&&  rhs) noexcept
 }
 
 
+
+
 statement&
 statement::
-assign(return_statement*  st) noexcept
+assign(return_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) return_statement(std::move(st));
 
   m_kind = kind::return_;
 
@@ -47,11 +81,11 @@ assign(return_statement*  st) noexcept
 
 statement&
 statement::
-assign(label_statement*  st) noexcept
+assign(label_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) label_statement(std::move(st));
 
   m_kind = kind::label;
 
@@ -62,11 +96,11 @@ assign(label_statement*  st) noexcept
 
 statement&
 statement::
-assign(jump_statement*  st) noexcept
+assign(jump_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) jump_statement(std::move(st));
 
   m_kind = kind::jump;
 
@@ -77,11 +111,11 @@ assign(jump_statement*  st) noexcept
 
 statement&
 statement::
-assign(if_string_statement*  st) noexcept
+assign(if_string_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) if_string_statement(std::move(st));
 
   m_kind = kind::if_string;
 
@@ -92,11 +126,11 @@ assign(if_string_statement*  st) noexcept
 
 statement&
 statement::
-assign(block_statement*  st) noexcept
+assign(block_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) block_statement(std::move(st));
 
   m_kind = kind::block;
 
@@ -107,11 +141,11 @@ assign(block_statement*  st) noexcept
 
 statement&
 statement::
-assign(control_statement*  st) noexcept
+assign(control_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) control_statement(std::move(st));
 
   m_kind = kind::control;
 
@@ -122,11 +156,11 @@ assign(control_statement*  st) noexcept
 
 statement&
 statement::
-assign(expression_statement*  st) noexcept
+assign(expression_statement&&  st) noexcept
 {
   clear();
 
-  m_pointer = st;
+  new(&m_data) expression_statement(std::move(st));
 
   m_kind = kind::expression;
 
@@ -143,18 +177,17 @@ clear() noexcept
 {
     switch(m_kind)
     {
-  case(kind::return_   ): delete static_cast<return_statement*>(m_pointer);break;
-  case(kind::label     ): delete static_cast<label_statement*>(m_pointer);break;
-  case(kind::jump      ): delete static_cast<jump_statement*>(m_pointer);break;
-  case(kind::if_string ): delete static_cast<if_string_statement*>(m_pointer);break;
-  case(kind::block     ): delete static_cast<block_statement*>(m_pointer);break;
-  case(kind::control   ): delete static_cast<control_statement*>(m_pointer);break;
-  case(kind::expression): delete static_cast<expression_statement*>(m_pointer);break;
+  case(kind::return_   ): std::destroy_at(&m_data.ret);break;
+  case(kind::label     ): std::destroy_at(&m_data.lb);break;
+  case(kind::jump      ): std::destroy_at(&m_data.jmp);break;
+  case(kind::if_string ): std::destroy_at(&m_data.ifs);break;
+  case(kind::block     ): std::destroy_at(&m_data.blk);break;
+  case(kind::control   ): std::destroy_at(&m_data.ctrl);break;
+  case(kind::expression): std::destroy_at(&m_data.expr);break;
     }
 
 
-  m_kind    = kind::null;
-  m_pointer =    nullptr;
+  m_kind = kind::null;
 }
 
 

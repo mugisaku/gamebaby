@@ -10,33 +10,21 @@ namespace gbstd{
 using namespace typesystem;
 
 
-namespace{
-
-
-const type_info*
-read_type(context&  ctx, token_iterator&  it) noexcept;
-
-
 parameter_list
-read_parameter_list(context&  ctx, const token_block&  blk) noexcept
+context::
+read_parameter_list(token_iterator&  it) noexcept
 {
-  auto&  tc = ctx.get_type_collection();
-
-  token_iterator  it(blk);
-
   parameter_list  ls;
 
     while(it)
     {
-      auto  ti = read_type(ctx,it);
+      auto  ti = read_type(it);
 
         if(ti)
         {
-          ls.push(*ti);
-
             if(it->is_identifier())
             {
-              ++it;
+              ls.emplace_back(*ti,it++->get_string());
             }
 
 
@@ -57,18 +45,15 @@ read_parameter_list(context&  ctx, const token_block&  blk) noexcept
 }
 
 
-struct_type_info
-read_struct_type(context&  ctx, const token_block&  blk) noexcept
+const type_info*
+context::
+read_struct_type(token_iterator&  it) noexcept
 {
-  auto&  tc = ctx.get_type_collection();
-
-  token_iterator  it(blk);
-
   struct_type_info  sti;
 
     while(it)
     {
-      auto  ti = read_type(ctx,it);
+      auto  ti = read_type(it);
 
         if(ti)
         {
@@ -95,22 +80,21 @@ read_struct_type(context&  ctx, const token_block&  blk) noexcept
     }
 
 
-  return std::move(sti);
+  auto  ti = std::make_unique<type_info>(std::move(sti));
+
+  return &append_type_info(std::move(ti));
 }
 
 
-union_type_info
-read_union_type(context&  ctx, const token_block&  blk) noexcept
+const type_info*
+context::
+read_union_type(token_iterator&  it) noexcept
 {
-  auto&  tc = ctx.get_type_collection();
-
-  token_iterator  it(blk);
-
   union_type_info  uti;
 
     while(it)
     {
-      auto  ti = read_type(ctx,it);
+      auto  ti = read_type(it);
 
         if(ti)
         {
@@ -137,17 +121,16 @@ read_union_type(context&  ctx, const token_block&  blk) noexcept
     }
 
 
-  return std::move(uti);
+  auto  ti = std::make_unique<type_info>(std::move(uti));
+
+  return &append_type_info(std::move(ti));
 }
 
 
-enum_type_info
-read_enum_type(context&  ctx, const token_block&  blk) noexcept
+const type_info*
+context::
+read_enum_type(token_iterator&  it) noexcept
 {
-  auto&  tc = ctx.get_type_collection();
-
-  token_iterator  it(blk);
-
   enum_type_info  eti(gbstd::type_infos::enum_size);
 
   int  next = 0;
@@ -189,22 +172,232 @@ read_enum_type(context&  ctx, const token_block&  blk) noexcept
     }
 
 
-  return std::move(eti);
+  auto  ti = std::make_unique<type_info>(std::move(eti));
+
+  return &append_type_info(std::move(ti));
+}
+
+
+
+
+bool
+context::
+read_declaration(token_iterator&  it) noexcept
+{
+  const type_info*  ti = nullptr;
+
+    if(it->is_identifier())
+    {
+      auto&  first = it->get_string();
+
+        if(first == std::string_view("alias"))
+        {
+          ++it;
+
+            if(it->is_identifier())
+            {
+              auto&  name = it++->get_string();
+
+              ti = read_type(it);
+
+                if(ti)
+                {
+                  m_type_collection.push(name,*ti);
+
+                  return true;
+                }
+            }
+        }
+
+      else
+        if(first == std::string_view("struct"))
+        {
+          ++it;
+
+          auto&  it0 = it[0];
+          auto&  it1 = it[1];
+
+            if(it0.is_identifier() && it1.is_block("{","}"))
+            {
+              auto&  name = it0.get_string();
+
+              token_iterator  coit(it1.get_block());
+
+              ti = read_struct_type(coit);
+
+                if(ti)
+                {
+                  it += 2;
+
+                  m_type_collection.push(name,*ti);
+
+                  return true;
+                }
+            }
+        }
+
+      else
+        if(first == std::string_view("union"))
+        {
+          ++it;
+
+          auto&  it0 = it[0];
+          auto&  it1 = it[1];
+
+            if(it0.is_identifier() && it1.is_block("{","}"))
+            {
+              auto&  name = it0.get_string();
+
+              token_iterator  coit(it++->get_block());
+
+              ti = read_union_type(coit);
+
+                if(ti)
+                {
+                  it += 2;
+
+                  m_type_collection.push(name,*ti);
+
+                  return true;
+                }
+            }
+        }
+
+      else
+        if(first == std::string_view("enum"))
+        {
+          ++it;
+
+          auto&  it0 = it[0];
+          auto&  it1 = it[1];
+
+            if(it0.is_identifier() && it1.is_block("{","}"))
+            {
+              auto&  name = it0.get_string();
+
+              token_iterator  coit(it++->get_block());
+
+              ti = read_enum_type(coit);
+
+                if(ti)
+                {
+                  it += 2;
+
+                  m_type_collection.push(name,*ti);
+
+                  return true;
+                }
+            }
+        }
+
+      else
+        if(first == std::string_view("function_pointer"))
+        {
+          ++it;
+
+/*
+                if(it->is_block("(",")"))
+                {
+                  token_iterator  coit(it++->get_block());
+
+                  function_signature  fnsig(*ti,read_parameter_list(coit));
+
+                  function_pointer_type_info  fnptr_ti(std::move(fnsig),type_infos::pointer_size);
+
+                  append_type_info(std::make_unique<type_info>(std::move(fnptr_ti)));
+                }
+
+              else
+                {
+                  return;
+                }
+            }
+
+          else
+            {
+              return;
+            }
+*/
+        }
+
+      else
+        if(first == std::string_view("function"))
+        {
+          ++it;
+
+            if(it->is_identifier())
+            {
+              auto&  name = it++->get_string();
+
+              ti = read_type(it);
+
+                if(ti)
+                {
+                  auto&  it0 = it[0];
+                  auto&  it1 = it[1];
+
+                    if(it0.is_block("(",")") && it1.is_block("{","}"))
+                    {
+                      token_iterator  parals_it(it0.get_block());
+                      token_iterator     blk_it(it1.get_block());
+
+                      it += 2;
+
+                      auto  parals = read_parameter_list(parals_it);
+                      auto     blk = read_block(            blk_it);
+
+                      auto  fn = std::make_unique<function>(*ti,std::move(parals),std::move(blk));
+
+                      append_function(std::move(fn));
+                    }
+                }
+            }
+        }
+
+      else
+        {
+          ti = read_type(it);
+
+            if(ti)
+            {
+                if(it->is_identifier())
+                {
+                  auto&  name = it++->get_string();
+
+                  m_global_symbol_table.push(symbol(*ti,name,0,nullptr));
+
+                  return true;
+                }
+            }
+        }
+    }
+
+
+  return false;
 }
 
 
 const type_info*
-read_derived_type(context&  ctx, token_iterator&  it, std::string_view  name) noexcept
+context::
+read_type(token_iterator&  it) noexcept
 {
-  auto&  tc = ctx.get_type_collection();
+    if(!it->is_identifier())
+    {
+      return nullptr;
+    }
 
-  auto  ti = tc.find_by_name(name);
+
+  auto  ti = m_type_collection.find_by_name(it->get_string());
 
     if(!ti)
     {
-      goto END;
+      printf("\"%s\" as typename is not found.\n",it->get_string().data());
+
+      return nullptr;
     }
 
+
+  ++it;
 
     while(it)
     {
@@ -248,91 +441,7 @@ read_derived_type(context&  ctx, token_iterator&  it, std::string_view  name) no
     }
 
 
-END:
   return ti;
-}
-
-
-const type_info*
-read_type(context&  ctx, token_iterator&  it) noexcept
-{
-  auto&  tc = ctx.get_type_collection();
-
-    if(!it->is_identifier())
-    {
-      return nullptr;
-    }
-
-
-  auto&  name = it++->get_string();
-
-    if(name == std::string_view("struct"))
-    {
-        if(it->is_block("{","}"))
-        {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_struct_type(ctx,it++->get_block())));
-        }
-
-      else
-        {
-          return nullptr;
-        }
-    }
-
-  else
-    if(name == std::string_view("union"))
-    {
-        if(it->is_block("{","}"))
-        {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_union_type(ctx,it++->get_block())));
-        }
-
-      else
-        {
-          return nullptr;
-        }
-    }
-
-  else
-    if(name == std::string_view("enum"))
-    {
-        if(it->is_block("{","}"))
-        {
-          return &ctx.append_type_info(std::make_unique<type_info>(read_enum_type(ctx,it++->get_block())));
-        }
-
-      else
-        {
-          return nullptr;
-        }
-    }
-
-  else
-    if(name == std::string_view("function"))
-    {
-      auto  ti = read_type(ctx,it);
-
-        if(ti)
-        {
-            if(it->is_block("(",")"))
-            {
-              function_signature  fnsig(*ti,read_parameter_list(ctx,it++->get_block()));
-
-              function_pointer_type_info  fnptr_ti(std::move(fnsig),type_infos::pointer_size);
-
-              return &ctx.append_type_info(std::make_unique<type_info>(std::move(fnptr_ti)));
-            }
-        }
-
-
-      return nullptr;
-    }
-
-
-  return read_derived_type(ctx,it,name);
-}
-
-
 }
 
 
@@ -346,7 +455,7 @@ create_type_from_string(std::string_view  sv) noexcept
 
   token_iterator  it(blk);
 
-  return read_type(*this,it);
+  return read_type(it);
 }
 
 

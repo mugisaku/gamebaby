@@ -12,11 +12,28 @@ std::string
 function_signature::
 make_id() const noexcept
 {
-  std::string  s = m_parameter_list.make_id();
+  auto      it = m_container.cbegin();
+  auto  end_it = m_container.cend();
 
-  s += "->";
+  std::string  s;
 
-  s += m_return_type_info.get_id();
+    if(it != end_it)
+    {
+      s += (*it++)->get_id();
+    }
+
+
+  s += "(";
+
+    while(it != end_it)
+    {
+      s += (*it++)->get_id();
+
+      s += ",";
+    }
+
+
+  s += ")";
 
   return std::move(s);
 }
@@ -26,6 +43,17 @@ void
 function_signature::
 print() const noexcept
 {
+  printf("(");
+
+    for(auto  ti: m_container)
+    {
+      ti->print();
+
+      printf(",");
+    }
+
+
+  printf(")");
 }
 
 

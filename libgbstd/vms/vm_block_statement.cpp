@@ -8,6 +8,16 @@ namespace gbstd{
 
 
 
+const statement&
+block_statement::
+operator[](int  i) const noexcept
+{
+  static const statement  null;
+
+  return (i < m_statement_list.size())? m_statement_list[i]:null;
+}
+
+
 void
 block_statement::
 push(statement&&  st) noexcept
@@ -16,11 +26,11 @@ push(statement&&  st) noexcept
     {
       auto&  e = st.get_expression();
 
-      m_symbol_table.create(*e.get_type_info(),e.get_name(),0,m_function);
+      m_symbol_table.create(*e.get_type_info(),e.get_name(),0,nullptr);
     }
 
 
-  m_statement_list.emplace_back(std::make_unique<statement>(std::move(st)));
+  m_statement_list.emplace_back(std::move(st));
 }
 
 

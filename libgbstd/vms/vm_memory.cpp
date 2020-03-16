@@ -94,6 +94,13 @@ allocate(uint32_t  sz) noexcept
     if(sz > sizeof(int64_t))
     {
       m_byte_array = (uint8_t*)malloc(sz);
+
+      std::memset(m_byte_array,0,sz);
+    }
+
+  else
+    {
+      m_word = 0;
     }
 }
 

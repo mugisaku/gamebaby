@@ -34,6 +34,20 @@ context::
 context() noexcept:
 m_memory(1024*1024*16)
 {
+  clear();
+}
+
+
+void
+context::
+clear() noexcept
+{
+  m_source.clear();
+  m_type_collection.clear();
+  m_type_info_table.clear();
+  m_function_table.clear();
+  m_global_symbol_table.clear();
+
   m_type_collection.push(  "int8_t",type_infos::s8);
   m_type_collection.push( "uint8_t",type_infos::u8);
   m_type_collection.push( "int16_t",type_infos::s16);
@@ -44,6 +58,8 @@ m_memory(1024*1024*16)
   m_type_collection.push("uint64_t",type_infos::u64);
   m_type_collection.push("float32_t",type_infos::f32);
   m_type_collection.push("float64_t",type_infos::f64);
+  m_type_collection.push( "int",type_infos::s64);
+  m_type_collection.push("uint",type_infos::u64);
 
   m_type_collection.push("bool",type_infos::boolean);
 
@@ -51,23 +67,24 @@ m_memory(1024*1024*16)
   m_type_collection.push("nullptr_t",type_infos::null_pointer);
 
   m_type_collection.push("geneptr_t",type_infos::generic_pointer);
+
+    while(m_number_of_frames)
+    {
+      pop_frame();
+    }
+
+
+  m_current_frame = nullptr;
 }
 
 
-void
+const function&
 context::
-clear() noexcept
+append_function(std::unique_ptr<function>&&  fn) noexcept
 {
-}
+  m_function_table.emplace_back(std::move(fn));
 
-
-function&
-context::
-create_function() noexcept
-{
-  m_function_table.emplace_back();
-
-  return m_function_table.back();
+  return *m_function_table.back();
 }
 
 
@@ -85,9 +102,71 @@ void
 context::
 print() const noexcept
 {
+  printf("type collection{\n");
+
+  m_type_collection.print();
+
+  printf("}\ntype info table{\n");
+
+    for(auto&  ti: m_type_info_table)
+    {
+      ti->print();
+
+      printf("\n");
+    }
+
+
+  printf("}\nsymbol table{\n");
+
+  m_global_symbol_table.print(m_memory);
+
+  printf("}\nfunction table{\n");
+
+    for(auto&  fn: m_function_table)
+    {
+      fn->print(*this);
+
+      printf("\n");
+    }
+
+
+  printf("}\n");
 }
 
 
+
+
+context&
+context::
+assign(std::string_view  sv) noexcept
+{
+  clear();
+
+  m_source = sv;
+
+  token_block  blk(m_source);
+
+  token_iterator  it(blk);
+
+    while(it)
+    {
+        if(it->is_operator_code(";"))
+        {
+          ++it;
+        }
+
+      else
+        {
+            if(!read_declaration(it))
+            {
+              break;
+            }
+        }
+    }
+
+
+  return *this;
+}
 
 
 void

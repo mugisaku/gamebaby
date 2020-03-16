@@ -27,14 +27,14 @@ class type_info;
 
 
 class
-parameter_list
+function_signature
 {
   std::vector<const type_info*>  m_container;
 
 public:
-  parameter_list(std::vector<const type_info*>&&  ls={}) noexcept: m_container(std::move(ls)){}
+  function_signature(std::vector<const type_info*>&&  ls={}) noexcept: m_container(std::move(ls)){}
 
-  parameter_list&  push(const type_info&  ti) noexcept{  m_container.emplace_back(&ti);  return *this;}
+  function_signature&  push(const type_info&  ti) noexcept{  m_container.emplace_back(&ti);  return *this;}
 
   const type_info**  begin() noexcept{return m_container.data();}
   const type_info**    end() noexcept{return m_container.data()+m_container.size();}
@@ -43,28 +43,6 @@ public:
   const type_info* const*    end() const noexcept{return m_container.data()+m_container.size();}
 
   int  get_number_of_elements() const noexcept{return m_container.size();}
-
-  std::string  make_id() const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
-class
-function_signature
-{
-  const type_info&  m_return_type_info;
-
-  parameter_list  m_parameter_list;
-
-public:
-  function_signature(const type_info&  ret_ti, parameter_list&&  parals) noexcept:
-  m_return_type_info(ret_ti), m_parameter_list(std::move(parals)){}
-
-  const type_info&  get_return_type_info() const noexcept{return m_return_type_info;}
-
-  const parameter_list&  get_parameter_list() const noexcept{return m_parameter_list;}
 
   std::string  make_id() const noexcept;
 
@@ -570,6 +548,11 @@ type_collection
 
 public:
   type_collection() noexcept{}
+
+  void  clear() noexcept{
+    m_entry_table.clear();
+    m_alias_table.clear();
+  }
 
   const type_entry&  push(std::string_view  name, const type_info&  ti) noexcept;
 

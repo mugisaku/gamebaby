@@ -305,6 +305,42 @@ print(const char*  base, int  indent) const noexcept
 }
 
 
+void
+token::
+print_source(const char*  base) const noexcept
+{
+    if(base)
+    {
+      int  n = 1;
+
+        while(base < m_begin)
+        {
+            if(*base == '\n')
+            {
+              ++n;
+            }
+
+
+          ++base;
+        }
+
+
+      printf("%4d ",n);
+    }
+
+
+  auto  p = m_begin;
+
+    while(p < m_end)
+    {
+      printf("%c",*p++);
+    }
+
+
+  printf("\n");
+}
+
+
 
 
 }

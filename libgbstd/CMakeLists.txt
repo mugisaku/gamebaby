@@ -80,7 +80,6 @@ set(SOURCES
   typesystems/type_info.cpp
   typesystems/type_entry.cpp
   typesystems/type_collection.cpp
-  typesystems/parameter_list.cpp
   typesystems/function_signature.cpp
   vms/vm_memory.cpp
   vms/vm_tepid_object.cpp
@@ -91,6 +90,7 @@ set(SOURCES
   vms/vm_context.cpp
   vms/vm_context__frame.cpp
   vms/vm_context__create_type.cpp
+  vms/vm_context__read_block.cpp
   vms/vm_operations_callback.cpp
   vms/vm_expression.cpp
   vms/vm_block_statement.cpp

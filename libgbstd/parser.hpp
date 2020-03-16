@@ -177,6 +177,7 @@ public:
   const token_block&  get_block()                 const noexcept{return m_data.blk;}
 
   void  print(const char*  base=nullptr, int  indent=0) const noexcept;
+  void  print_source(const char*  base=nullptr) const noexcept;
 
 };
 

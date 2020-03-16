@@ -161,7 +161,7 @@ cold_object(const function&  fn) noexcept
 {
   m_memory = &fn;
 
-  m_type_info = &fn.get_type_info();
+  m_type_info = &fn.get_pointer_type_info();
 }
 
 
@@ -243,8 +243,6 @@ print() const noexcept
     if(m_type_info)
     {
       auto&  ti = *m_type_info;
-
-      auto  sz = ti.get_size();
 
         if(ti.is_integer())
         {

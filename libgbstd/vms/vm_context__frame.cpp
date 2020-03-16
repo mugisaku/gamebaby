@@ -83,15 +83,11 @@ void
 context::
 push_frame(address_t  st_p, const function&  fn, int  argc, const expression*  argv) noexcept
 {
-  auto&  sig = fn.get_type_info().get_function_pointer_type_info().get_signature();
-
-  auto  paras = sig.get_parameter_list().begin();
-  auto  names = fn.get_argument_name_list().begin();
+  auto  paras = fn.get_parameter_list().begin();
 
     while(argc--)
     {
-      auto&    ti = **paras++;
-      auto&  name =  *names++;
+      auto&  decl = *paras++;
 /*
       auto&  dst_var = push_variable(fn.get_name().data(),ti,name);
 
@@ -133,6 +129,8 @@ push_frame(address_t  st_p, const function&  fn, int  argc, const expression*  a
 
   new_frame->m_previous = m_current_frame            ;
                           m_current_frame = new_frame;
+
+  ++m_number_of_frames;
 }
 
 
@@ -150,6 +148,8 @@ pop_frame() noexcept
                     m_current_frame = old_frame->m_previous;
 
   delete old_frame;
+
+  --m_number_of_frames;
 }
 
 
