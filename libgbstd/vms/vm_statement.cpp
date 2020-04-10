@@ -8,6 +8,7 @@ namespace gbstd{
 
 
 
+/*
 statement&
 statement::
 assign(const statement&  rhs) noexcept
@@ -16,7 +17,8 @@ assign(const statement&  rhs) noexcept
     {
       clear();
 
-      m_kind = rhs.m_kind;
+      m_space = rhs.m_space;
+      m_kind  = rhs.m_kind;
 
         switch(m_kind)
         {
@@ -26,13 +28,15 @@ assign(const statement&  rhs) noexcept
       case(kind::if_string ): new(&m_data) if_string_statement(rhs.m_data.ifs);break;
       case(kind::block     ): new(&m_data) block_statement(rhs.m_data.blk);break;
       case(kind::control   ): new(&m_data) control_statement(rhs.m_data.ctrl);break;
-      case(kind::expression): new(&m_data) expression_statement(rhs.m_data.expr);break;
+      case(kind::let       ): new(&m_data) let_statement(rhs.m_data.let);break;
+      case(kind::expression): new(&m_data) expression(rhs.m_data.expr);break;
         }
     }
 
 
   return *this;
 }
+*/
 
 
 statement&
@@ -43,7 +47,8 @@ assign(statement&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_kind,rhs.m_kind);
+      std::swap(m_block,rhs.m_block);
+      std::swap(m_kind ,rhs.m_kind );
 
         switch(m_kind)
         {
@@ -51,9 +56,10 @@ assign(statement&&  rhs) noexcept
       case(kind::label     ): new(&m_data) label_statement(std::move(rhs.m_data.lb));break;
       case(kind::jump      ): new(&m_data) jump_statement(std::move(rhs.m_data.jmp));break;
       case(kind::if_string ): new(&m_data) if_string_statement(std::move(rhs.m_data.ifs));break;
-      case(kind::block     ): new(&m_data) block_statement(std::move(rhs.m_data.blk));break;
+      case(kind::block     ): new(&m_data) std::unique_ptr<block_statement>(std::move(rhs.m_data.blk));break;
       case(kind::control   ): new(&m_data) control_statement(std::move(rhs.m_data.ctrl));break;
-      case(kind::expression): new(&m_data) expression_statement(std::move(rhs.m_data.expr));break;
+      case(kind::let       ): new(&m_data) let_statement(std::move(rhs.m_data.let));break;
+      case(kind::expression): new(&m_data) expression(std::move(rhs.m_data.expr));break;
         }
     }
 
@@ -66,9 +72,11 @@ assign(statement&&  rhs) noexcept
 
 statement&
 statement::
-assign(return_statement&&  st) noexcept
+assign(const block_statement*  blk, return_statement&&  st) noexcept
 {
   clear();
+
+  m_block = blk;
 
   new(&m_data) return_statement(std::move(st));
 
@@ -81,9 +89,11 @@ assign(return_statement&&  st) noexcept
 
 statement&
 statement::
-assign(label_statement&&  st) noexcept
+assign(const block_statement*  blk, label_statement&&  st) noexcept
 {
   clear();
+
+  m_block = blk;
 
   new(&m_data) label_statement(std::move(st));
 
@@ -96,9 +106,11 @@ assign(label_statement&&  st) noexcept
 
 statement&
 statement::
-assign(jump_statement&&  st) noexcept
+assign(const block_statement*  blk, jump_statement&&  st) noexcept
 {
   clear();
+
+  m_block = blk;
 
   new(&m_data) jump_statement(std::move(st));
 
@@ -111,9 +123,11 @@ assign(jump_statement&&  st) noexcept
 
 statement&
 statement::
-assign(if_string_statement&&  st) noexcept
+assign(const block_statement*  blk, if_string_statement&&  st) noexcept
 {
   clear();
+
+  m_block = blk;
 
   new(&m_data) if_string_statement(std::move(st));
 
@@ -126,11 +140,13 @@ assign(if_string_statement&&  st) noexcept
 
 statement&
 statement::
-assign(block_statement&&  st) noexcept
+assign(const block_statement*  blk, std::unique_ptr<block_statement>&&  st) noexcept
 {
   clear();
 
-  new(&m_data) block_statement(std::move(st));
+  m_block = blk;
+
+  new(&m_data) std::unique_ptr<block_statement>(std::move(st));
 
   m_kind = kind::block;
 
@@ -141,9 +157,11 @@ assign(block_statement&&  st) noexcept
 
 statement&
 statement::
-assign(control_statement&&  st) noexcept
+assign(const block_statement*  blk, control_statement&&  st) noexcept
 {
   clear();
+
+  m_block = blk;
 
   new(&m_data) control_statement(std::move(st));
 
@@ -156,11 +174,31 @@ assign(control_statement&&  st) noexcept
 
 statement&
 statement::
-assign(expression_statement&&  st) noexcept
+assign(const block_statement*  blk, let_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) expression_statement(std::move(st));
+  m_block = blk;
+
+  new(&m_data) let_statement(std::move(st));
+
+  m_kind = kind::let;
+
+
+  return *this;
+}
+
+
+statement&
+statement::
+assign(const block_statement*  blk, expression&&  st) noexcept
+{
+  clear();
+
+  m_block = blk;
+
+
+  new(&m_data) expression(std::move(st));
 
   m_kind = kind::expression;
 
@@ -183,11 +221,13 @@ clear() noexcept
   case(kind::if_string ): std::destroy_at(&m_data.ifs);break;
   case(kind::block     ): std::destroy_at(&m_data.blk);break;
   case(kind::control   ): std::destroy_at(&m_data.ctrl);break;
+  case(kind::let       ): std::destroy_at(&m_data.let);break;
   case(kind::expression): std::destroy_at(&m_data.expr);break;
     }
 
 
-  m_kind = kind::null;
+  m_block = nullptr;
+  m_kind  = kind::null;
 }
 
 
@@ -201,9 +241,14 @@ print(const context*  ctx, const function*  fn) const noexcept
   case(kind::label     ): get_label().print();break;
   case(kind::jump      ): get_jump().print();break;
   case(kind::if_string ): get_if_string().print();break;
-  case(kind::block     ): get_block().print();break;
   case(kind::control   ): get_control().print();break;
+  case(kind::let       ): get_let().print();break;
   case(kind::expression): get_expression().print();break;
+  case(kind::block     ):
+      printf("{\n");
+      get_block().print();
+      printf("}\n");
+      break;
     }
 }
 

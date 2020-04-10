@@ -19,7 +19,7 @@ make_id() const noexcept
 
     if(it != end_it)
     {
-      s += (*it++)->get_id();
+      s += (*it++).get_id();
     }
 
 
@@ -27,7 +27,7 @@ make_id() const noexcept
 
     while(it != end_it)
     {
-      s += (*it++)->get_id();
+      s += (*it++).get_id();
 
       s += ",";
     }
@@ -45,9 +45,9 @@ print() const noexcept
 {
   printf("(");
 
-    for(auto  ti: m_container)
+    for(auto&  ti: m_container)
     {
-      ti->print();
+      ti.print();
 
       printf(",");
     }

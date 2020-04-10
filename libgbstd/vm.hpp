@@ -23,7 +23,6 @@ namespace gbstd{
 
 
 using typesystem::type_info;
-using typesystem::type_collection;
 using typesystem::function_signature;
 using typesystem::function_pointer_type_info;
 using typesystem::pointer_type_info;
@@ -47,8 +46,17 @@ class if_string_statement;
 class expression_statement;
 
 
-using address_t = uint32_t;
-using boolean_t =  uint8_t;
+using address_t = int32_t;
+using boolean_t =  int8_t;
+
+
+constexpr address_t
+get_aligned_address(address_t  addr) noexcept
+{
+  constexpr auto  align = sizeof(int64_t);
+
+  return (addr+(align-1))/align*align;
+}
 
 
 namespace type_infos{
@@ -57,14 +65,10 @@ constexpr int  pointer_size = sizeof(address_t);
 constexpr int  function_pointer_size = sizeof(function*);
 constexpr int     enum_size = 4;
 
-extern const type_info  s8;
-extern const type_info  u8;
-extern const type_info  s16;
-extern const type_info  u16;
-extern const type_info  s32;
-extern const type_info  u32;
-extern const type_info  s64;
-extern const type_info  u64;
+extern const type_info  i8;
+extern const type_info  i16;
+extern const type_info  i32;
+extern const type_info  i64;
 extern const type_info  f32;
 extern const type_info  f64;
 extern const type_info  undefined;
@@ -158,11 +162,8 @@ public:
   cold_object(const type_info&  ti, address_t  addr) noexcept;
   cold_object(bool  b) noexcept;
   cold_object(  int8_t  i) noexcept;
-  cold_object( uint8_t  u) noexcept;
   cold_object( int16_t  i) noexcept;
-  cold_object(uint16_t  u) noexcept;
   cold_object( int32_t  i) noexcept;
-  cold_object(uint32_t  u) noexcept;
   cold_object( int64_t  i) noexcept;
   cold_object(uint64_t  u) noexcept;
   cold_object(float   f) noexcept;
@@ -178,8 +179,7 @@ public:
 
   const type_info&  get_type_info() const noexcept{return *m_type_info;}
 
-   int64_t  get_integer()          const noexcept;
-  uint64_t  get_unsigned_integer() const noexcept;
+   int64_t  get_integer() const noexcept;
 
   double  get_fpn() const noexcept;
 
@@ -338,24 +338,39 @@ class expression;
 
 
 class
-unary_operation
+prefix_unary_operation
 {
+protected:
   operator_code  m_opcode;
 
   std::unique_ptr<expression>  m_operand;
 
 public:
-  unary_operation(operator_code  op, std::unique_ptr<expression>&&  o) noexcept:
+  prefix_unary_operation(operator_code  op, std::unique_ptr<expression>&&  o) noexcept:
   m_opcode(op), m_operand(std::move(o)){}
 
-  unary_operation(const unary_operation&  rhs) noexcept{assign(rhs);}
+  prefix_unary_operation(const prefix_unary_operation&  rhs) noexcept{assign(rhs);}
 
-  unary_operation&  operator=(const unary_operation&  rhs) noexcept{return assign(rhs);}
-  unary_operation&  assign(const unary_operation&  rhs) noexcept;
+  prefix_unary_operation&  operator=(const prefix_unary_operation&  rhs) noexcept{return assign(rhs);}
+  prefix_unary_operation&  assign(const prefix_unary_operation&  rhs) noexcept;
 
   operator_code  get_opcode() const noexcept{return m_opcode;}
 
+        expression&  get_operand()       noexcept{return *m_operand;}
   const expression&  get_operand() const noexcept{return *m_operand;}
+
+  type_info  get_type_info(const block_statement*  blkst) const noexcept;
+
+};
+
+
+class
+postfix_unary_operation: public prefix_unary_operation
+{
+public:
+  using prefix_unary_operation::prefix_unary_operation;
+
+  type_info  get_type_info(const block_statement*  blkst) const noexcept;
 
 };
 
@@ -379,8 +394,13 @@ public:
 
   operator_code  get_opcode() const noexcept{return m_opcode;}
 
-  const expression&  get_left()  const noexcept{return *m_left;}
+        expression&  get_left()       noexcept{return *m_left;}
+  const expression&  get_left() const noexcept{return *m_left;}
+
+        expression&  get_right()       noexcept{return *m_right;}
   const expression&  get_right() const noexcept{return *m_right;}
+
+  type_info  get_type_info(const block_statement*  blkst) const noexcept;
 
 };
 
@@ -408,17 +428,22 @@ expression
   union data{
     bool         b;
     std::string  s;
-    uint64_t     i;
+    int64_t      i;
 
     double  f;
 
-     unary_operation   un;
+     prefix_unary_operation   pre_un;
+    postfix_unary_operation   pos_un;
+
     binary_operation  bin;
 
   data() noexcept{}
  ~data(){}
 
   } m_data;
+
+  address_t  m_begin_address=0;
+  address_t  m_end_address=0;
 
 public:
   expression() noexcept{}
@@ -429,9 +454,10 @@ public:
   expression(bool  b) noexcept{assign(b);}
   expression(identifier&&  id) noexcept{assign(std::move(id));}
   expression(std::string_view  sv) noexcept{assign(sv);}
-  expression(uint64_t  i) noexcept{assign(i);}
+  expression(int64_t  i) noexcept{assign(i);}
   expression(double  f) noexcept{assign(f);}
-  expression(int  k, unary_operation&&  op) noexcept{assign(k,std::move(op));}
+  expression(prefix_unary_operation&&  op) noexcept{assign(std::move(op));}
+  expression(postfix_unary_operation&&  op) noexcept{assign(std::move(op));}
   expression(binary_operation&&  op) noexcept{assign(std::move(op));}
  ~expression(){clear();}
 
@@ -442,8 +468,10 @@ public:
   expression&  operator=(bool  b) noexcept{return assign(b);}
   expression&  operator=(identifier&&  id) noexcept{return assign(std::move(id));}
   expression&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  expression&  operator=(uint64_t  i) noexcept{return assign(i);}
+  expression&  operator=(int64_t  i) noexcept{return assign(i);}
   expression&  operator=(double  f) noexcept{return assign(f);}
+  expression&  operator=(prefix_unary_operation&&  op) noexcept{return assign(std::move(op));}
+  expression&  operator=(postfix_unary_operation&&  op) noexcept{return assign(std::move(op));}
   expression&  operator=(binary_operation&&  op) noexcept{return assign(std::move(op));}
 
   operator bool() const noexcept{return m_kind != kind::null;}
@@ -455,18 +483,26 @@ public:
   expression&  assign(bool  b) noexcept;
   expression&  assign(identifier&&  id) noexcept;
   expression&  assign(std::string_view  sv) noexcept;
-  expression&  assign(uint64_t  i) noexcept;
+  expression&  assign(int64_t  i) noexcept;
   expression&  assign(double  f) noexcept;
-  expression&  assign(int  k, unary_operation&&  op) noexcept;
+  expression&  assign(prefix_unary_operation&&  op) noexcept;
+  expression&  assign(postfix_unary_operation&&  op) noexcept;
   expression&  assign(binary_operation&&  op) noexcept;
 
   expression&  clear() noexcept;
 
+  address_t  get_begin_address() const noexcept{return m_begin_address;}
+  address_t  get_end_address()   const noexcept{return m_end_address;}
+
   const std::string&  get_string() const noexcept{return m_data.s;}
 
   bool      get_boolean() const noexcept{return m_data.b;}
-  uint64_t  get_integer() const noexcept{return m_data.i;}
+  int64_t   get_integer() const noexcept{return m_data.i;}
   double    get_fpn()     const noexcept{return m_data.f;}
+
+  const prefix_unary_operation&   get_prefix_unary_operation() const noexcept{return m_data.pre_un;}
+  const postfix_unary_operation&  get_postfix_unary_operation() const noexcept{return m_data.pos_un;}
+  const binary_operation&  get_binary_operation() const noexcept{return m_data.bin;}
 
   bool  is_undefined_literal()    const noexcept{return m_kind == kind::undefined_literal;}
   bool  is_boolean_literal()      const noexcept{return m_kind == kind::boolean_literal;}
@@ -479,7 +515,11 @@ public:
   bool  is_postfix_unary() const noexcept{return m_kind == kind::postfix_unary;}
   bool  is_binary()        const noexcept{return m_kind == kind::binary;}
 
-  tepid_object  evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept;
+  tepid_object  evaluate(context&  ctx) const noexcept;
+
+  address_t  allocate_address() noexcept;
+
+  type_info  get_type_info(const block_statement*  blkst) const noexcept;
 
   std::vector<const expression*>  get_argument_source_list() const noexcept;
 
@@ -497,16 +537,16 @@ expression  make_expression(std::string_view  sv) noexcept;
 class
 parameter
 {
-  const type_info*  m_type_info=nullptr;
+  type_info  m_type_info;
 
   std::string  m_name;
 
 public:
   parameter() noexcept{}
   parameter(const type_info&   ti, std::string_view  name) noexcept:
-  m_type_info(&ti), m_name(name){}
+  m_type_info(ti), m_name(name){}
 
-  const type_info&  get_type_info() const noexcept{return *m_type_info;}
+  const type_info&  get_type_info() const noexcept{return m_type_info;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
@@ -519,7 +559,7 @@ using parameter_list = std::vector<parameter>;
 class
 symbol
 {
-  const type_info*  m_type_info=nullptr;
+  type_info  m_type_info;
 
   std::string  m_name;
 
@@ -532,9 +572,9 @@ symbol
 public:
   symbol() noexcept{}
   symbol(const type_info&  ti, std::string_view  name, int attr, const function*  fn) noexcept:
-  m_type_info(&ti), m_name(name), m_attribute(attr), m_function(fn){}
+  m_type_info(ti), m_name(name), m_attribute(attr), m_function(fn){}
 
-  const type_info&  get_type_info() const noexcept{return *m_type_info;}
+  const type_info&  get_type_info() const noexcept{return m_type_info;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
@@ -551,38 +591,113 @@ public:
 class
 symbol_table
 {
-  std::vector<symbol>  m_content;
+public:
+  enum class directions{  absolute, relative_forward, relative_backward,};
+
+private:
+  std::vector<std::unique_ptr<symbol>>  m_content;
+
+  directions  m_direction;
 
   address_t  m_end_address=0;
 
 public:
-  symbol_table() noexcept{}
+  symbol_table(directions  dir=directions::absolute) noexcept: m_direction(dir){}
 
-        symbol&  operator[](int  i)       noexcept{return m_content[i];}
-  const symbol&  operator[](int  i) const noexcept{return m_content[i];}
+        symbol&  operator[](int  i)       noexcept{return *m_content[i];}
+  const symbol&  operator[](int  i) const noexcept{return *m_content[i];}
 
   void  clear() noexcept{  m_content.clear();  m_end_address = 0;}
 
+  directions  get_direction() const noexcept{return m_direction;}
+
+  bool  is_absolute()          const noexcept{return m_direction == directions::absolute;}
+  bool  is_relative_forward()  const noexcept{return m_direction == directions::relative_forward;}
+  bool  is_relative_backward() const noexcept{return m_direction == directions::relative_backward;}
+
   address_t  get_end_address() const noexcept{return m_end_address;}
 
-  symbol&  create(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept;
-  symbol&    push(const symbol&  sym) noexcept;
+  symbol&  push(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept;
+  symbol&  push(const symbol&  sym) noexcept;
 
-  void  pop() noexcept;
+  symbol_table&  push(const parameter_list&  ls) noexcept;
 
-        symbol*  find(std::string_view  name)       noexcept;
-  const symbol*  find(std::string_view  name) const noexcept;
+  const std::unique_ptr<symbol>&  find(std::string_view  name)       noexcept;
+  const symbol*                   find(std::string_view  name) const noexcept;
 
   int  get_number_of_symbols() const noexcept{return m_content.size();}
 
-  hot_object  make_object(std::string_view  name, const memory&  mem                ) const noexcept;
+  const std::unique_ptr<symbol>*  begin() const noexcept{return m_content.data();}
+  const std::unique_ptr<symbol>*    end() const noexcept{return m_content.data()+m_content.size();}
 
-  bool  reallocate() noexcept;
+  void  print(const memory*  mem=nullptr) const noexcept;
 
-  const symbol*  begin() const noexcept{return m_content.data();}
-  const symbol*    end() const noexcept{return m_content.data()+m_content.size();}
+};
 
-  void  print(const memory&  mem) const noexcept;
+
+class global_space;
+class  local_space;
+
+
+
+
+class
+memo_info
+{
+  type_info  m_type_info;
+
+  std::string  m_name;
+
+  address_t  m_address=0;
+
+public:
+  memo_info() noexcept{}
+  memo_info(const type_info&  ti, std::string_view  name) noexcept: m_type_info(ti), m_name(name){}
+
+  const type_info&  get_type_info() const noexcept{return m_type_info;}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+  void       set_address(address_t  addr)       noexcept{m_address = addr;}
+  address_t  get_addrees(               ) const noexcept{return m_address;}
+
+};
+
+
+class
+global_space
+{
+  std::vector<std::unique_ptr<memo_info>>  m_memo_info_table;
+
+  std::vector<std::unique_ptr<function>>  m_function_table;
+
+  std::vector<std::unique_ptr<local_space>>  m_local_spaces;
+
+public:
+  local_space&  create_local_space() noexcept;
+
+  function&  create_function(std::string_view  name, const type_info&  retti, parameter_list&&  parals) noexcept;
+
+  const memo_info&  push(const type_info&  ti, std::string_view  name) noexcept;
+
+};
+
+
+class
+local_space
+{
+  global_space&  m_global_space;
+
+  std::vector<std::unique_ptr<memo_info>>  m_parameter_memo_info_table;
+  std::vector<std::unique_ptr<memo_info>>   m_domestic_memo_info_table;
+
+public:
+  local_space(global_space&  gs) noexcept: m_global_space(gs){}
+
+  global_space&  get_global_space() const noexcept{return m_global_space;}
+
+  const memo_info&  push_parameter(const type_info&  ti, std::string_view  name) noexcept;
+  const memo_info&  push_domestic( const type_info&  ti, std::string_view  name) noexcept;
 
 };
 
@@ -601,6 +716,7 @@ public:
   return_statement() noexcept{}
   return_statement(expression&&  e) noexcept: m_expression(std::move(e)){}
 
+        expression&  get_expression()       noexcept{return m_expression;}
   const expression&  get_expression() const noexcept{return m_expression;}
 
   void  print() const noexcept{  printf("return ");  m_expression.print();}
@@ -643,21 +759,74 @@ public:
 class
 block_statement
 {
-  symbol_table  m_symbol_table;
+  const block_statement*  m_parent=nullptr;
+
+  const function*  m_function=nullptr;
+
+  pointer_wrapper<global_space>  m_global_space;
+
+  std::vector<type_info>  m_type_info_table;
+
+  std::vector<const memo_info*>  m_memo_info_table;
+
+  std::vector<std::unique_ptr<function>>  m_function_table;
 
   std::vector<statement>  m_statement_list;
 
+  parameter_list  read_parameter_list(token_iterator&  it) noexcept;
+
+  statement    read_return(token_iterator&  it) noexcept;
+  statement    read_jump(token_iterator&  it) noexcept;
+  statement    read_label(token_iterator&  it) noexcept;
+  statement    read_if(token_iterator&  it) noexcept;
+  statement    read_for(token_iterator&  it) noexcept;
+  statement    read_while(token_iterator&  it) noexcept;
+  statement    read_switch(token_iterator&  it) noexcept;
+  statement    read_let(token_iterator&  it) noexcept;
+
+  type_info   read_struct_type_info(token_iterator&  it) noexcept;
+  type_info    read_union_type_info(token_iterator&  it) noexcept;
+  type_info     read_enum_type_info(token_iterator&  it) noexcept;
+  type_info  read_derived_type_info(token_iterator&  it) noexcept;
+
+  type_info                    read_alias(token_iterator&  it) noexcept;
+  type_info   read_named_struct_type_info(token_iterator&  it) noexcept;
+  type_info    read_named_union_type_info(token_iterator&  it) noexcept;
+  type_info     read_named_enum_type_info(token_iterator&  it) noexcept;
+
+  type_info  read_user_defined_type_info(token_iterator&  it) noexcept;
+
+  const function*  read_function(token_iterator&  it) noexcept;
+
 public:
   block_statement() noexcept{}
+  block_statement(global_space&  gsp, token_iterator&  it) noexcept: m_global_space(&gsp){read(it);}
+  block_statement(const function&  fn, token_iterator&  it) noexcept;
+  block_statement(const block_statement*  p, token_iterator&  it) noexcept{read(it);}
 
   const statement&  operator[](int  i) const noexcept;
 
+  void  set_parent(const block_statement*  p) noexcept;
+
+  const function*  get_function() const noexcept{return m_function;}
+
+  const function*  find_function(std::string_view  name) const noexcept;
+
+  type_info  find_type_info_by_name(std::string_view  name) const noexcept;
+  type_info  find_type_info_by_id(  std::string_view  name) const noexcept;
+
+  void  clear() noexcept;
+
   void  push(statement&&  st) noexcept;
 
-        symbol_table&  get_symbol_table()       noexcept{return m_symbol_table;}
-  const symbol_table&  get_symbol_table() const noexcept{return m_symbol_table;}
+  const std::vector<statement>&  get_statement_list() const noexcept{return m_statement_list;}
 
-  void  print() const noexcept{}
+  block_statement&  read(token_iterator&  it) noexcept;
+  block_statement&  read(std::string_view  sv) noexcept;
+
+  type_info  create_type_from_string(std::string_view  sv) noexcept;
+
+  void  print() const noexcept;
 
 };
 
@@ -675,6 +844,30 @@ public:
   const std::string&  get_string() const noexcept{return m_string;}
 
   void  print() const noexcept{printf("%s",m_string.data());}
+
+};
+
+
+class
+let_statement
+{
+  std::string  m_target_name;
+
+  expression  m_expression;
+
+public:
+  let_statement(std::string_view  sv, expression&&  e) noexcept:
+  m_target_name(sv), m_expression(std::move(e)){}
+
+  const std::string&  get_target_name() const noexcept{return m_target_name;}
+
+        expression&  get_expression()       noexcept{return m_expression;}
+  const expression&  get_expression() const noexcept{return m_expression;}
+
+  void  print() const noexcept{
+    printf("let %s",m_target_name.data());
+      if(m_expression){  printf(" = (");  m_expression.print();  printf(")");}
+  }
 
 };
 
@@ -710,37 +903,16 @@ public:
 
 
 class
-expression_statement
-{
-  const type_info*  m_type_info=nullptr;
-
-  std::string  m_name;
-
-  expression  m_expression;
-
-public:
-  expression_statement(                                  std::string_view  sv, expression&&  e) noexcept: m_name(sv), m_expression(std::move(e)){}
-  expression_statement(const typesystem::type_info&  ti, std::string_view  sv, expression&&  e) noexcept: m_type_info(&ti), m_name(sv), m_expression(std::move(e)){}
-
-  const type_info*  get_type_info() const noexcept{return m_type_info;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-  const expression&  get_expression() const noexcept{return m_expression;}
-
-  void  print() const noexcept{  printf("%s = ",m_name.data());  m_expression.print();}
-
-};
-
-
-class
 statement
 {
+  const block_statement*  m_block=nullptr;
+
   enum class kind{
     null,
     return_,
     block,
     control,
+    let,
     if_string,
     expression,
     jump,
@@ -750,12 +922,14 @@ statement
 
   union data{
     return_statement       ret;
-    block_statement        blk;
     control_statement     ctrl;
+    let_statement          let;
     if_string_statement    ifs;
-    expression_statement  expr;
     jump_statement         jmp;
     label_statement         lb;
+    expression            expr;
+
+    std::unique_ptr<block_statement>  blk;
 
    data() noexcept{}
   ~data(){}
@@ -763,31 +937,33 @@ statement
 
 public:
   statement() noexcept{}
-  statement(const statement&   rhs) noexcept{assign(rhs);}
+  statement(const statement&   rhs) noexcept=delete;//{assign(rhs);}
   statement(      statement&&  rhs) noexcept{assign(std::move(rhs));}
-  statement(return_statement&&       st) noexcept{assign(std::move(st));}
-  statement( label_statement&&       st) noexcept{assign(std::move(st));}
-  statement( jump_statement&&        st) noexcept{assign(std::move(st));}
-  statement( if_string_statement&&   st) noexcept{assign(std::move(st));}
-  statement( block_statement&&       st) noexcept{assign(std::move(st));}
-  statement( control_statement&&     st) noexcept{assign(std::move(st));}
-  statement( expression_statement&&  st) noexcept{assign(std::move(st));}
+  statement(const block_statement*  blk, return_statement&&       st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  label_statement&&       st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  jump_statement&&        st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  if_string_statement&&   st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  std::unique_ptr<block_statement>&&       st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  control_statement&&     st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk,  let_statement&&         st) noexcept{assign(blk,std::move(st));}
+  statement(const block_statement*  blk, expression&&  e) noexcept{assign(blk,std::move(e));}
  ~statement(){clear();}
 
-  statement&  operator=(const statement&   rhs) noexcept{return assign(rhs);}
+  statement&  operator=(const statement&   rhs) noexcept=delete;//{return assign(rhs);}
   statement&  operator=(      statement&&  rhs) noexcept{return assign(std::move(rhs));}
 
   operator bool() const noexcept{return m_kind != kind::null;}
 
-  statement&  assign(const statement&   rhs) noexcept;
+//  statement&  assign(const statement&   rhs) noexcept;
   statement&  assign(      statement&&  rhs) noexcept;
-  statement&  assign(return_statement&&       st) noexcept;
-  statement&  assign( label_statement&&       st) noexcept;
-  statement&  assign( jump_statement&&        st) noexcept;
-  statement&  assign( if_string_statement&&   st) noexcept;
-  statement&  assign( block_statement&&       st) noexcept;
-  statement&  assign( control_statement&&     st) noexcept;
-  statement&  assign( expression_statement&&  st) noexcept;
+  statement&  assign(const block_statement*  blk, return_statement&&       st) noexcept;
+  statement&  assign(const block_statement*  blk,  label_statement&&       st) noexcept;
+  statement&  assign(const block_statement*  blk,  jump_statement&&        st) noexcept;
+  statement&  assign(const block_statement*  blk,  if_string_statement&&   st) noexcept;
+  statement&  assign(const block_statement*  blk,  std::unique_ptr<block_statement>&&       st) noexcept;
+  statement&  assign(const block_statement*  blk,  control_statement&&     st) noexcept;
+  statement&  assign(const block_statement*  blk,  let_statement&&         st) noexcept;
+  statement&  assign(const block_statement*  blk,  expression&&  e) noexcept;
 
   void  clear() noexcept;
 
@@ -798,15 +974,17 @@ public:
   bool  is_if_string()  const noexcept{return m_kind == kind::if_string;}
   bool  is_block()      const noexcept{return m_kind == kind::block;}
   bool  is_control()    const noexcept{return m_kind == kind::control;}
+  bool  is_let()        const noexcept{return m_kind == kind::let;}
   bool  is_expression() const noexcept{return m_kind == kind::expression;}
 
   const return_statement&      get_return()     const noexcept{return m_data.ret;}
   const label_statement&       get_label()      const noexcept{return m_data.lb;}
   const jump_statement&        get_jump()       const noexcept{return m_data.jmp;}
   const if_string_statement&   get_if_string()  const noexcept{return m_data.ifs;}
-  const block_statement&       get_block()      const noexcept{return m_data.blk;}
+  const block_statement&       get_block()      const noexcept{return *m_data.blk;}
   const control_statement&     get_control()    const noexcept{return m_data.ctrl;}
-  const expression_statement&  get_expression() const noexcept{return m_data.expr;}
+  const let_statement&         get_let()        const noexcept{return m_data.let;}
+  const expression&            get_expression() const noexcept{return m_data.expr;}
 
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
@@ -816,67 +994,72 @@ public:
 
 
 class
-statement_cursor
-{
-  struct frame{
-    const block_statement&  m_block;
-
-    int  m_counter=0;
-
-    frame(const block_statement&  st) noexcept: m_block(st){}
-
-  };
-
-  std::vector<frame>  m_frame_stack;
-
-public:
-  statement_cursor() noexcept{}
-  statement_cursor(const block_statement&  st) noexcept{assign(st);}
-
-  operator bool() const noexcept{return m_frame_stack.size();}
-
-  statement_cursor&  assign(const block_statement&  st) noexcept;
-
-  statement_cursor&       push(const block_statement&  st) noexcept;
-  const block_statement&  pop() noexcept;
-
-  void  advance() noexcept;
-
-  const statement&  get() const noexcept;
-
-};
-
-
-class
 function
 {
+  pointer_wrapper<local_space>  m_local_space;
+
   std::unique_ptr<type_info>  m_pointer_type_info;
 
-  const type_info*  m_return_type_info;
+  std::string  m_name;
 
-  parameter_list  m_parameter_list;
+  const type_info*  m_return_type_info;
 
   block_statement  m_block;
 
 public:
-  function(const type_info&  retti, std::vector<parameter>&&  parals, block_statement&&  blkst) noexcept:
-  m_return_type_info(&retti), m_parameter_list(std::move(parals)), m_block(std::move(blkst)){update_pointer_type_info();}
+  function() noexcept{}
+  function(local_space&  lsp, std::string_view  name, const type_info&  retti, parameter_list&&  parals) noexcept;
+
+  global_space&  get_global_space() const noexcept{return m_local_space->get_global_space();}
+  local_space&    get_local_space() const noexcept{return *m_local_space;}
 
   const type_info&  update_pointer_type_info() noexcept;
+
+  const std::string&  get_name() const noexcept{return m_name;}
 
   const type_info&  get_pointer_type_info() const noexcept{return *m_pointer_type_info;}
   const type_info&   get_return_type_info() const noexcept{return *m_return_type_info;}
 
-  const parameter_list&  get_parameter_list() const noexcept{return m_parameter_list;}
+        block_statement&  get_block_statement()       noexcept{return m_block;}
+  const block_statement&  get_block_statement() const noexcept{return m_block;}
 
-        block_statement&  get_block()       noexcept{return m_block;}
-  const block_statement&  get_block() const noexcept{return m_block;}
-
-  void  print(const context&  ctx) const noexcept;
+  void  print() const noexcept;
 
 };
 
 
+
+
+class
+call_frame
+{
+  const function*  m_function;
+
+  struct state{
+    const statement*  m_begin;
+    const statement*  m_current;
+    const statement*  m_end;
+
+  };
+
+
+  std::vector<state>  m_state_stack;
+
+  void  process(const     return_statement&  st, context&  ctx) noexcept;
+  void  process(const       jump_statement&  st) noexcept;
+  void  process(const      label_statement&  st) noexcept;
+  void  process(const      block_statement&  st) noexcept;
+  void  process(const    control_statement&  st) noexcept;
+  void  process(const  if_string_statement&  st) noexcept;
+
+public:
+  call_frame(const function&  fn) noexcept;
+
+  operator bool() const noexcept{return m_state_stack.size();}
+
+  void  operator()(context&  ctx) noexcept;
+
+};
 
 
 class
@@ -884,46 +1067,16 @@ context
 {
   std::string  m_source;
 
-  type_collection  m_type_collection;
+  global_space  m_global_space;
 
-  std::vector<std::unique_ptr<type_info>>  m_type_info_table;
-  std::vector<std::unique_ptr<function>>    m_function_table;
+  block_statement  m_block;
 
-  symbol_table   m_global_symbol_table;
-  symbol_table  m_runtime_symbol_table;
+  address_t  m_sp=0;
+  address_t  m_bp=0;
+
+  std::vector<call_frame>  m_call_stack;
 
   memory  m_memory;
-
-  struct frame;
-
-  int  m_number_of_frames=0;
-
-  frame*  m_current_frame=nullptr;
-
-  bool  m_finalized=false;
-
-  void  push_block(const block_statement&  st) noexcept;
-
-  void  exit_block() noexcept;
-
-  void  push_frame(uint32_t  st_p, const function&  fn, int  argc, const expression*  args) noexcept;
-  void  pop_frame() noexcept;
-
-
-  void  process(const            statement&  st) noexcept;
-  void  process(const     return_statement&  st) noexcept;
-  void  process(const       jump_statement&  st) noexcept;
-  void  process(const      label_statement&  st) noexcept;
-  void  process(const      block_statement&  st) noexcept;
-  void  process(const    control_statement&  st) noexcept;
-  void  process(const  if_string_statement&  st) noexcept;
-  void  process(const expression_statement&  st) noexcept;
-
-  parameter_list  read_parameter_list(token_iterator&  it) noexcept;
-  block_statement          read_block(token_iterator&  it) noexcept;
-  const type_info*   read_struct_type(token_iterator&  it) noexcept;
-  const type_info*    read_union_type(token_iterator&  it) noexcept;
-  const type_info*     read_enum_type(token_iterator&  it) noexcept;
 
 public:
   context() noexcept;
@@ -931,36 +1084,22 @@ public:
 
   void  clear() noexcept;
 
-        type_collection&  get_type_collection()       noexcept{return m_type_collection;}
-  const type_collection&  get_type_collection() const noexcept{return m_type_collection;}
+  context&  assign(std::string_view  sv) noexcept;
 
-  const function&  append_function(std::unique_ptr<function>&&  fn) noexcept;
-
-  const type_info&  append_type_info(std::unique_ptr<type_info>&&  ti) noexcept;
-
-        symbol_table&  get_global_symbol_table()       noexcept{return m_global_symbol_table;}
-  const symbol_table&  get_global_symbol_table() const noexcept{return m_global_symbol_table;}
-
-  const symbol_table&  get_runtime_symbol_table() const noexcept{return m_runtime_symbol_table;}
+  address_t  get_bp() const noexcept{return m_bp;}
 
         memory&  get_memory()       noexcept{return m_memory;}
   const memory&  get_memory() const noexcept{return m_memory;}
 
-  address_t  get_bp() const noexcept;
+  void  call_function(std::string_view  fn_name, address_t  return_value_address) noexcept;
 
-  context&  assign(std::string_view  sv) noexcept;
-
-  const type_info*  read_type(token_iterator&  it) noexcept;
-
-  bool  read_declaration(token_iterator&  it) noexcept;
+  void  print_stack_frame() const noexcept;
+  void  push_stack_frame(address_t  return_address, address_t  return_value_address, size_t  size) noexcept;
+  void   pop_stack_frame() noexcept;
 
   void  reset() noexcept;
   bool   step() noexcept;
   void    run() noexcept;
-
-  context&  finalize() noexcept;
-
-  const type_info*  create_type_from_string(std::string_view  sv) noexcept;
 
   void  print() const noexcept;
 

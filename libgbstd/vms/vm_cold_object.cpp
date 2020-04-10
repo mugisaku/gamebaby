@@ -20,18 +20,19 @@ cold_object(const tepid_object&  o) noexcept
 {
     if(o.get_type_info().is_reference())
     {
+/*
       m_type_info = &o.get_type_info().strip_reference_type();
 
         if(m_type_info->is_array())
         {
           m_type_info = &m_type_info->strip_array_type().form_pointer_type(type_infos::pointer_size);
 
-          m_memory = address_t(o.get_unsigned_integer());
+          m_memory = address_t(o.get_integer());
         }
 
       else
         {
-          auto  addr = o.get_unsigned_integer();
+          auto  addr = o.get_integer();
           auto    sz = o.get_size();
 
           m_memory.allocate(sz);
@@ -41,6 +42,7 @@ cold_object(const tepid_object&  o) noexcept
 
           std::memcpy(dst,src,sz);
         }
+*/
     }
 
   else
@@ -66,16 +68,7 @@ cold_object(int8_t  i) noexcept
 {
   m_memory = i;
 
-  m_type_info = &type_infos::s8;
-}
-
-
-cold_object::
-cold_object(uint8_t  u) noexcept
-{
-  m_memory = u;
-
-  m_type_info = &type_infos::u8;
+  m_type_info = &type_infos::i8;
 }
 
 
@@ -84,16 +77,7 @@ cold_object(int16_t  i) noexcept
 {
   m_memory = i;
 
-  m_type_info = &type_infos::s16;
-}
-
-
-cold_object::
-cold_object(uint16_t  u) noexcept
-{
-  m_memory = u;
-
-  m_type_info = &type_infos::u16;
+  m_type_info = &type_infos::i16;
 }
 
 
@@ -102,14 +86,7 @@ cold_object(int32_t  i) noexcept
 {
   m_memory = i;
 
-  m_type_info = &type_infos::s32;
-}
-
-
-cold_object::
-cold_object(uint32_t  u) noexcept
-{
-  m_memory = u;
+  m_type_info = &type_infos::i32;
 }
 
 
@@ -118,14 +95,7 @@ cold_object(int64_t  i) noexcept
 {
   m_memory = i;
 
-  m_type_info = &type_infos::s64;
-}
-
-
-cold_object::
-cold_object(uint64_t  u) noexcept
-{
-  m_memory = u;
+  m_type_info = &type_infos::i64;
 }
 
 
@@ -172,7 +142,7 @@ cold_object(std::string_view  sv) noexcept
 
   m_memory.allocate(sz+1);
 
-  m_type_info = &type_infos::s8.form_array_type(sz+1);
+//  m_type_info = &type_infos::i8.form_array_type(sz+1);
 
   std::memcpy(&m_memory[0],sv.data(),sz);
 
@@ -201,21 +171,6 @@ get_integer() const noexcept
   else if(sz == 2){return *m_memory.get_pointer<int16_t>(0);}
   else if(sz == 4){return *m_memory.get_pointer<int32_t>(0);}
   else if(sz == 8){return *m_memory.get_pointer<int64_t>(0);}
-
-  return 0;
-}
-
-
-uint64_t
-cold_object::
-get_unsigned_integer() const noexcept
-{
-  auto  sz = get_size();
-
-       if(sz == 1){return *m_memory.get_pointer< uint8_t>(0);}
-  else if(sz == 2){return *m_memory.get_pointer<uint16_t>(0);}
-  else if(sz == 4){return *m_memory.get_pointer<uint32_t>(0);}
-  else if(sz == 8){return *m_memory.get_pointer<uint64_t>(0);}
 
   return 0;
 }
@@ -256,12 +211,6 @@ print() const noexcept
         }
 
       else
-        if(ti.is_unsigned_integer())
-        {
-          printf("uint(%" PRIu64 ")",get_unsigned_integer());
-        }
-
-      else
         if(ti.is_fpn())
         {
           printf("fpn(%f)",get_fpn());
@@ -270,7 +219,7 @@ print() const noexcept
       else
         if(ti.is_reference())
         {
-          printf("reference(%" PRIu64 ")",get_unsigned_integer());
+          printf("reference(%" PRIi64 ")",get_integer());
         }
 
       else
@@ -282,7 +231,7 @@ print() const noexcept
       else
         if(ti.is_pointer() || ti.is_generic_pointer())
         {
-          printf("pointer(%" PRIu64 ")",get_unsigned_integer());
+          printf("pointer(%" PRIi64 ")",get_integer());
         }
 
       else

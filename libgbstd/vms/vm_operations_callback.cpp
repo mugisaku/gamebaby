@@ -57,9 +57,9 @@ neg(cold_object  o) noexcept
 cold_object
 size(cold_object  o) noexcept
 {
-  auto&  ti = o.get_type_info().strip_reference_type();
+  auto  ti = o.get_type_info().strip_reference_type();
 
-  return cold_object(static_cast<uint64_t>(ti.get_size()));
+  return cold_object(static_cast<int64_t>(ti.get_size()));
 }
 
 
@@ -68,7 +68,7 @@ address(hot_object  o) noexcept
 {
     if(o.get_type_info().is_reference())
     {
-      auto&  ptr_ti = o.get_type_info().strip_reference_type();
+      auto  ptr_ti = o.get_type_info().strip_reference_type();
 
       return cold_object(ptr_ti,o.get_address());
     }
@@ -83,9 +83,9 @@ dereference(cold_object  o, const memory&  home_mem) noexcept
 {
     if(o.get_type_info().is_pointer())
     {
-      auto&  ref_ti = o.get_type_info().strip_pointer_type().form_reference_type(type_infos::pointer_size);
+      auto  ref_ti = o.get_type_info().strip_pointer_type().form_reference_type(type_infos::pointer_size);
 
-      return hot_object(home_mem,ref_ti,o.get_unsigned_integer());
+      return hot_object(home_mem,ref_ti,o.get_integer());
     }
 
 
@@ -133,44 +133,21 @@ add(cold_object  lo, cold_object  ro) noexcept
         }
 
       else
-        if(rti.is_unsigned_integer())
+        if(rti.is_fpn())
         {
-          return cold_object(li+ro.get_unsigned_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-      auto  li = lo.get_unsigned_integer();
-
-        if(rti.is_integer())
-        {
-          return cold_object(li+ro.get_integer());
-        }
-
-      else
-        if(rti.is_unsigned_integer())
-        {
-          return cold_object(li+ro.get_unsigned_integer());
+          return cold_object(li+ro.get_fpn());
         }
     }
 
   else
     if(lti.is_pointer())
     {
-      auto  li = lo.get_unsigned_integer();
+      auto  li = lo.get_integer();
       auto  sz = lti.get_pointer_type_info().get_base_type_info().get_size();
 
         if(rti.is_integer())
         {
           return cold_object(li+(sz*ro.get_integer()));
-        }
-
-      else
-        if(rti.is_unsigned_integer())
-        {
-          return cold_object(li+(sz*ro.get_unsigned_integer()));
         }
     }
 
@@ -195,26 +172,9 @@ sub(cold_object  lo, cold_object  ro) noexcept
         }
 
       else
-        if(rti.is_unsigned_integer())
+        if(rti.is_fpn())
         {
-          return cold_object(li-ro.get_unsigned_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-      auto  li = lo.get_unsigned_integer();
-
-        if(rti.is_integer())
-        {
-          return cold_object(li-ro.get_integer());
-        }
-
-      else
-        if(rti.is_unsigned_integer())
-        {
-          return cold_object(li-ro.get_unsigned_integer());
+          return cold_object(li-ro.get_fpn());
         }
     }
 
@@ -230,17 +190,11 @@ sub(cold_object  lo, cold_object  ro) noexcept
 
       else
         {
-          auto  li = lo.get_unsigned_integer();
+          auto  li = lo.get_integer();
 
             if(rti.is_integer())
             {
               return cold_object(li-(sz*ro.get_integer()));
-            }
-
-          else
-            if(rti.is_unsigned_integer())
-            {
-              return cold_object(li-(sz*ro.get_unsigned_integer()));
             }
         }
     }
@@ -258,20 +212,10 @@ mul(cold_object  lo, cold_object  ro) noexcept
 
     if(lti.is_integer())
     {
-        if(rti.is_integer() || rti.is_unsigned_integer())
+        if(rti.is_integer())
         {
           return cold_object( lo.get_integer()
                             *ro.get_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_integer() || rti.is_unsigned_integer())
-        {
-          return cold_object( lo.get_unsigned_integer()
-                            *ro.get_unsigned_integer());
         }
     }
 
@@ -288,20 +232,10 @@ div(cold_object  lo, cold_object  ro) noexcept
 
     if(lti.is_integer())
     {
-        if(rti.is_integer() || rti.is_unsigned_integer())
+        if(rti.is_integer())
         {
           return cold_object( lo.get_integer()
                             /ro.get_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_integer() || rti.is_unsigned_integer())
-        {
-          return cold_object( lo.get_unsigned_integer()
-                            /ro.get_unsigned_integer());
         }
     }
 
@@ -318,20 +252,10 @@ rem(cold_object  lo, cold_object  ro) noexcept
 
     if(lti.is_integer())
     {
-        if(rti.is_integer() || rti.is_unsigned_integer())
+        if(rti.is_integer())
         {
           return cold_object( lo.get_integer()
                             %ro.get_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_integer() || rti.is_unsigned_integer())
-        {
-          return cold_object( lo.get_unsigned_integer()
-                            %ro.get_unsigned_integer());
         }
     }
 
@@ -348,20 +272,10 @@ shl(cold_object  lo, cold_object  ro) noexcept
 
     if(lti.is_integer())
     {
-        if(rti.is_kind_of_integer())
+        if(rti.is_integer())
         {
           return cold_object(  lo.get_integer()
-                            <<ro.get_unsigned_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_kind_of_integer())
-        {
-          return cold_object(  lo.get_unsigned_integer()
-                            <<ro.get_unsigned_integer());
+                            <<ro.get_integer());
         }
     }
 
@@ -378,20 +292,10 @@ shr(cold_object  lo, cold_object  ro) noexcept
 
     if(lti.is_integer())
     {
-        if(rti.is_kind_of_integer())
+        if(rti.is_integer())
         {
           return cold_object(  lo.get_integer()
-                            >>ro.get_unsigned_integer());
-        }
-    }
-
-  else
-    if(lti.is_unsigned_integer())
-    {
-        if(rti.is_kind_of_integer())
-        {
-          return cold_object(  lo.get_unsigned_integer()
-                            >>ro.get_unsigned_integer());
+                            >>ro.get_integer());
         }
     }
 
@@ -409,8 +313,7 @@ eq(cold_object  lo, cold_object  ro) noexcept
   auto  li = lo.get_integer();
   auto  ri = ro.get_integer();
 
-    if((lti.is_integer()          && rti.is_integer()         ) ||
-       (lti.is_unsigned_integer() && rti.is_unsigned_integer()))
+    if(lti.is_integer() && rti.is_integer())
     {
       return cold_object(li == ri);
     }
@@ -435,8 +338,7 @@ neq(cold_object  lo, cold_object  ro) noexcept
   auto  li = lo.get_integer();
   auto  ri = ro.get_integer();
 
-    if((lti.is_integer()          && rti.is_integer()         ) ||
-       (lti.is_unsigned_integer() && rti.is_unsigned_integer()))
+    if(lti.is_integer() && rti.is_integer())
     {
       return cold_object(li != ri);
     }
@@ -464,15 +366,9 @@ lt(cold_object  lo, cold_object  ro) noexcept
     }
 
   else
-    if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
-    {
-      return cold_object(lo.get_unsigned_integer() < ro.get_unsigned_integer());
-    }
-
-  else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return cold_object(lo.get_unsigned_integer() < ro.get_unsigned_integer());
+      return cold_object(lo.get_integer() < ro.get_integer());
     }
 
 
@@ -492,15 +388,9 @@ lteq(cold_object  lo, cold_object  ro) noexcept
     }
 
   else
-    if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
-    {
-      return cold_object(lo.get_unsigned_integer() <= ro.get_unsigned_integer());
-    }
-
-  else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return cold_object(lo.get_unsigned_integer() <= ro.get_unsigned_integer());
+      return cold_object(lo.get_integer() <= ro.get_integer());
     }
 
 
@@ -520,15 +410,9 @@ gt(cold_object  lo, cold_object  ro) noexcept
     }
 
   else
-    if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
-    {
-      return cold_object(lo.get_unsigned_integer() > ro.get_unsigned_integer());
-    }
-
-  else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return cold_object(lo.get_unsigned_integer() > ro.get_unsigned_integer());
+      return cold_object(lo.get_integer() > ro.get_integer());
     }
 
 
@@ -548,15 +432,9 @@ gteq(cold_object  lo, cold_object  ro) noexcept
     }
 
   else
-    if(lti.is_unsigned_integer() && rti.is_unsigned_integer())
-    {
-      return cold_object(lo.get_unsigned_integer() >= ro.get_unsigned_integer());
-    }
-
-  else
     if(lti.is_pointer() && rti.is_pointer() && (lti == rti))
     {
-      return cold_object(lo.get_unsigned_integer() >= ro.get_unsigned_integer());
+      return cold_object(lo.get_integer() >= ro.get_integer());
     }
 
 
@@ -602,9 +480,9 @@ bit_or(cold_object  lo, cold_object  ro) noexcept
   auto&  lti = lo.get_type_info();
   auto&  rti = ro.get_type_info();
 
-    if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
+    if(lti.is_integer() && rti.is_integer())
     {
-      return cold_object(lo.get_unsigned_integer()|ro.get_unsigned_integer());
+      return cold_object(lo.get_integer()|ro.get_integer());
     }
 
 
@@ -618,9 +496,9 @@ bit_and(cold_object  lo, cold_object  ro) noexcept
   auto&  lti = lo.get_type_info();
   auto&  rti = ro.get_type_info();
 
-    if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
+    if(lti.is_integer() && rti.is_integer())
     {
-      return cold_object(lo.get_unsigned_integer()&ro.get_unsigned_integer());
+      return cold_object(lo.get_integer()&ro.get_integer());
     }
 
 
@@ -634,9 +512,9 @@ bit_xor(cold_object  lo, cold_object  ro) noexcept
   auto&  lti = lo.get_type_info();
   auto&  rti = ro.get_type_info();
 
-    if(lti.is_kind_of_integer() && rti.is_kind_of_integer())
+    if(lti.is_integer() && rti.is_integer())
     {
-      return cold_object(lo.get_unsigned_integer()^ro.get_unsigned_integer());
+      return cold_object(lo.get_integer()^ro.get_integer());
     }
 
 
@@ -659,21 +537,21 @@ subscript(cold_object  lo, cold_object  ro, const memory&  mem) noexcept
   auto&  lti = lo.get_type_info();
   auto&  rti = ro.get_type_info();
 
-    if(lti.is_pointer() && rti.is_kind_of_integer())
+    if(lti.is_pointer() && rti.is_integer())
     {
-      auto&  ti = lti.strip_pointer_type();
+      auto  ti = lti.strip_pointer_type();
 
-      address_t  p = lo.get_unsigned_integer()+(ti.get_size()*ro.get_unsigned_integer());
+      address_t  p = lo.get_integer()+(ti.get_size()*ro.get_integer());
 
       return hot_object(mem,ti,p);
     }
 
   else
-    if(lti.is_kind_of_integer() && rti.is_pointer())
+    if(lti.is_integer() && rti.is_pointer())
     {
-      auto&  ti = rti.strip_pointer_type();
+      auto  ti = rti.strip_pointer_type();
 
-      address_t  p = ro.get_unsigned_integer()+(ti.get_size()*lo.get_unsigned_integer());
+      address_t  p = ro.get_integer()+(ti.get_size()*lo.get_integer());
 
       return hot_object(mem,ti,p);
     }
@@ -697,7 +575,7 @@ dot(hot_object  lo, const expression&  r) noexcept
     {
         if(lo.get_type_info().is_reference())
         {
-          auto&  ti = lo.get_type_info().strip_reference_type();
+          auto  ti = lo.get_type_info().strip_reference_type();
 
             if(ti.is_struct())
             {

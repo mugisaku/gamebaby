@@ -10,21 +10,32 @@ namespace gbstd{
 
 symbol&
 symbol_table::
-create(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept
+push(const type_info&  ti, std::string_view  name, int  attr, const function*  fn) noexcept
 {
-  m_content.emplace_back(ti,name,attr,fn);
+  m_content.emplace_back(std::make_unique<symbol>(ti,name,attr,fn));
 
   auto&  bk = m_content.back();
 
-  auto  align = ti.get_align();
+  auto  sz = ti.get_size();
 
-  auto  addr = (m_end_address+(align-1))/align*align;
+    if(m_direction != directions::relative_backward)
+    {
+      bk->set_address(m_end_address);
 
-  bk.set_address(addr);
+      m_end_address = get_aligned_address(m_end_address+sz);
+    }
 
-  m_end_address = addr+ti.get_size();
+  else
+    {
+      constexpr auto  align = sizeof(int64_t);
 
-  return bk;
+      m_end_address = (m_end_address-sz-(align-1))/align*align;
+
+      bk->set_address(m_end_address);
+    }
+
+
+  return *bk;
 }
 
 
@@ -32,49 +43,42 @@ symbol&
 symbol_table::
 push(const symbol&  sym) noexcept
 {
-  return create(sym.get_type_info(),sym.get_name(),sym.get_attribute(),sym.get_function());
+  return push(sym.get_type_info(),sym.get_name(),sym.get_attribute(),sym.get_function());
 }
 
 
-void
+symbol_table&
 symbol_table::
-pop() noexcept
+push(const parameter_list&  ls) noexcept
 {
-  m_content.pop_back();
-
-    if(m_content.size())
+    for(auto&  para: ls)
     {
-      auto&  last = m_content.back();
-
-      m_end_address = last.get_address()+last.get_type_info().get_size();
+      push(para.get_type_info(),para.get_name(),0,nullptr);
     }
 
-  else
-    {
-      m_end_address = 0;
-    }
+
+  return *this;
 }
 
 
-symbol*
+
+
+const std::unique_ptr<symbol>&
 symbol_table::
 find(std::string_view  name) noexcept
 {
-  auto  it     = m_content.rbegin();
-  auto  it_end = m_content.rend();
+  static const std::unique_ptr<symbol>  null;
 
-    while(it != it_end)
+    for(auto&  ptr: m_content)
     {
-      auto&  sym = *it++;
-
-        if(sym.get_name() == name)
+        if(ptr->get_name() == name)
         {
-          return &sym;
+          return ptr;
         }
     }
 
 
-  return nullptr;
+  return null;
 }
 
 
@@ -87,7 +91,7 @@ find(std::string_view  name) const noexcept
 
     while(it != it_end)
     {
-      auto&  sym = *it++;
+      auto&  sym = **(it++);
 
         if(sym.get_name() == name)
         {
@@ -100,51 +104,29 @@ find(std::string_view  name) const noexcept
 }
 
 
-hot_object
-symbol_table::
-make_object(std::string_view  name, const memory&  mem) const noexcept
-{
-  auto  sym = find(name);
-
-    if(sym)
-    {
-      return hot_object(mem,sym->get_type_info().form_reference_type(type_infos::pointer_size),sym->get_address());
-    }
-
-
-  return {};
-}
-
-
-bool
-symbol_table::
-reallocate() noexcept
-{
-  uint32_t  offset = 0;
-
-  return true;
-}
-
-
 void
 symbol_table::
-print(const memory&  mem) const noexcept
+print(const memory*  mem) const noexcept
 {
     for(auto&  sym: m_content)
     {
-      auto&  ti = sym.get_type_info();
+      auto&  ti = sym->get_type_info();
 
-      auto  addr = sym.get_address();
+      auto  addr = sym->get_address();
 
-      printf("%s %s(address: %6d)",ti.get_id().data(),sym.get_name().data(),addr);
+      printf("%s %s(address: %6d)",ti.get_id().data(),sym->get_name().data(),addr);
 
-      printf(":");
+        if(mem)
+        {
+          printf(":");
 
-      hot_object  ho(mem,ti,addr);
+          hot_object  ho(*mem,ti,addr);
 
-      tepid_object  to(ho);
+          tepid_object  to(ho);
 
-      to.print();
+          to.print();
+        }
+
 
       printf("\n");
     }

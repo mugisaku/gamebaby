@@ -78,24 +78,24 @@ set(SOURCES
   typesystems/union_type_info.cpp
   typesystems/enum_type_info.cpp
   typesystems/type_info.cpp
-  typesystems/type_entry.cpp
-  typesystems/type_collection.cpp
   typesystems/function_signature.cpp
   vms/vm_memory.cpp
   vms/vm_tepid_object.cpp
   vms/vm_cold_object.cpp
   vms/vm_hot_object.cpp
   vms/vm_function.cpp
+  vms/vm_global_space.cpp
+  vms/vm_local_space.cpp
   vms/vm_symbol_table.cpp
   vms/vm_context.cpp
-  vms/vm_context__frame.cpp
-  vms/vm_context__create_type.cpp
-  vms/vm_context__read_block.cpp
+  vms/vm_call_frame.cpp
   vms/vm_operations_callback.cpp
   vms/vm_expression.cpp
+  vms/vm_make_expression.cpp
   vms/vm_block_statement.cpp
+  vms/vm_block_statement__create_type.cpp
+  vms/vm_block_statement__read_block.cpp
   vms/vm_statement.cpp
-  vms/vm_statement_cursor.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

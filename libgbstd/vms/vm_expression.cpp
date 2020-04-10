@@ -8,9 +8,9 @@ namespace gbstd{
 
 
 
-unary_operation&
-unary_operation::
-assign(const unary_operation&  rhs) noexcept
+prefix_unary_operation&
+prefix_unary_operation::
+assign(const prefix_unary_operation&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -21,6 +21,80 @@ assign(const unary_operation&  rhs) noexcept
 
 
   return *this;
+}
+
+
+type_info
+prefix_unary_operation::
+get_type_info(const block_statement*  blkst) const noexcept
+{
+  auto  ti = m_operand->get_type_info(blkst);
+
+    if((m_opcode == "++") ||
+       (m_opcode == "--"))
+    {
+      return ti;
+    }
+
+  else
+    if(m_opcode == "-")
+    {
+      auto  t = ti.strip_reference_type();
+
+      return t.is_fpn()? type_infos::f64
+            :t.is_integer()? type_infos::i64
+            :type_infos::undefined;
+    }
+
+  else
+    if(m_opcode == "~")
+    {
+      return type_infos::i64;
+    }
+
+  else
+    if(m_opcode == "*")
+    {
+      return ti.form_reference_type(type_infos::pointer_size);
+    }
+
+  else
+    if(m_opcode == "!")
+    {
+      return type_infos::i64;
+    }
+
+  else
+    if(m_opcode == "&")
+    {
+      return ti.strip_reference_type().form_pointer_type(type_infos::pointer_size);
+    }
+
+  else
+    if(m_opcode == "sz")
+    {
+      return type_infos::i64;
+    }
+
+
+  return type_infos::undefined;
+}
+
+
+type_info
+postfix_unary_operation::
+get_type_info(const block_statement*  blkst) const noexcept
+{
+  auto  ti = m_operand->get_type_info(blkst);
+
+    if((m_opcode == "++") ||
+       (m_opcode == "--"))
+    {
+      return ti;
+    }
+
+
+  return type_infos::undefined;
 }
 
 
@@ -41,6 +115,107 @@ assign(const binary_operation&  rhs) noexcept
 }
 
 
+type_info
+binary_operation::
+get_type_info(const block_statement*  blkst) const noexcept
+{
+  auto  lti = m_left->get_type_info(blkst);
+  auto  rti = m_right->get_type_info(blkst);
+
+    if(m_opcode == "+")
+    {
+      auto  l = lti.strip_reference_type();
+      auto  r = rti.strip_reference_type();
+
+      return (l.is_fpn() || r.is_fpn())? type_infos::f64
+            :(l.is_integer() && r.is_integer())? type_infos::i64
+            :(l.is_integer() || r.is_pointer())? r
+            :(l.is_pointer() || r.is_integer())? l
+            :type_infos::undefined;
+    }
+
+  else
+    if(m_opcode == "-")
+    {
+      auto  l = lti.strip_reference_type();
+      auto  r = rti.strip_reference_type();
+
+      return (l.is_fpn() || r.is_fpn())? type_infos::f64
+            :(l.is_integer() && r.is_integer())? type_infos::i64
+            :(l.is_integer() || r.is_pointer())? r
+            :(l.is_pointer() || r.is_integer())? l
+            :(l.is_pointer() && r.is_pointer())? type_infos::i64
+            :type_infos::undefined;
+    }
+
+  else
+    if((m_opcode == "*") ||
+       (m_opcode == "/"))
+    {
+      auto  l = lti.strip_reference_type();
+      auto  r = rti.strip_reference_type();
+
+      return (l.is_fpn() || r.is_fpn())? type_infos::f64
+            :                            type_infos::i64;
+    }
+
+  else
+    if((m_opcode ==  "%") ||
+       (m_opcode == "<<") ||
+       (m_opcode == ">>") ||
+       (m_opcode ==  "|") ||
+       (m_opcode ==  "&") ||
+       (m_opcode ==  "^"))
+    {
+      return type_infos::i64;
+    }
+
+  else
+    if((m_opcode == "==") ||
+       (m_opcode == "!=") ||
+       (m_opcode ==  "<") ||
+       (m_opcode == "<=") ||
+       (m_opcode ==  ">") ||
+       (m_opcode == ">=") ||
+       (m_opcode == "&&") ||
+       (m_opcode == "||"))
+    {
+      return type_infos::boolean;
+    }
+
+  else
+    if((m_opcode ==   ".") ||
+       (m_opcode ==  "->") ||
+       (m_opcode ==  ".*") ||
+       (m_opcode == "->*"))
+    {
+    }
+
+  else
+    if((m_opcode == "(?)") ||
+       (m_opcode == "[?]"))
+    {
+    }
+
+  else
+    if((m_opcode ==   "=") ||
+       (m_opcode ==  "+=") ||
+       (m_opcode ==  "-=") ||
+       (m_opcode ==  "*=") ||
+       (m_opcode ==  "/=") ||
+       (m_opcode ==  "%=") ||
+       (m_opcode == "<<=") ||
+       (m_opcode == ">>=") ||
+       (m_opcode ==  "|=") ||
+       (m_opcode ==  "&=") ||
+       (m_opcode ==  "^="))
+    {
+      return lti;
+    }
+
+
+  return type_infos::undefined;
+}
 
 
 expression&
@@ -51,18 +226,20 @@ assign(const expression&  rhs) noexcept
     {
       clear();
 
-      m_kind = rhs.m_kind;
+      m_kind          = rhs.m_kind;
+      m_begin_address = rhs.m_begin_address;
+      m_end_address   = rhs.m_end_address;
 
         switch(m_kind)
         {
       case(kind::boolean_literal): new(&m_data) bool(rhs.m_data.b);break;
       case(kind::identifier     ): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::string_literal ): new(&m_data) std::string(rhs.m_data.s);break;
-      case(kind::integer_literal): new(&m_data) uint64_t(rhs.m_data.i);break;
+      case(kind::integer_literal): new(&m_data) int64_t(rhs.m_data.i);break;
       case(kind::fpn_literal    ): new(&m_data) double(rhs.m_data.f);break;
 
-      case(kind::prefix_unary ):
-      case(kind::postfix_unary): new(&m_data)  unary_operation(rhs.m_data.un );break;
+      case(kind::prefix_unary ): new(&m_data)  prefix_unary_operation(rhs.m_data.pre_un );break;
+      case(kind::postfix_unary): new(&m_data)  postfix_unary_operation(rhs.m_data.pos_un );break;
       case(kind::binary       ): new(&m_data) binary_operation(rhs.m_data.bin);break;
         }
     }
@@ -80,18 +257,20 @@ assign(expression&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_kind,rhs.m_kind);
+      std::swap(m_kind         ,rhs.m_kind   );
+      std::swap(m_begin_address,rhs.m_begin_address);
+      std::swap(m_end_address  ,rhs.m_end_address);
 
         switch(m_kind)
         {
       case(kind::boolean_literal): new(&m_data) bool(rhs.m_data.b);break;
       case(kind::identifier     ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::string_literal ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
-      case(kind::integer_literal): new(&m_data) uint64_t(std::move(rhs.m_data.i));break;
+      case(kind::integer_literal): new(&m_data) int64_t(std::move(rhs.m_data.i));break;
       case(kind::fpn_literal    ): new(&m_data) double(std::move(rhs.m_data.f));break;
 
-      case(kind::prefix_unary ):
-      case(kind::postfix_unary): new(&m_data)  unary_operation(std::move(rhs.m_data.un ));break;
+      case(kind::prefix_unary ): new(&m_data)  prefix_unary_operation(std::move(rhs.m_data.pre_un));break;
+      case(kind::postfix_unary): new(&m_data)  postfix_unary_operation(std::move(rhs.m_data.pos_un));break;
       case(kind::binary       ): new(&m_data) binary_operation(std::move(rhs.m_data.bin));break;
         }
     }
@@ -169,11 +348,11 @@ assign(std::string_view  sv) noexcept
 
 expression&
 expression::
-assign(uint64_t  i) noexcept
+assign(int64_t  i) noexcept
 {
   clear();
 
-  new(&m_data) uint64_t(i);
+  new(&m_data) int64_t(i);
 
   m_kind = kind::integer_literal;
 
@@ -197,15 +376,27 @@ assign(double  f) noexcept
 
 expression&
 expression::
-assign(int  k, unary_operation&&  op) noexcept
+assign(prefix_unary_operation&&  op) noexcept
 {
   clear();
 
-  new(&m_data) unary_operation(std::move(op));
+  new(&m_data) prefix_unary_operation(std::move(op));
 
-  m_kind = (k == 'p')? kind::prefix_unary
-          :            kind::postfix_unary
-          ;
+  m_kind = kind::prefix_unary;
+
+  return *this;
+}
+
+
+expression&
+expression::
+assign(postfix_unary_operation&&  op) noexcept
+{
+  clear();
+
+  new(&m_data) postfix_unary_operation(std::move(op));
+
+  m_kind = kind::postfix_unary;
 
   return *this;
 }
@@ -241,15 +432,115 @@ clear() noexcept
   case(kind::integer_literal): /*m_data.i.~int()*/;break;
   case(kind::fpn_literal): /*m_data.i.~int()*/;break;
 
-  case(kind::prefix_unary ):
-  case(kind::postfix_unary): m_data.un.~unary_operation();break;
+  case(kind::prefix_unary ): std::destroy_at(&m_data.pre_un);break;
+  case(kind::postfix_unary): std::destroy_at(&m_data.pos_un);break;
   case(kind::binary       ): m_data.bin.~binary_operation();break;
     }
 
 
   m_kind = kind::null;
 
+  m_begin_address = 0;
+  m_end_address   = 0;
+
   return *this;
+}
+
+
+type_info
+expression::
+get_type_info(const block_statement*  blkst) const noexcept
+{
+    switch(m_kind)
+    {
+  case(kind::null                ): return type_infos::null;break;
+  case(kind::null_pointer_literal): return type_infos::null_pointer;break;
+  case(kind::undefined_literal   ): return type_infos::undefined;break;
+  case(kind::boolean_literal     ): return type_infos::boolean;break;
+  case(kind::string_literal      ): return type_infos::i8.form_pointer_type(type_infos::pointer_size);break;
+  case(kind::integer_literal     ): return type_infos::i64;break;
+  case(kind::identifier          ):
+    {
+        if(blkst)
+        {
+          auto  fn = blkst->find_function(m_data.s);
+
+            if(fn)
+            {
+              return fn->get_return_type_info();
+            }
+
+
+/*
+          auto  sym = ds->get_symbol_collection().find(m_data.s);
+
+            if(sym)
+            {
+              return sym->get_type_info();
+            }
+*/
+
+          printf("expression::get_type_info error: identifier %s is not found.\n",m_data.s.data());
+        }
+
+      else
+        {
+          printf("expression::get_type_info error: data_space is null.\n");
+        }
+    }
+    break;
+
+  case(kind::prefix_unary ): return m_data.pre_un.get_type_info(blkst);break;
+  case(kind::postfix_unary): return m_data.pos_un.get_type_info(blkst);break;
+  case(kind::binary       ): return m_data.bin.get_type_info(blkst);break;
+    }
+
+
+  return type_infos::undefined;
+}
+
+
+address_t
+expression::
+allocate_address() noexcept
+{
+/*
+  m_begin_address = get_aligned_address(base);
+
+  auto  ti = get_type_info(ds);
+
+    if(ti.is_undefined())
+    {
+      printf("allocate_address error: type is undefined.");
+    }
+
+
+  address_t  end = get_aligned_address(base+ti.get_size());
+
+    if(is_prefix_unary())
+    {
+       m_data.pre_un.get_operand().allocate_address(end,ds);
+    }
+
+  else
+    if(is_postfix_unary())
+    {
+      end = m_data.pos_un.get_operand().allocate_address(end,ds);
+    }
+
+  else
+    if(is_binary())
+    {
+      end =  m_data.bin.get_left().allocate_address(end,ds);
+      end = m_data.bin.get_right().allocate_address(end,ds);
+    }
+
+
+  m_end_address = end;
+
+  return end;
+*/
+  return 0;
 }
 
 
@@ -265,18 +556,18 @@ print() const noexcept
   case(kind::boolean_literal): printf("%s",m_data.b? "true":"false");break;
   case(kind::string_literal ): printf("\"%s\"",m_data.s.data());break;
   case(kind::identifier     ): printf("%s",m_data.s.data());break;
-  case(kind::integer_literal): printf("%" PRIu64,m_data.i);break;
+  case(kind::integer_literal): printf("%" PRIi64,m_data.i);break;
 
   case(kind::prefix_unary):
       printf("(");
-      printf("%s",m_data.un.get_opcode().get_string());
-      m_data.un.get_operand().print();
+      printf("%s",m_data.pre_un.get_opcode().get_string());
+      m_data.pre_un.get_operand().print();
       printf(")");
       break;
   case(kind::postfix_unary):
       printf("(");
-      m_data.un.get_operand().print();
-      printf("%s",m_data.un.get_opcode().get_string());
+      m_data.pos_un.get_operand().print();
+      printf("%s",m_data.pos_un.get_opcode().get_string());
       printf(")");
       break;
   case(kind::binary):
@@ -287,240 +578,9 @@ print() const noexcept
       printf(")");
       break;
     }
-}
 
 
-
-
-expression
-make_expression(token_iterator&  it) noexcept
-{
-  exprrpn  rpn(it);
-
-  std::vector<std::vector<expression>>  table(1);
-
-  std::vector<operator_code>  close_stack;
-
-    for(auto&  e: rpn.get_stack())
-    {
-      auto&  buf = table.back();
-
-        if(e.is_unsigned_integer())
-        {
-          buf.emplace_back(e.get_unsigned_integer());
-        }
-
-      else
-        if(e.is_real_number())
-        {
-          buf.emplace_back(e.get_real_number());
-        }
-
-      else
-        if(e.is_identifier())
-        {
-          auto  s = e.get_string();
-
-            if(s == std::string_view("undefined"))
-            {
-              buf.emplace_back(undefined());
-            }
-
-          else
-            if(s == std::string_view("nullptr"))
-            {
-              buf.emplace_back(nullptr);
-            }
-
-          else
-            if(s == std::string_view("true"))
-            {
-              buf.emplace_back(true);
-            }
-
-          else
-            if(s == std::string_view("false"))
-            {
-              buf.emplace_back(false);
-            }
-
-          else
-            {
-              identifier  id(s);
-
-              buf.emplace_back(std::move(id));
-            }
-        }
-
-      else
-        if(e.is_string())
-        {
-          buf.emplace_back(e.get_string());
-        }
-
-      else
-        if(e.is_prefix_unary_operator())
-        {
-            if(buf.size() < 1)
-            {
-              report;
-
-              return {};
-            }
-
-
-          auto  op = e.get_operator_code();
-          auto  o  = std::make_unique<expression>(std::move(buf.back()));
-
-          buf.back().assign('p',unary_operation(op,std::move(o)));
-        }
-
-      else
-        if(e.is_postfix_unary_operator())
-        {
-            if(buf.size() < 1)
-            {
-              report;
-
-              return {};
-            }
-
-
-          auto  op = e.get_operator_code();
-          auto  o  = std::make_unique<expression>(std::move(buf.back()));
-
-          buf.back().assign('P',unary_operation(op,std::move(o)));
-        }
-
-      else
-        if(e.is_binary_operator())
-        {
-            if(buf.size() < 2)
-            {
-              report;
-
-              return {};
-            }
-
-
-          auto  r = std::make_unique<expression>(std::move(buf.back()));
-
-          buf.pop_back();
-
-          auto  l = std::make_unique<expression>(std::move(buf.back()));
-
-          auto  op = e.get_operator_code();
-
-          buf.back() = binary_operation(op,std::move(l),std::move(r));
-        }
-
-      else
-        if(e.is_operator())
-        {
-          auto  op = e.get_operator_code();
-
-            if(op == "(")
-            {
-              close_stack.emplace_back(")");
-
-              table.emplace_back();
-            }
-
-          else
-            if(op == "[")
-            {
-              close_stack.emplace_back("]");
-
-              table.emplace_back();
-            }
-
-          else
-            if(op == "{")
-            {
-              close_stack.emplace_back("}");
-
-              table.emplace_back();
-            }
-
-          else
-            if(op == close_stack.back())
-            {
-              close_stack.pop_back();
-
-              expression  t;
-
-                if(buf.size())
-                {
-                    if(buf.size() > 1)
-                    {
-                      report;
-                    }
-
-
-                  t = std::move(buf.back());
-                }
-
-
-              table.pop_back();
-
-                if(table.back().size() < 1)
-                {
-                  table.back().emplace_back(std::move(t));
-                }
-
-              else
-                {
-                  operator_code  opop( (op == ")")? "(?)"
-                                      :(op == "]")? "[?]"
-                                      :(op == "}")? "{?}"
-                                      :"")
-                                      ;
-
-                  auto  l = std::make_unique<expression>(std::move(table.back().back()));
-                  auto  r = std::make_unique<expression>(std::move(t                  ));
-     
-                  table.back().back().assign(binary_operation(opop,std::move(l),std::move(r)));
-                }
-            }
-
-          else
-            {
-              report;
-            }
-        }
-
-      else
-        {
-          report;
-        }
-    }
-
-
-    if(table.size() == 1)
-    {
-      auto&  buf = table.back();
-
-        if(buf.size() == 1)
-        {
-          return std::move(buf.back());
-        }
-    }
-
-
-  report;
-
-  return expression();
-}
-
-
-expression
-make_expression(std::string_view  sv) noexcept
-{
-  token_block  blk(sv);
-
-  token_iterator  it(blk);
-
-  return make_expression(it);
+  printf("[%d]",m_begin_address);
 }
 
 
@@ -528,8 +588,10 @@ make_expression(std::string_view  sv) noexcept
 
 tepid_object
 expression::
-evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
+evaluate(context&  ctx) const noexcept
 {
+  auto&  mem = ctx.get_memory();
+
     if(is_integer_literal())
     {
       return {m_data.i,mem};
@@ -562,14 +624,36 @@ evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
   else
     if(is_identifier())
     {
-      return symtbl.make_object(m_data.s,mem);
+/*
+      auto  sym = ctx.get_local_symbol_table().find(m_data.s);
+
+        if(sym)
+        {
+          hot_object  ho(mem,sym->get_type_info().form_reference_type(type_infos::pointer_size),ctx.get_bp()+sym->get_address());
+
+          return ho;
+        }
+
+
+      sym = ctx.get_global_symbol_table().find(m_data.s);
+
+        if(sym)
+        {
+          hot_object  ho(mem,sym->get_type_info().form_reference_type(type_infos::pointer_size),sym->get_address());
+
+          return ho;
+        }
+*/
+
+
+      printf("symbol %s is not found.",m_data.s.data());
     }
 
   else
     if(is_prefix_unary())
     {
-      auto   op = m_data.un.get_opcode();
-      auto  obj = m_data.un.get_operand().evaluate(symtbl,mem);
+      auto   op = m_data.pre_un.get_opcode();
+      auto  obj = m_data.pre_un.get_operand().evaluate(ctx);
 
       using namespace operations;
 
@@ -586,8 +670,8 @@ evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
   else
     if(is_postfix_unary())
     {
-      auto   op = m_data.un.get_opcode();
-      auto  obj = m_data.un.get_operand().evaluate(symtbl,mem);
+      auto   op = m_data.pos_un.get_opcode();
+      auto  obj = m_data.pos_un.get_operand().evaluate(ctx);
 
       using namespace operations;
 
@@ -613,7 +697,7 @@ evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
       else
         if(o == ".")
         {
-          return dot(l.evaluate(symtbl,mem),r);
+          return dot(l.evaluate(ctx),r);
         }
 
       else
@@ -625,7 +709,7 @@ evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
       else
         if(o == "->")
         {
-          return arrow(l.evaluate(symtbl,mem),r,mem);
+          return arrow(l.evaluate(ctx),r,mem);
         }
 
       else
@@ -637,12 +721,12 @@ evaluate(const symbol_table&  symtbl, memory&  mem) const noexcept
       else
         if(o == "(?)")
         {
-          return invoke(l.evaluate(symtbl,mem),r);
+          return invoke(l.evaluate(ctx),r);
         }
         
 
-      auto  lo = l.evaluate(symtbl,mem);
-      auto  ro = r.evaluate(symtbl,mem);
+      auto  lo = l.evaluate(ctx);
+      auto  ro = r.evaluate(ctx);
 
            if(o == "+"  ){return {    add(lo,ro),mem};}
       else if(o == "-"  ){return {    sub(lo,ro),mem};}

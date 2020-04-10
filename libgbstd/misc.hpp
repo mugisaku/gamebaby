@@ -8,6 +8,8 @@
 #include<cstring>
 #include<cstdint>
 #include<stdexcept>
+#include<memory>
+#include<new>
 
 
 
@@ -15,6 +17,76 @@
 namespace gbstd{
 
 
+
+
+template<typename  T>
+std::unique_ptr<T>
+clone_unique(const std::unique_ptr<T>&  p) noexcept
+{
+  return std::make_unique<T>(p? *p:nullptr);
+}
+
+
+template<typename  T>
+class
+clone_ptr
+{
+  T*  m_data=nullptr;
+
+public:
+  constexpr clone_ptr() noexcept{}
+  constexpr clone_ptr(T*  p) noexcept: m_data(p){}
+
+  template<typename  U>
+  constexpr clone_ptr(U*  p) noexcept: m_data(static_cast<T*>(p)){}
+
+  clone_ptr(const clone_ptr&   rhs) noexcept{assign(rhs);}
+  clone_ptr(      clone_ptr&&  rhs) noexcept{assign(std::move(rhs));}
+  ~clone_ptr(){clear();}
+
+  clone_ptr&  operator=(const clone_ptr&   rhs) noexcept{return assign(rhs);}
+  clone_ptr&  operator=(      clone_ptr&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  constexpr T&  operator*()  const noexcept{return *m_data;}
+  constexpr T*  operator->() const noexcept{return  m_data;}
+
+  constexpr operator bool() const noexcept{return m_data;}
+
+  clone_ptr&  assign(const clone_ptr&   rhs) noexcept{
+      if(this != &rhs){
+        clear();
+          if(rhs.m_data){
+            m_data = new T(*rhs.m_data);
+          }
+      }
+    return *this;
+  }
+
+  clone_ptr&  assign(clone_ptr&&  rhs) noexcept{
+      if(this != &rhs){
+        clear();
+        std::swap(m_data,rhs.m_data);
+      }
+    return *this;
+  }
+
+  void  clear(){  delete m_data;  m_data = nullptr;}
+
+  constexpr T*  get() const noexcept{return m_data;}
+
+};
+
+
+template<typename  T, typename...  Args>
+inline clone_ptr<T>
+make_clone(Args&&...  args) noexcept
+{
+  return clone_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+
+template<typename  T>inline void  create_at(void*  dst, const T&   src) noexcept{new(dst) T(src);}
+template<typename  T>inline void  create_at(void*  dst,       T&&  src) noexcept{new(dst) T(std::forward<T>(src));}
 
 
 template<typename  T>
@@ -34,8 +106,12 @@ public:
   template<typename  U>
   pointer_wrapper&  operator=(U*  ptr) noexcept{  m_data = static_cast<T*>(ptr);  return *this;}
 
+  constexpr operator const T*() const noexcept{return m_data;}
+
   constexpr T*  operator->() const noexcept{return  m_data;}
   constexpr T&  operator *() const noexcept{return *m_data;}
+
+  constexpr T&  operator[](int  i) const noexcept{return m_data[i];}
 
   constexpr pointer_wrapper  operator+(int  n) const noexcept{return m_data+n;}
   constexpr pointer_wrapper  operator-(int  n) const noexcept{return m_data-n;}
@@ -59,6 +135,20 @@ public:
 };
 
 
+template<typename  T>
+inline pointer_wrapper<T>
+wrap(T*  p) noexcept
+{
+  return pointer_wrapper(p);
+}
+
+
+template<typename  T>
+inline pointer_wrapper<T>
+wrap(const std::unique_ptr<T>&  p) noexcept
+{
+  return pointer_wrapper(p.get());
+}
 
 
 class dummy{};

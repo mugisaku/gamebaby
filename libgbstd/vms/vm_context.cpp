@@ -13,14 +13,10 @@ const type_info  null{};
 const type_info  undefined{typesystem::undefined_type_info()};
 const type_info  null_pointer{typesystem::null_pointer_type_info()};
 const type_info         void_{typesystem::void_type_info()};
-const type_info            s8{         typesystem::integer_type_info(1)};
-const type_info            u8{typesystem::unsigned_integer_type_info(1)};
-const type_info           s16{         typesystem::integer_type_info(2)};
-const type_info           u16{typesystem::unsigned_integer_type_info(2)};
-const type_info           s32{         typesystem::integer_type_info(4)};
-const type_info           u32{typesystem::unsigned_integer_type_info(4)};
-const type_info           s64{         typesystem::integer_type_info(8)};
-const type_info           u64{typesystem::unsigned_integer_type_info(8)};
+const type_info            i8{typesystem::integer_type_info(1)};
+const type_info           i16{typesystem::integer_type_info(2)};
+const type_info           i32{typesystem::integer_type_info(4)};
+const type_info           i64{typesystem::integer_type_info(8)};
 const type_info           f32{typesystem::fpn_type_info(4)};
 const type_info           f64{typesystem::fpn_type_info(8)};
 const type_info          boolean{typesystem::boolean_type_info(boolean_size)};
@@ -43,94 +39,28 @@ context::
 clear() noexcept
 {
   m_source.clear();
-  m_type_collection.clear();
-  m_type_info_table.clear();
-  m_function_table.clear();
-  m_global_symbol_table.clear();
 
-  m_type_collection.push(  "int8_t",type_infos::s8);
-  m_type_collection.push( "uint8_t",type_infos::u8);
-  m_type_collection.push( "int16_t",type_infos::s16);
-  m_type_collection.push("uint16_t",type_infos::u16);
-  m_type_collection.push( "int32_t",type_infos::s32);
-  m_type_collection.push("uint32_t",type_infos::u32);
-  m_type_collection.push( "int64_t",type_infos::s64);
-  m_type_collection.push("uint64_t",type_infos::u64);
-  m_type_collection.push("float32_t",type_infos::f32);
-  m_type_collection.push("float64_t",type_infos::f64);
-  m_type_collection.push( "int",type_infos::s64);
-  m_type_collection.push("uint",type_infos::u64);
+  m_block.clear();
 
-  m_type_collection.push("bool",type_infos::boolean);
+/*
+  auto&  tc = m_data_space.get_type_collection();
 
-  m_type_collection.push("void",type_infos::void_);
-  m_type_collection.push("nullptr_t",type_infos::null_pointer);
+  tc.push(type_infos::i8,  "int8_t");
+  tc.push(type_infos::i16, "int16_t");
+  tc.push(type_infos::i32, "int32_t");
+  tc.push(type_infos::i64, "int64_t");
+  tc.push(type_infos::i64, "int");
+  tc.push(type_infos::f32,"float32_t");
+  tc.push(type_infos::f64,"float64_t");
+  tc.push(type_infos::f64,"float");
 
-  m_type_collection.push("geneptr_t",type_infos::generic_pointer);
+  tc.push(type_infos::boolean,"bool");
 
-    while(m_number_of_frames)
-    {
-      pop_frame();
-    }
+  tc.push(type_infos::void_,"void");
+  tc.push(type_infos::null_pointer,"nullptr_t");
 
-
-  m_current_frame = nullptr;
-}
-
-
-const function&
-context::
-append_function(std::unique_ptr<function>&&  fn) noexcept
-{
-  m_function_table.emplace_back(std::move(fn));
-
-  return *m_function_table.back();
-}
-
-
-const type_info&
-context::
-append_type_info(std::unique_ptr<type_info>&&  ti) noexcept
-{
-  m_type_info_table.emplace_back(std::move(ti));
-
-  return *m_type_info_table.back();
-}
-
-
-void
-context::
-print() const noexcept
-{
-  printf("type collection{\n");
-
-  m_type_collection.print();
-
-  printf("}\ntype info table{\n");
-
-    for(auto&  ti: m_type_info_table)
-    {
-      ti->print();
-
-      printf("\n");
-    }
-
-
-  printf("}\nsymbol table{\n");
-
-  m_global_symbol_table.print(m_memory);
-
-  printf("}\nfunction table{\n");
-
-    for(auto&  fn: m_function_table)
-    {
-      fn->print(*this);
-
-      printf("\n");
-    }
-
-
-  printf("}\n");
+  tc.push(type_infos::generic_pointer,"geneptr_t");
+*/
 }
 
 
@@ -148,21 +78,7 @@ assign(std::string_view  sv) noexcept
 
   token_iterator  it(blk);
 
-    while(it)
-    {
-        if(it->is_operator_code(";"))
-        {
-          ++it;
-        }
-
-      else
-        {
-            if(!read_declaration(it))
-            {
-              break;
-            }
-        }
-    }
+  m_block.read(it);
 
 
   return *this;
@@ -171,11 +87,143 @@ assign(std::string_view  sv) noexcept
 
 void
 context::
+call_function(std::string_view  fn_name, address_t  return_value_address) noexcept
+{
+  auto  fn = m_block.find_function(fn_name);
+
+    if(fn)
+    {
+      auto&  retti = fn->get_return_type_info();
+
+        if(!return_value_address)
+        {
+          m_bp = get_aligned_address(retti.get_size());
+        }
+
+
+/*
+      auto  sz = fn->get_block_statement()->get_symbol_table().get_end_address();
+
+      push_stack_frame(0,return_value_address,sz);
+
+      m_call_stack.emplace_back(*fn);
+*/
+    }
+}
+
+
+
+
+void
+context::
+print_stack_frame() const noexcept
+{
+  constexpr auto  address_size = sizeof(address_t);
+
+    if(m_bp >= (address_size*4))
+    {
+      auto  return_value_address = *m_memory.get_pointer<address_t>(m_bp-(address_size  ));
+      auto  return_address       = *m_memory.get_pointer<address_t>(m_bp-(address_size*2));
+      auto  previous_bp          = *m_memory.get_pointer<address_t>(m_bp-(address_size*3));
+      auto  code                 = *m_memory.get_pointer<address_t>(m_bp-(address_size*4));
+
+      printf("stack_frame:{\n  code:%X,\n  return_address:%d,\n  return_value_address:%d,\n  previous_bp:%d\n}\n",
+        code,
+        return_address,
+        return_value_address,
+        previous_bp
+      )
+      ;
+    }
+}
+
+
+void
+context::
+push_stack_frame(address_t  return_address, address_t  return_value_address, size_t  size) noexcept
+{
+  constexpr auto  address_size = sizeof(address_t);
+
+  *m_memory.get_pointer<address_t>(m_sp                 ) = 0xDEADC0DE;
+  *m_memory.get_pointer<address_t>(m_sp+(address_size  )) = m_bp;
+  *m_memory.get_pointer<address_t>(m_sp+(address_size*2)) = return_address;
+  *m_memory.get_pointer<address_t>(m_sp+(address_size*3)) = return_value_address;
+
+  m_bp = get_aligned_address(m_sp+(address_size*4));
+  m_sp = get_aligned_address(m_bp+size            );
+}
+
+
+void
+context::
+pop_stack_frame() noexcept
+{
+  constexpr auto  address_size = sizeof(address_t);
+
+  auto  return_value_address = *m_memory.get_pointer<address_t>(m_bp-(address_size  ));
+  auto  return_address       = *m_memory.get_pointer<address_t>(m_bp-(address_size*2));
+  auto  previous_bp          = *m_memory.get_pointer<address_t>(m_bp-(address_size*3));
+  auto  code                 = *m_memory.get_pointer<address_t>(m_bp-(address_size*4));
+
+  m_sp = m_bp-(address_size*4);
+  m_bp = previous_bp;
+
+
+  printf("stack_frame:{\n  bp:%d\n  sp:%d\n}\n",
+    m_bp,
+    m_sp
+  )
+  ;
+}
+
+
+void
+context::
+print() const noexcept
+{
+  m_block.print();
+}
+
+
+
+
+void
+context::
 reset() noexcept
 {
-  m_runtime_symbol_table = m_global_symbol_table;
+  m_call_stack.clear();
+
+  m_bp = 0;
+  m_sp = 0;
+}
 
 
+bool
+context::
+step() noexcept
+{
+START:
+    if(m_call_stack.size())
+    {
+      auto&  bk = m_call_stack.back();
+
+        if(bk)
+        {
+          bk(*this);
+
+          return true;
+        }
+
+      else
+        {
+          m_call_stack.pop_back();
+
+          goto START;
+        }
+    }
+
+
+  return false;
 }
 
 
@@ -189,19 +237,6 @@ run() noexcept
 }
 
 
-
-
-context&
-context::
-finalize() noexcept
-{
-    for(auto&  sym: m_global_symbol_table)
-    {
-    }
-
-
-  return *this;
-}
 
 
 }

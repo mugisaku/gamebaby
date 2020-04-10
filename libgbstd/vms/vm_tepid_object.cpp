@@ -10,7 +10,7 @@ namespace gbstd{
 
 tepid_object::
 tepid_object(const hot_object&  ho) noexcept:
-cold_object(ho.get_type_info().form_reference_type(type_infos::pointer_size),ho.get_address()),
+//cold_object(ho.get_type_info().form_reference_type(type_infos::pointer_size),ho.get_address()),
 m_base_memory(ho.get_memory())
 {
 }
