@@ -11,7 +11,7 @@ using namespace typesystem;
 
 
 parameter_list
-block_statement::
+space_node::
 read_parameter_list(token_iterator&  it) noexcept
 {
   parameter_list  ls;
@@ -30,6 +30,8 @@ read_parameter_list(token_iterator&  it) noexcept
 
             if(it->is_operator_code(","))
             {
+              ls.emplace_back(ti,std::string_view(""));
+
               ++it;
             }
         }
@@ -46,7 +48,7 @@ read_parameter_list(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_struct_type_info(token_iterator&  it) noexcept
 {
   struct_type_info  sti;
@@ -85,7 +87,7 @@ read_struct_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_union_type_info(token_iterator&  it) noexcept
 {
   union_type_info  uti;
@@ -124,7 +126,7 @@ read_union_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_enum_type_info(token_iterator&  it) noexcept
 {
   enum_type_info  eti(gbstd::type_infos::enum_size);
@@ -175,7 +177,7 @@ read_enum_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_alias(token_iterator&  it) noexcept
 {
     if(it->is_identifier())
@@ -188,7 +190,7 @@ read_alias(token_iterator&  it) noexcept
         {
           ti.set_name(name);
 
-          m_type_info_table.emplace_back(ti);
+          push_type_info(std::move(ti));
 
           return std::move(ti);
         }
@@ -200,7 +202,7 @@ read_alias(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_named_struct_type_info(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
@@ -220,7 +222,7 @@ read_named_struct_type_info(token_iterator&  it) noexcept
 
           ti.set_name(name);
 
-          m_type_info_table.emplace_back(ti);
+          push_type_info(std::move(ti));
 
           return std::move(ti);
         }
@@ -232,7 +234,7 @@ read_named_struct_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_named_union_type_info(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
@@ -252,7 +254,7 @@ read_named_union_type_info(token_iterator&  it) noexcept
 
           ti.set_name(name);
 
-          m_type_info_table.emplace_back(ti);
+          push_type_info(std::move(ti));
 
           return std::move(ti);
         }
@@ -264,7 +266,7 @@ read_named_union_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_named_enum_type_info(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
@@ -284,7 +286,7 @@ read_named_enum_type_info(token_iterator&  it) noexcept
 
           ti.set_name(name);
 
-          m_type_info_table.emplace_back(ti);
+          push_type_info(std::move(ti));
 
           return std::move(ti);
         }
@@ -298,7 +300,7 @@ read_named_enum_type_info(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_user_defined_type_info(token_iterator&  it) noexcept
 {
     if(it->is_identifier())
@@ -335,7 +337,7 @@ read_user_defined_type_info(token_iterator&  it) noexcept
 
 
 const function*
-block_statement::
+space_node::
 read_function(token_iterator&  it) noexcept
 {
    if(it->is_identifier())
@@ -356,9 +358,23 @@ read_function(token_iterator&  it) noexcept
 
              it += 2;
 
-             auto  parals = read_parameter_list(parals_it);
+             function_signature  fnsig(ti,read_parameter_list(parals_it));
 
-             auto&  fn = m_global_space->create_function(name,ti,std::move(parals));
+             auto  fn = create_function(name,std::move(fnsig));
+
+               if(fn)
+               {
+                 auto  blk = fn->get_node().create_block();
+
+                   if(blk)
+                   {
+                     blk->get_node().read(body_it);
+
+                     fn->set_main_block(*blk);
+
+                     return fn;
+                   }
+               }
            }
        }
    }
@@ -369,7 +385,7 @@ read_function(token_iterator&  it) noexcept
 
 
 type_info
-block_statement::
+space_node::
 read_derived_type_info(token_iterator&  it) noexcept
 {
     if(!it->is_identifier())
@@ -433,20 +449,6 @@ read_derived_type_info(token_iterator&  it) noexcept
 
 
   return ti;
-}
-
-
-
-
-type_info
-block_statement::
-create_type_from_string(std::string_view  sv) noexcept
-{
-  token_block  blk(sv);
-
-  token_iterator  it(blk);
-
-  return read_derived_type_info(it);
 }
 
 

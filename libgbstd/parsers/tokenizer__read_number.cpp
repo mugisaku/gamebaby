@@ -39,7 +39,7 @@ read_binary_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,n));
+  push(token(m_begin,m_current,get_line_number(),n));
 }
 
 
@@ -69,7 +69,7 @@ read_octal_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,n));
+  push(token(m_begin,m_current,get_line_number(),n));
 }
 
 
@@ -110,7 +110,7 @@ read_decimal_number() noexcept
 
   else
     {
-      push(token(m_begin,m_current,n));
+      push(token(m_begin,m_current,get_line_number(),n));
     }
 }
 
@@ -182,7 +182,7 @@ read_hexadecimal_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,n));
+  push(token(m_begin,m_current,get_line_number(),n));
 }
 
 
@@ -214,7 +214,7 @@ read_floating_point_number(uint64_t  i) noexcept
     }
 
 
-  push(token(m_begin,m_current,fpn));
+  push(token(m_begin,m_current,get_line_number(),fpn));
 }
 
 
@@ -228,7 +228,7 @@ read_number_that_begins_by_zero() noexcept
   else if((c == 'o') || (c == 'O')){  ++m_current;            read_octal_number();}
   else if((c == 'x') || (c == 'X')){  ++m_current;      read_hexadecimal_number();}
   else if((c == '.')              ){  ++m_current;  read_floating_point_number(0);}
-  else                             {push(token(m_begin,m_current,static_cast<uint64_t>(0)));}
+  else                             {push(token(m_begin,m_current,get_line_number(),static_cast<uint64_t>(0)));}
 }
 
 

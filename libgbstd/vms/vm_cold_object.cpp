@@ -131,7 +131,7 @@ cold_object(const function&  fn) noexcept
 {
   m_memory = &fn;
 
-  m_type_info = &fn.get_pointer_type_info();
+//  m_type_info = &fn.get_pointer_type_info();
 }
 
 

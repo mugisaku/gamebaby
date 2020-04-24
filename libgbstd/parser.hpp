@@ -13,6 +13,23 @@
 namespace gbstd{
 
 
+
+
+class
+parse_error
+{
+public:
+  int  m_line_number;
+
+  std::string  m_comment;
+
+  parse_error(int  ln, std::string_view  sv) noexcept: m_line_number(ln), m_comment(sv){}
+
+};
+
+
+
+
 class
 operator_code
 {
@@ -89,7 +106,7 @@ public:
 
   const std::vector<token>*  operator->() const noexcept{return &m_container;}
 
-  void  print(const char*  base=nullptr, int  indent=0) const noexcept;
+  void  print(int  indent=0) const noexcept;
 
 };
 
@@ -99,6 +116,8 @@ token
 {
   const char*  m_begin=nullptr;
   const char*  m_end  =nullptr;
+
+  int  m_line_number=0;
 
   enum class kind{
     null,
@@ -132,11 +151,11 @@ public:
   token() noexcept{}
   token(const token&   rhs) noexcept{assign(rhs);}
   token(      token&&  rhs) noexcept{assign(std::move(rhs));}
-  token(const char*  begin, const char*  end, uint64_t  n)                noexcept{assign(begin,end,n);}
-  token(const char*  begin, const char*  end, double  f)                  noexcept{assign(begin,end,f);}
-  token(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept{assign(begin,end,std::move(s),sym);}
-  token(const char*  begin, const char*  end, operator_code  opco)        noexcept{assign(begin,end,opco);}
-  token(const char*  begin, const char*  end, token_block&&  blk)         noexcept{assign(begin,end,std::move(blk));}
+  token(const char*  begin, const char*  end, int  ln, uint64_t  n)                noexcept{assign(begin,end,ln,n);}
+  token(const char*  begin, const char*  end, int  ln, double  f)                  noexcept{assign(begin,end,ln,f);}
+  token(const char*  begin, const char*  end, int  ln, std::string&&  s, int  sym) noexcept{assign(begin,end,ln,std::move(s),sym);}
+  token(const char*  begin, const char*  end, int  ln, operator_code  opco)        noexcept{assign(begin,end,ln,opco);}
+  token(const char*  begin, const char*  end, int  ln, token_block&&  blk)         noexcept{assign(begin,end,ln,std::move(blk));}
  ~token(){clear();}
 
   operator bool() const noexcept{return !is_null();}
@@ -146,11 +165,11 @@ public:
 
   token&  assign(const token&   rhs) noexcept;
   token&  assign(      token&&  rhs) noexcept;
-  token&  assign(const char*  begin, const char*  end, uint64_t  n) noexcept;
-  token&  assign(const char*  begin, const char*  end, double  f) noexcept;
-  token&  assign(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept;
-  token&  assign(const char*  begin, const char*  end, operator_code  opco) noexcept;
-  token&  assign(const char*  begin, const char*  end, token_block&&  blk) noexcept;
+  token&  assign(const char*  begin, const char*  end, int  ln, uint64_t  n) noexcept;
+  token&  assign(const char*  begin, const char*  end, int  ln, double  f) noexcept;
+  token&  assign(const char*  begin, const char*  end, int  ln, std::string&&  s, int  sym) noexcept;
+  token&  assign(const char*  begin, const char*  end, int  ln, operator_code  opco) noexcept;
+  token&  assign(const char*  begin, const char*  end, int  ln, token_block&&  blk) noexcept;
 
   void  clear() noexcept;
 
@@ -170,14 +189,15 @@ public:
   bool  is_block()                            const noexcept{return m_kind == kind::block;}
   bool  is_block(operator_code  open, operator_code  close) const noexcept;
 
+  int  get_line_number() const noexcept{return m_line_number;}
+
   uint64_t            get_integer()               const noexcept{return m_data.n;}
   double              get_floating_point_number() const noexcept{return m_data.f;}
   const std::string&  get_string()                const noexcept{return m_data.s;}
   operator_code       get_operator_code()         const noexcept{return m_data.opco;}
   const token_block&  get_block()                 const noexcept{return m_data.blk;}
 
-  void  print(const char*  base=nullptr, int  indent=0) const noexcept;
-  void  print_source(const char*  base=nullptr) const noexcept;
+  void  print(int  indent=0) const noexcept;
 
 };
 
@@ -194,6 +214,10 @@ tokenizer
 
   std::vector<element>  m_elements;
 
+  const char*  m_source_begin=nullptr;
+
+  int  m_line_number=0;
+
   const char*  m_begin  =nullptr;
   const char*  m_current=nullptr;
   const char*  m_end    =nullptr;
@@ -207,11 +231,11 @@ tokenizer
   void  read_number_that_begins_by_zero() noexcept;
   void  read_number() noexcept;
 
-  void  read_operator_code() noexcept;
+  void  read_operator_code();
 
   void  read_quoted_string(char  close_char);
 
-  void  read_block(operator_code  open, operator_code  close);
+  void  read_block(operator_code  open, operator_code  close) noexcept;
 
   static bool  test_head_of_identifier_defaultly(char  c) noexcept;
   static bool  test_body_of_identifier_defaultly(char  c) noexcept;
@@ -228,6 +252,8 @@ tokenizer
 
 
   void  step(operator_code  close, int close_len);
+
+  int  get_line_number() const noexcept;
 
 public:
   token_block  operator()(std::string_view  sv);
@@ -273,6 +299,21 @@ public:
   token_iterator  operator-(int  n) const noexcept{return token_iterator(m_begin-n,m_end);}
 
   int  size() const noexcept{return m_end-m_begin;}
+
+};
+
+
+
+
+class
+exprrpn_error
+{
+public:
+  int  m_line_number;
+
+  std::string  m_comment;
+
+  exprrpn_error(int  ln, std::string_view  sv) noexcept: m_line_number(ln), m_comment(sv){}
 
 };
 
@@ -373,20 +414,20 @@ exprrpn
   void  finish(std::vector<exprelem>&&  opstack, std::vector<exprelem>&  dst) noexcept;
 
   void   preprocess(token_iterator&  top_it) noexcept;
-  void  postprocess() noexcept;
+  void  postprocess();
 
 public:
   exprrpn() noexcept{}
   exprrpn(const exprrpn&) noexcept=delete;
-  exprrpn(std::string_view  sv) noexcept{assign(sv);}
-  exprrpn(token_iterator&  it) noexcept{assign(it);}
+  exprrpn(std::string_view  sv){assign(sv);}
+  exprrpn(token_iterator&  it){assign(it);}
 
   exprrpn&  operator=(const exprrpn&) noexcept=delete;
-  exprrpn&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  exprrpn&  operator=(token_iterator&  it) noexcept{return assign(it);}
+  exprrpn&  operator=(std::string_view  sv){return assign(sv);}
+  exprrpn&  operator=(token_iterator&  it){return assign(it);}
 
-  exprrpn&  assign(std::string_view  sv) noexcept;
-  exprrpn&  assign(token_iterator&  it) noexcept;
+  exprrpn&  assign(std::string_view  sv);
+  exprrpn&  assign(token_iterator&  it);
 
   const std::vector<exprelem>&  get_stack() const noexcept{return m_stack;}
 

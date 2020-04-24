@@ -8,27 +8,55 @@ namespace gbstd{
 
 
 
-local_space&
+void
 global_space::
-create_local_space() noexcept
+initialize() noexcept
 {
-  return *m_local_spaces.emplace_back(std::make_unique<local_space>(*this));
+  m_type_info_table.emplace_back(type_infos::int_);
+
+  m_type_info_table.emplace_back(type_infos::i8);
+  m_type_info_table.emplace_back(type_infos::i16);
+  m_type_info_table.emplace_back(type_infos::i32);
+  m_type_info_table.emplace_back(type_infos::i64);
+  m_type_info_table.emplace_back(type_infos::f32);
+  m_type_info_table.emplace_back(type_infos::f64);
+  m_type_info_table.emplace_back(type_infos::void_);
+  m_type_info_table.emplace_back(type_infos::null_pointer);
+  m_type_info_table.emplace_back(type_infos::generic_pointer);
+  m_type_info_table.emplace_back(type_infos::boolean);
+  m_type_info_table.emplace_back(type_infos::undefined);
 }
 
 
-function&
+global_space&
 global_space::
-create_function(std::string_view  name, const type_info&  retti, parameter_list&&  parals) noexcept
+assign(std::string_view  sv) noexcept
 {
-  return *m_function_table.emplace_back(std::make_unique<function>(create_local_space(),name,retti,std::move(parals)));
+  clear();
+
+  initialize();
+
+  m_source = sv;
+
+  token_block  blk(m_source);
+
+  token_iterator  it(blk);
+
+  m_node.read(it);
+
+  return *this;
 }
 
 
-const memo_info&
+
+
+void
 global_space::
-push(const type_info&  ti, std::string_view  name) noexcept
+clear() noexcept
 {
-  return *m_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));
+  m_source.clear();
+
+  basic_space::clear();
 }
 
 

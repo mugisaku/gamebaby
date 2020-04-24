@@ -93,18 +93,14 @@ read_quoted_string(char  close_char)
 */
           else
             {
-              printf("toknizer read_quoted_string error\n");
-
-              throw 0;
+              throw parse_error(get_line_number(),"Inkown escape sequence");
             }
         }
 
       else
         if(!c)
         {
-          printf("toknizer error: 文字列が%cで閉じられていない\n",close_char);
-
-          throw 0;
+          throw parse_error(get_line_number(),form_string("文字列が%cで閉じられていない",close_char));
         }
 
 
@@ -112,13 +108,13 @@ read_quoted_string(char  close_char)
     }
 
 
-  push(token(m_begin,m_current,std::move(s),close_char));
+  push(token(m_begin,m_current,get_line_number(),std::move(s),close_char));
 }
 
 
 void
 tokenizer::
-read_operator_code() noexcept
+read_operator_code()
 {
   constexpr operator_code  codes[] = {
     operator_code("..."),
@@ -185,20 +181,20 @@ read_operator_code() noexcept
         {
           m_current += l;
 
-          push(token(m_begin,m_current,opco));
+          push(token(m_begin,m_current,get_line_number(),opco));
 
           return;
         }
     }
 
 
-  push(token(m_begin,m_current,operator_code()));
+  throw parse_error(get_line_number(),"Unknown operator code");
 }
 
 
 void
 tokenizer::
-read_block(operator_code  open, operator_code  close)
+read_block(operator_code  open, operator_code  close) noexcept
 {
   m_elements.emplace_back(m_begin,open,close);
 
@@ -227,7 +223,7 @@ step(operator_code  close, int close_len)
 
       m_elements.pop_back();
 
-      push(token(e.m_begin,m_current,std::move(e.m_block)));
+      push(token(e.m_begin,m_current,get_line_number(),std::move(e.m_block)));
 
       return;
     }
@@ -243,7 +239,7 @@ step(operator_code  close, int close_len)
         }
 
 
-      push(token(m_begin,m_current,std::move(s),'\0'));
+      push(token(m_begin,m_current,get_line_number(),std::move(s),'\0'));
 
       return;
     }
@@ -341,13 +337,16 @@ step(operator_code  close, int close_len)
 
   else
     {
-      printf("[処理できない文字です %d]\n",c);
-      printf("%s\n",m_current);
-
-      m_elements.back().m_block.print();
-
-      throw m_current;
+      throw parse_error(get_line_number(),"処理できない文字");
     }
+}
+
+
+int
+tokenizer::
+get_line_number() const noexcept
+{
+  return m_line_number;
 }
 
 
@@ -355,9 +354,12 @@ token_block
 tokenizer::
 operator()(std::string_view  sv)
 {
-  m_begin   = sv.data();
-  m_current = sv.data();
-  m_end     = sv.data()+sv.size();
+  m_source_begin = sv.data();
+  m_begin        = sv.data();
+  m_current      = sv.data();
+  m_end          = sv.data()+sv.size();
+
+  m_line_number = 0;
 
   skip_spaces();
 
@@ -391,9 +393,7 @@ operator()(std::string_view  sv)
     }
 
 
-  report;
-
-  return {};
+  throw parse_error(get_line_number(),"parse is failed");
 }
 
 

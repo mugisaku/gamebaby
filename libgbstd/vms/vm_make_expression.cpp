@@ -9,7 +9,7 @@ namespace gbstd{
 
 
 expression
-make_expression(token_iterator&  it) noexcept
+make_expression(token_iterator&  it)
 {
     if(!it || it->is_null())
     {
@@ -242,7 +242,7 @@ make_expression(token_iterator&  it) noexcept
 
 
 expression
-make_expression(std::string_view  sv) noexcept
+make_expression(std::string_view  sv)
 {
   token_block  blk(sv);
 

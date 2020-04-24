@@ -463,11 +463,11 @@ get_type_info(const block_statement*  blkst) const noexcept
     {
         if(blkst)
         {
-          auto  fn = blkst->find_function(m_data.s);
+          auto  fn = blkst->get_node().find_function(m_data.s);
 
             if(fn)
             {
-              return fn->get_return_type_info();
+              return fn->get_signature().get_return_type_info();
             }
 
 

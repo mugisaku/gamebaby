@@ -10,90 +10,53 @@ namespace gbstd{
 
 namespace type_infos{
 const type_info  null{};
-const type_info  undefined{typesystem::undefined_type_info()};
-const type_info  null_pointer{typesystem::null_pointer_type_info()};
-const type_info         void_{typesystem::void_type_info()};
-const type_info            i8{typesystem::integer_type_info(1)};
-const type_info           i16{typesystem::integer_type_info(2)};
-const type_info           i32{typesystem::integer_type_info(4)};
-const type_info           i64{typesystem::integer_type_info(8)};
-const type_info           f32{typesystem::fpn_type_info(4)};
-const type_info           f64{typesystem::fpn_type_info(8)};
-const type_info          boolean{typesystem::boolean_type_info(boolean_size)};
-const type_info  generic_pointer{typesystem::generic_pointer_type_info(pointer_size)};
+const type_info  undefined{typesystem::undefined_type_info(),"undefined"};
+const type_info  null_pointer{typesystem::null_pointer_type_info(),"nullptr_t"};
+const type_info         void_{typesystem::void_type_info(),"void"};
+const type_info            i8{typesystem::integer_type_info(1),"i8_t"};
+const type_info           i16{typesystem::integer_type_info(2),"i16_t"};
+const type_info           i32{typesystem::integer_type_info(4),"i32_t"};
+const type_info           i64{typesystem::integer_type_info(8),"i64_t"};
+const type_info           int_{typesystem::integer_type_info(8),"int"};
+const type_info           f32{typesystem::fpn_type_info(4),"f32_t"};
+const type_info           f64{typesystem::fpn_type_info(8),"f64_t"};
+const type_info          boolean{typesystem::boolean_type_info(boolean_size),"bool"};
+const type_info  generic_pointer{typesystem::generic_pointer_type_info(pointer_size),"geneptr_t"};
 }
 
 
+
+
+constexpr int  g_mem_size = 1024*1024*16;
 
 
 context::
 context() noexcept:
-m_memory(1024*1024*16)
+m_memory(g_mem_size)
 {
-  clear();
 }
 
 
-void
 context::
-clear() noexcept
+context(const global_space&  gsp) noexcept:
+m_memory(g_mem_size),
+m_global_space(&gsp)
 {
-  m_source.clear();
-
-  m_block.clear();
-
-/*
-  auto&  tc = m_data_space.get_type_collection();
-
-  tc.push(type_infos::i8,  "int8_t");
-  tc.push(type_infos::i16, "int16_t");
-  tc.push(type_infos::i32, "int32_t");
-  tc.push(type_infos::i64, "int64_t");
-  tc.push(type_infos::i64, "int");
-  tc.push(type_infos::f32,"float32_t");
-  tc.push(type_infos::f64,"float64_t");
-  tc.push(type_infos::f64,"float");
-
-  tc.push(type_infos::boolean,"bool");
-
-  tc.push(type_infos::void_,"void");
-  tc.push(type_infos::null_pointer,"nullptr_t");
-
-  tc.push(type_infos::generic_pointer,"geneptr_t");
-*/
 }
 
 
-
-
-context&
-context::
-assign(std::string_view  sv) noexcept
-{
-  clear();
-
-  m_source = sv;
-
-  token_block  blk(m_source);
-
-  token_iterator  it(blk);
-
-  m_block.read(it);
-
-
-  return *this;
-}
 
 
 void
 context::
 call_function(std::string_view  fn_name, address_t  return_value_address) noexcept
 {
+/*
   auto  fn = m_block.find_function(fn_name);
 
     if(fn)
     {
-      auto&  retti = fn->get_return_type_info();
+      auto  retti = fn->get_return_type_info();
 
         if(!return_value_address)
         {
@@ -101,14 +64,13 @@ call_function(std::string_view  fn_name, address_t  return_value_address) noexce
         }
 
 
-/*
       auto  sz = fn->get_block_statement()->get_symbol_table().get_end_address();
 
       push_stack_frame(0,return_value_address,sz);
 
       m_call_stack.emplace_back(*fn);
-*/
     }
+*/
 }
 
 
@@ -181,7 +143,7 @@ void
 context::
 print() const noexcept
 {
-  m_block.print();
+//  m_block.print();
 }
 
 

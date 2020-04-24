@@ -45,7 +45,7 @@ public:
 
   std::string  m_id;
 
-  core(kind  k, std::string&&  id) noexcept: m_reference_count(1), m_kind(k), m_id(std::move(id)){}
+  core(kind  k, std::string_view  name, std::string&&  id) noexcept: m_reference_count(1), m_kind(k), m_name(name), m_id(std::move(id)){}
  ~core();
 
 };
@@ -70,21 +70,21 @@ type_info::core::
 
 
 
-type_info::type_info(void_type_info)                   noexcept: m_core(new core(kind::void_           ,"void")     ){}
-type_info::type_info(undefined_type_info)              noexcept: m_core(new core(kind::undefined       ,"undefined")){}
-type_info::type_info(null_pointer_type_info)           noexcept: m_core(new core(kind::null_pointer    ,"nullptr")  ){}
-type_info::type_info(boolean_type_info&&           ti) noexcept: m_core(new core(kind::boolean         ,"bool")      ){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(generic_pointer_type_info&&   ti) noexcept: m_core(new core(kind::generic_pointer ,"geneptr")   ){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(         integer_type_info&&  ti) noexcept: m_core(new core(kind::integer         ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(unsigned_integer_type_info&&  ti) noexcept: m_core(new core(kind::unsigned_integer,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(fpn_type_info&&               ti) noexcept: m_core(new core(kind::fpn             ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(pointer_type_info&&           ti) noexcept: m_core(new core(kind::pointer         ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(reference_type_info&&         ti) noexcept: m_core(new core(kind::reference       ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(struct_type_info&&            ti) noexcept: m_core(new core(kind::struct_         ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(union_type_info&&             ti) noexcept: m_core(new core(kind::union_          ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(enum_type_info&&              ti) noexcept: m_core(new core(kind::enum_           ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info(array_type_info&&             ti) noexcept: m_core(new core(kind::array           ,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
-type_info::type_info::type_info(function_pointer_type_info&&  ti) noexcept: m_core(new core(kind::function_pointer,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(void_type_info                  , std::string_view  name)                   noexcept: m_core(new core(kind::void_           ,name,"void")     ){}
+type_info::type_info(undefined_type_info             , std::string_view  name)              noexcept: m_core(new core(kind::undefined       ,name,"undefined")){}
+type_info::type_info(null_pointer_type_info          , std::string_view  name)           noexcept: m_core(new core(kind::null_pointer    ,name,"nullptr")  ){}
+type_info::type_info(boolean_type_info&&           ti, std::string_view  name) noexcept: m_core(new core(kind::boolean         ,name,"bool")      ){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(generic_pointer_type_info&&   ti, std::string_view  name) noexcept: m_core(new core(kind::generic_pointer ,name,"geneptr")   ){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(         integer_type_info&&  ti, std::string_view  name) noexcept: m_core(new core(kind::integer         ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(unsigned_integer_type_info&&  ti, std::string_view  name) noexcept: m_core(new core(kind::unsigned_integer,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(fpn_type_info&&               ti, std::string_view  name) noexcept: m_core(new core(kind::fpn             ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(pointer_type_info&&           ti, std::string_view  name) noexcept: m_core(new core(kind::pointer         ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(reference_type_info&&         ti, std::string_view  name) noexcept: m_core(new core(kind::reference       ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(struct_type_info&&            ti, std::string_view  name) noexcept: m_core(new core(kind::struct_         ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(union_type_info&&             ti, std::string_view  name) noexcept: m_core(new core(kind::union_          ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(enum_type_info&&              ti, std::string_view  name) noexcept: m_core(new core(kind::enum_           ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(array_type_info&&             ti, std::string_view  name) noexcept: m_core(new core(kind::array           ,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
+type_info::type_info(function_pointer_type_info&&  ti, std::string_view  name) noexcept: m_core(new core(kind::function_pointer,name,ti.make_id())){create_at(&m_core->m_data,std::move(ti));}
 
 
 
@@ -93,7 +93,7 @@ type_info::kind
 type_info::
 get_kind() const noexcept
 {
-  return m_core->m_kind;
+  return m_core? m_core->m_kind:kind::null;
 }
 
 
@@ -322,7 +322,7 @@ void
 type_info::
 print() const noexcept
 {
-  printf("%s",m_core->m_name.data());
+  printf("%s",m_core? m_core->m_name.data():"NO TYPE");
 }
 
 

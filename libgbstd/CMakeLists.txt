@@ -84,8 +84,8 @@ set(SOURCES
   vms/vm_cold_object.cpp
   vms/vm_hot_object.cpp
   vms/vm_function.cpp
+  vms/vm_basic_space.cpp
   vms/vm_global_space.cpp
-  vms/vm_local_space.cpp
   vms/vm_symbol_table.cpp
   vms/vm_context.cpp
   vms/vm_call_frame.cpp
@@ -93,8 +93,9 @@ set(SOURCES
   vms/vm_expression.cpp
   vms/vm_make_expression.cpp
   vms/vm_block_statement.cpp
-  vms/vm_block_statement__create_type.cpp
-  vms/vm_block_statement__read_block.cpp
+  vms/vm_space_node.cpp
+  vms/vm_space_node__create_type.cpp
+  vms/vm_space_node__read_block.cpp
   vms/vm_statement.cpp
   ilc_javascript.cpp
   utility.cpp

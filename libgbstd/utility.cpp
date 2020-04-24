@@ -61,6 +61,54 @@ is_webp(const void*  ptr) noexcept
 }
 
 
+namespace{
+std::vector<std::string>
+strings;
+}
+
+
+void
+clear_formed_strings() noexcept
+{
+  strings.clear();
+}
+
+
+std::string_view
+form_string(const char*  fmt, ...) noexcept
+{
+  static char  buf[1024];
+
+  va_list  ap;
+
+  va_start(ap,fmt);
+
+  vsnprintf(buf,sizeof(buf),fmt,ap);
+
+  va_end(ap);
+
+
+  return strings.emplace_back(buf);
+}
+
+
+int
+get_number_of_newlines(const char*  begin, const char*  end) noexcept
+{
+  int  n = 0;
+
+    while(begin < end)
+    {
+        if(*begin++ == '\n')
+        {
+          ++n;
+        }
+    }
+
+
+  return n;
+}
+
 
 
 }

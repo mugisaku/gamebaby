@@ -23,6 +23,7 @@ skip_linestyle_comment() noexcept
       else           
         if(c == '\n')
         {
+          ++m_line_number;
           ++m_current;
 
           break;
@@ -66,6 +67,12 @@ skip_blockstyle_comment()
 
       else
         {
+            if(c == '\n')
+            {
+              ++m_line_number;
+            }
+
+
           ++m_current;
         }           
     }

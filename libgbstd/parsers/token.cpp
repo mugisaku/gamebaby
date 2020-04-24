@@ -19,9 +19,10 @@ assign(const token&  rhs) noexcept
     {
       clear();
 
-      m_begin = rhs.m_begin;
-      m_end   =   rhs.m_end;
-      m_kind  =  rhs.m_kind;
+      m_begin       = rhs.m_begin;
+      m_end         = rhs.m_end;
+      m_line_number = rhs.m_line_number;
+      m_kind        = rhs.m_kind;
 
         switch(m_kind)
         {
@@ -60,9 +61,10 @@ assign(token&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_begin,rhs.m_begin);
-      std::swap(m_end  ,rhs.m_end  );
-      std::swap(m_kind ,rhs.m_kind );
+      std::swap(m_begin      ,rhs.m_begin      );
+      std::swap(m_end        ,rhs.m_end        );
+      std::swap(m_line_number,rhs.m_line_number);
+      std::swap(m_kind       ,rhs.m_kind       );
 
         switch(m_kind)
         {
@@ -95,12 +97,13 @@ assign(token&&  rhs) noexcept
 
 token&
 token::
-assign(const char*  begin, const char*  end, uint64_t  n) noexcept
+assign(const char*  begin, const char*  end, int  ln, uint64_t  n) noexcept
 {
   clear();
 
-  m_begin = begin;
-  m_end   =   end;
+  m_begin       = begin;
+  m_end         =   end;
+  m_line_number =    ln;
 
   m_data.n = n;
 
@@ -113,12 +116,13 @@ assign(const char*  begin, const char*  end, uint64_t  n) noexcept
 
 token&
 token::
-assign(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcept
+assign(const char*  begin, const char*  end, int  ln, std::string&&  s, int  sym) noexcept
 {
   clear();
 
-  m_begin = begin;
-  m_end   =   end;
+  m_begin       = begin;
+  m_end         =   end;
+  m_line_number =    ln;
 
   new(&m_data) std::string(std::move(s));
 
@@ -136,12 +140,13 @@ assign(const char*  begin, const char*  end, std::string&&  s, int  sym) noexcep
 
 token&
 token::
-assign(const char*  begin, const char*  end, double  f) noexcept
+assign(const char*  begin, const char*  end, int  ln, double  f) noexcept
 {
   clear();
 
-  m_begin = begin;
-  m_end   =   end;
+  m_begin       = begin;
+  m_end         =   end;
+  m_line_number =    ln;
 
   m_data.f = f;
 
@@ -154,12 +159,13 @@ assign(const char*  begin, const char*  end, double  f) noexcept
 
 token&
 token::
-assign(const char*  begin, const char*  end, operator_code  opco) noexcept
+assign(const char*  begin, const char*  end, int  ln, operator_code  opco) noexcept
 {
   clear();
 
-  m_begin = begin;
-  m_end   =   end;
+  m_begin       = begin;
+  m_end         =   end;
+  m_line_number =    ln;
 
   m_data.opco = opco;
 
@@ -172,12 +178,13 @@ assign(const char*  begin, const char*  end, operator_code  opco) noexcept
 
 token&
 token::
-assign(const char*  begin, const char*  end, token_block&&  blk) noexcept
+assign(const char*  begin, const char*  end, int  ln, token_block&&  blk) noexcept
 {
   clear();
 
-  m_begin = begin;
-  m_end   =   end;
+  m_begin       = begin;
+  m_end         =   end;
+  m_line_number =    ln;
 
   new(&m_data) token_block(std::move(blk));
 
@@ -260,29 +267,9 @@ print_string(const std::string&  s, char  punct) noexcept
 
 void
 token::
-print(const char*  base, int  indent) const noexcept
+print(int  indent) const noexcept
 {
-  int  i = 0;
-
-    if(base)
-    {
-      auto  p = base;
-
-        while(p < m_begin)
-        {
-           if(*p == '\n')
-           {
-             ++i;
-           }
-
-
-          ++p;
-        }
-
-
-      printf("%4d  ",i);
-    }
-
+  printf("%4d: ",m_line_number);
 
     for(int  n = 0;  n < indent;  ++n)
     {
@@ -299,45 +286,9 @@ print(const char*  base, int  indent) const noexcept
   case(kind::double_quoted): print_string(m_data.s,'\"');break;
   case(kind::floating_point_number): printf("%f",m_data.f);break;
   case(kind::operator_code): printf("%s",m_data.opco.get_string());break;
-  case(kind::block): m_data.blk.print(base,indent+2);break;
+  case(kind::block): m_data.blk.print(indent+2);break;
   default: printf("UNKNOWN");break;
     }
-}
-
-
-void
-token::
-print_source(const char*  base) const noexcept
-{
-    if(base)
-    {
-      int  n = 1;
-
-        while(base < m_begin)
-        {
-            if(*base == '\n')
-            {
-              ++n;
-            }
-
-
-          ++base;
-        }
-
-
-      printf("%4d ",n);
-    }
-
-
-  auto  p = m_begin;
-
-    while(p < m_end)
-    {
-      printf("%c",*p++);
-    }
-
-
-  printf("\n");
 }
 
 

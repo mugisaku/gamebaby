@@ -414,7 +414,7 @@ preprocess(token_iterator&  top_it) noexcept
 
 void
 exprrpn::
-postprocess() noexcept
+postprocess()
 {
   std::vector<exprelem>  tmp;
 
@@ -517,7 +517,7 @@ printf("\n");
 
 exprrpn&
 exprrpn::
-assign(token_iterator&  it) noexcept
+assign(token_iterator&  it)
 {
   m_strings.clear();
   m_stack.clear();
@@ -531,7 +531,7 @@ assign(token_iterator&  it) noexcept
 
 exprrpn&
 exprrpn::
-assign(std::string_view  sv) noexcept
+assign(std::string_view  sv)
 {
 //  printf("%s\n",sv.data());
 

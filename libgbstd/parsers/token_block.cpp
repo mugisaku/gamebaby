@@ -40,13 +40,13 @@ clear() noexcept
 
 void
 token_block::
-print(const char*  base, int  indent) const noexcept
+print(int  indent) const noexcept
 {
   printf("%s\n",m_open.get_string());
 
     for(auto&  tok: m_container)
     {
-      tok.print(base,indent);
+      tok.print(indent);
 
       printf("\n");
     }
