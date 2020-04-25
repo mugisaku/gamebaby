@@ -370,9 +370,9 @@ global_space: public basic_space
 
 public:
   global_space(space_node&  nd) noexcept: basic_space(nd){initialize();}
-  global_space(space_node&  nd, std::string_view  sv) noexcept: basic_space(nd){  initialize();  assign(sv);}
+  global_space(space_node&  nd, std::string_view  sv): basic_space(nd){  initialize();  assign(sv);}
 
-  global_space&  assign(std::string_view  sv) noexcept;
+  global_space&  assign(std::string_view  sv);
 
   void  clear() noexcept;
 
@@ -410,7 +410,7 @@ space_node
   statement    read_for(token_iterator&  it) noexcept;
   statement    read_while(token_iterator&  it) noexcept;
   statement    read_switch(token_iterator&  it) noexcept;
-  statement    read_let(token_iterator&  it) noexcept;
+  statement    read_let(token_iterator&  it);
 
   type_info   read_struct_type_info(token_iterator&  it) noexcept;
   type_info    read_union_type_info(token_iterator&  it) noexcept;
@@ -422,15 +422,13 @@ space_node
   type_info    read_named_union_type_info(token_iterator&  it) noexcept;
   type_info     read_named_enum_type_info(token_iterator&  it) noexcept;
 
-  type_info  read_user_defined_type_info(token_iterator&  it) noexcept;
-
   const function*  read_function(token_iterator&  it) noexcept;
 
   void  read_element_that_begins_with_identifier(token_iterator&  it);
 
 public:
   space_node() noexcept;
-  space_node(std::string_view  src) noexcept;
+  space_node(std::string_view  src);
   space_node(space_node&  parent, std::string_view  name, function_signature&&  fnsig) noexcept;
   space_node(space_node&  parent, nullptr_t) noexcept;
  ~space_node();

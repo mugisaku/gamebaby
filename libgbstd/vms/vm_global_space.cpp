@@ -30,7 +30,7 @@ initialize() noexcept
 
 global_space&
 global_space::
-assign(std::string_view  sv) noexcept
+assign(std::string_view  sv)
 {
   clear();
 

@@ -21,17 +21,15 @@ skip_linestyle_comment() noexcept
         }
 
       else           
-        if(c == '\n')
-        {
-          ++m_line_number;
-          ++m_current;
-
-          break;
-        }
-
-      else
         {
           ++m_current;
+
+            if(c == '\n')
+            {
+              ++m_line_number;
+
+              break;
+            }
         }           
     }
 }
@@ -47,9 +45,7 @@ skip_blockstyle_comment()
 
         if(!c)
         {
-          printf("ブロック式コメントが閉じられていない\n");
-
-          throw m_current;
+          throw parse_error(get_line_number(),"ブロック式コメントが閉じられていない\n");
         }
 
       else           
@@ -67,13 +63,12 @@ skip_blockstyle_comment()
 
       else
         {
+          ++m_current;
+
             if(c == '\n')
             {
               ++m_line_number;
             }
-
-
-          ++m_current;
         }           
     }
 }
@@ -96,10 +91,16 @@ skip_spaces()
         if((c ==  ' ') ||
            (c == '\t') ||
            (c == '\r') ||
-           (c == '\n') ||
            (c == '\v'))
         {
           ++m_current;
+        }
+
+      else
+        if(c == '\n')
+        {
+          ++m_current;
+          ++m_line_number;
         }
 
       else           

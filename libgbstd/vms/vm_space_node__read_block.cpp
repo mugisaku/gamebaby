@@ -10,6 +10,8 @@ namespace gbstd{
 using namespace typesystem;
 
 
+
+
 statement
 space_node::
 read_return(token_iterator&  it) noexcept
@@ -135,7 +137,7 @@ read_switch(token_iterator&  it) noexcept
 
 statement
 space_node::
-read_let(token_iterator&  it) noexcept
+read_let(token_iterator&  it)
 {
   auto&  it0 = it[0];
   auto&  it1 = it[1];
@@ -241,6 +243,30 @@ read_element_that_begins_with_identifier(token_iterator&  it)
     }
 
   else
+    if(first == std::string_view("alias"))
+    {
+      read_alias(++it);
+    }
+
+  else
+    if(first == std::string_view("struct"))
+    {
+      read_named_struct_type_info(++it);
+    }
+
+  else
+    if(first == std::string_view("union"))
+    {
+      read_named_union_type_info(++it);
+    }
+
+  else
+    if(first == std::string_view("enum"))
+    {
+      read_named_enum_type_info(++it);
+    }
+
+  else
     {
       push_statement(statement(make_expression(it)));
     }
@@ -293,12 +319,6 @@ read(token_iterator&  it)
         }
 
       else
-        if(read_user_defined_type_info(it))
-        {
-          continue;
-        }
-
-      else
         if(tok.is_identifier())
         {
             try{
@@ -327,27 +347,11 @@ space_node&
 space_node::
 read(std::string_view  sv)
 {
-  try{
-    token_block  blk(sv);
+  token_block  blk(sv);
 
-    token_iterator  it(blk);
+  token_iterator  it(blk);
 
-    read(it);
-  }
-
-
-  catch(const parse_error&  err){
-    printf("[parse error] line: %d\n%s",err.m_line_number,err.m_comment.data());
-
-    throw;
-  }
-
-  catch(const compile_error&  err){
-    printf("[compile error] line: %d\n%s",err.m_line_number,err.m_comment.data());
-
-    throw;
-  }
-
+  read(it);
 
   return *this;
 }

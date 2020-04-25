@@ -87,9 +87,7 @@ make_expression(token_iterator&  it)
         {
             if(buf.size() < 1)
             {
-              report;
-
-              return {};
+              throw expression_error("前置単項演算の被演算子がない");
             }
 
 
@@ -104,9 +102,7 @@ make_expression(token_iterator&  it)
         {
             if(buf.size() < 1)
             {
-              report;
-
-              return {};
+              throw expression_error("後置単項演算の被演算子がない");
             }
 
 
@@ -121,9 +117,7 @@ make_expression(token_iterator&  it)
         {
             if(buf.size() < 2)
             {
-              report;
-
-              return {};
+              throw expression_error("二項演算の被演算子が足りない");
             }
 
 
@@ -209,13 +203,13 @@ make_expression(token_iterator&  it)
 
           else
             {
-              report;
+              throw expression_error("不明な演算子");
             }
         }
 
       else
         {
-          report;
+          throw expression_error("不明な演算要素");
         }
     }
 
@@ -231,13 +225,7 @@ make_expression(token_iterator&  it)
     }
 
 
-  report;
-
-  rpn.print();
-
-  printf("\n%s\n",first.get_begin());
-
-  return expression();
+  throw expression_error("不正な演算結果");
 }
 
 

@@ -22,18 +22,21 @@ read_parameter_list(token_iterator&  it) noexcept
 
         if(ti)
         {
+          std::string_view  sv;
+
             if(it->is_identifier())
             {
-              ls.emplace_back(ti,it++->get_string());
+              sv = it++->get_string();
             }
 
 
             if(it->is_operator_code(","))
             {
-              ls.emplace_back(ti,std::string_view(""));
-
               ++it;
             }
+
+
+          ls.emplace_back(ti,sv);
         }
 
       else
@@ -289,45 +292,6 @@ read_named_enum_type_info(token_iterator&  it) noexcept
           push_type_info(std::move(ti));
 
           return std::move(ti);
-        }
-    }
-
-
-  return type_info();
-}
-
-
-
-
-type_info
-space_node::
-read_user_defined_type_info(token_iterator&  it) noexcept
-{
-    if(it->is_identifier())
-    {
-      auto&  first = it->get_string();
-
-        if(first == std::string_view("alias"))
-        {
-          return read_alias(++it);
-        }
-
-      else
-        if(first == std::string_view("struct"))
-        {
-          return read_named_struct_type_info(++it);
-        }
-
-      else
-        if(first == std::string_view("union"))
-        {
-          return read_named_union_type_info(++it);
-        }
-
-      else
-        if(first == std::string_view("enum"))
-        {
-          return read_named_enum_type_info(++it);
         }
     }
 

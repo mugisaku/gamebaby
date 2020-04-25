@@ -4,7 +4,9 @@ class
 expression_error
 {
 public:
-  expression_error() noexcept{}
+  std::string  m_comment;
+
+  expression_error(std::string_view  comm="") noexcept: m_comment(comm){}
 
 };
 

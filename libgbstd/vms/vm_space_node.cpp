@@ -18,7 +18,7 @@ m_root(this)
 
 
 space_node::
-space_node(std::string_view  src) noexcept:
+space_node(std::string_view  src):
 m_kind(kinds::global_space),
 m_root(this)
 {
