@@ -108,13 +108,12 @@ create_block() noexcept
   else
     if(is_function())
     {
+      return &blk;
     }
 
   else
     if(is_block())
     {
-      m_data.blk.push_statement(statement(blk));
-
       return &blk;
     }
 
@@ -209,13 +208,18 @@ find_function(std::string_view  name) const noexcept
 
         if(nd->is_block())
         {
-          fn = m_data.blk.find_function(name);
+          fn = nd->m_data.blk.find_function(name);
         }
 
       else
         if(nd->is_global_space())
         {
-          fn = m_data.gsp.find_function(name);
+          fn = nd->m_data.gsp.find_function(name);
+        }
+
+      else
+        if(nd->is_function())
+        {
         }
 
 
@@ -243,25 +247,33 @@ find_type_info_by_name(std::string_view  name) const noexcept
     {
       type_info  ti;
 
-        if(nd->is_block())
+        if(nd->is_function())
         {
-          ti = m_data.blk.find_type_info_by_name(name);
+          nd = nd->m_root;
         }
 
       else
-        if(nd->is_global_space())
         {
-          ti = m_data.gsp.find_type_info_by_name(name);
+            if(nd->is_block())
+            {
+              ti = nd->m_data.blk.find_type_info_by_name(name);
+            }
+
+          else
+            if(nd->is_global_space())
+            {
+              ti = nd->m_data.gsp.find_type_info_by_name(name);
+            }
+
+
+            if(ti)
+            {
+              return ti;
+            }
+
+
+          nd = nd->m_parent;
         }
-
-
-        if(ti)
-        {
-          return ti;
-        }
-
-
-      nd = nd->m_parent;
     }
 
 
@@ -279,25 +291,33 @@ find_type_info_by_id(std::string_view  id) const noexcept
     {
       type_info  ti;
 
-        if(nd->is_block())
+        if(nd->is_function())
         {
-          ti = m_data.blk.find_type_info_by_id(id);
+          nd = nd->m_root;
         }
 
       else
-        if(nd->is_global_space())
         {
-          ti = m_data.gsp.find_type_info_by_id(id);
+            if(nd->is_block())
+            {
+              ti = nd->m_data.blk.find_type_info_by_id(id);
+            }
+
+          else
+            if(nd->is_global_space())
+            {
+              ti = nd->m_data.gsp.find_type_info_by_id(id);
+            }
+
+
+            if(ti)
+            {
+              return ti;
+            }
+
+
+          nd = nd->m_parent;
         }
-
-
-        if(ti)
-        {
-          return ti;
-        }
-
-
-      nd = nd->m_parent;
     }
 
 
@@ -313,27 +333,43 @@ find_memo_info(std::string_view  name) const noexcept
 
     while(nd)
     {
-      const memo_info*  mi = nullptr;
+      const memo_info*  mi;
 
-        if(nd->is_block())
+        if(nd->is_function())
         {
-          mi = m_data.blk.find_memo_info(name);
+          mi = nd->m_data.fn.find_parameter_memo_info(name);
+
+            if(mi)
+            {
+              return mi;
+            }
+
+
+          nd = nd->m_root;
         }
 
       else
-        if(nd->is_global_space())
         {
-          mi = m_data.gsp.find_memo_info(name);
+            if(nd->is_block())
+            {
+              mi = nd->m_data.blk.find_memo_info(name);
+            }
+
+          else
+            if(nd->is_global_space())
+            {
+              mi = nd->m_data.gsp.find_memo_info(name);
+            }
+
+
+            if(mi)
+            {
+              return mi;
+            }
+
+
+          nd = nd->m_parent;
         }
-
-
-        if(mi)
-        {
-          return mi;
-        }
-
-
-      nd = nd->m_parent;
     }
 
 

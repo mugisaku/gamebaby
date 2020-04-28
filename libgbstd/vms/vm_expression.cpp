@@ -26,9 +26,9 @@ assign(const prefix_unary_operation&  rhs) noexcept
 
 type_info
 prefix_unary_operation::
-get_type_info(const block_statement*  blkst) const noexcept
+get_type_info(const space_node&  nd) const
 {
-  auto  ti = m_operand->get_type_info(blkst);
+  auto  ti = m_operand->get_type_info(nd);
 
     if((m_opcode == "++") ||
        (m_opcode == "--"))
@@ -83,9 +83,9 @@ get_type_info(const block_statement*  blkst) const noexcept
 
 type_info
 postfix_unary_operation::
-get_type_info(const block_statement*  blkst) const noexcept
+get_type_info(const space_node&  nd) const
 {
-  auto  ti = m_operand->get_type_info(blkst);
+  auto  ti = m_operand->get_type_info(nd);
 
     if((m_opcode == "++") ||
        (m_opcode == "--"))
@@ -117,10 +117,10 @@ assign(const binary_operation&  rhs) noexcept
 
 type_info
 binary_operation::
-get_type_info(const block_statement*  blkst) const noexcept
+get_type_info(const space_node&  nd) const
 {
-  auto  lti = m_left->get_type_info(blkst);
-  auto  rti = m_right->get_type_info(blkst);
+  auto  lti = m_left->get_type_info(nd);
+  auto  rti = m_right->get_type_info(nd);
 
     if(m_opcode == "+")
     {
@@ -427,14 +427,14 @@ clear() noexcept
   case(kind::undefined_literal): break;
   case(kind::null_pointer_literal): break;
   case(kind::boolean_literal): break;
-  case(kind::identifier     ): m_data.s.~basic_string();break;
-  case(kind::string_literal ): m_data.s.~basic_string();break;
-  case(kind::integer_literal): /*m_data.i.~int()*/;break;
-  case(kind::fpn_literal): /*m_data.i.~int()*/;break;
+  case(kind::identifier     ): std::destroy_at(&m_data.s);break;
+  case(kind::string_literal ): std::destroy_at(&m_data.s);break;
+  case(kind::integer_literal): std::destroy_at(&m_data.i);break;
+  case(kind::fpn_literal    ): std::destroy_at(&m_data.i);break;
 
   case(kind::prefix_unary ): std::destroy_at(&m_data.pre_un);break;
   case(kind::postfix_unary): std::destroy_at(&m_data.pos_un);break;
-  case(kind::binary       ): m_data.bin.~binary_operation();break;
+  case(kind::binary       ): std::destroy_at(&m_data.bin);break;
     }
 
 
@@ -449,7 +449,7 @@ clear() noexcept
 
 type_info
 expression::
-get_type_info(const block_statement*  blkst) const noexcept
+get_type_info(const space_node&  nd) const
 {
     switch(m_kind)
     {
@@ -461,38 +461,29 @@ get_type_info(const block_statement*  blkst) const noexcept
   case(kind::integer_literal     ): return type_infos::i64;break;
   case(kind::identifier          ):
     {
-        if(blkst)
+      auto  fn = nd.find_function(m_data.s);
+
+        if(fn)
         {
-          auto  fn = blkst->get_node().find_function(m_data.s);
-
-            if(fn)
-            {
-              return fn->get_signature().get_return_type_info();
-            }
-
-
-/*
-          auto  sym = ds->get_symbol_collection().find(m_data.s);
-
-            if(sym)
-            {
-              return sym->get_type_info();
-            }
-*/
-
-          printf("expression::get_type_info error: identifier %s is not found.\n",m_data.s.data());
+          return fn->get_signature().get_return_type_info();
         }
 
-      else
+
+      auto  mi = nd.find_memo_info(m_data.s);
+
+        if(mi)
         {
-          printf("expression::get_type_info error: data_space is null.\n");
+          return mi->get_type_info();
         }
+
+
+      throw expression_error(form_string("expression::get_type_info error: identifier %s is not found.\n",m_data.s.data()));
     }
     break;
 
-  case(kind::prefix_unary ): return m_data.pre_un.get_type_info(blkst);break;
-  case(kind::postfix_unary): return m_data.pos_un.get_type_info(blkst);break;
-  case(kind::binary       ): return m_data.bin.get_type_info(blkst);break;
+  case(kind::prefix_unary ): return m_data.pre_un.get_type_info(nd);break;
+  case(kind::postfix_unary): return m_data.pos_un.get_type_info(nd);break;
+  case(kind::binary       ): return m_data.bin.get_type_info(nd);break;
     }
 
 
@@ -502,45 +493,35 @@ get_type_info(const block_statement*  blkst) const noexcept
 
 address_t
 expression::
-allocate_address() noexcept
+allocate_address(const space_node&  nd, address_t  end)
 {
-/*
-  m_begin_address = get_aligned_address(base);
+  auto  ti = get_type_info(nd);
 
-  auto  ti = get_type_info(ds);
+  m_begin_address = get_aligned_address(end              );
+  m_end_address   = get_aligned_address(end+ti.get_size());
 
-    if(ti.is_undefined())
-    {
-      printf("allocate_address error: type is undefined.");
-    }
-
-
-  address_t  end = get_aligned_address(base+ti.get_size());
+  end = m_end_address;
 
     if(is_prefix_unary())
     {
-       m_data.pre_un.get_operand().allocate_address(end,ds);
+      end = m_data.pre_un.get_operand().allocate_address(nd,end);
     }
 
   else
     if(is_postfix_unary())
     {
-      end = m_data.pos_un.get_operand().allocate_address(end,ds);
+      end = m_data.pos_un.get_operand().allocate_address(nd,end);
     }
 
   else
     if(is_binary())
     {
-      end =  m_data.bin.get_left().allocate_address(end,ds);
-      end = m_data.bin.get_right().allocate_address(end,ds);
+      end =  m_data.bin.get_left().allocate_address(nd,end);
+      end = m_data.bin.get_right().allocate_address(nd,end);
     }
 
 
-  m_end_address = end;
-
   return end;
-*/
-  return 0;
 }
 
 
@@ -684,8 +665,8 @@ evaluate(context&  ctx) const noexcept
     {
       auto  o = m_data.bin.get_opcode();
 
-      auto  l = m_data.bin.get_left() ;
-      auto  r = m_data.bin.get_right();
+      auto&  l = m_data.bin.get_left() ;
+      auto&  r = m_data.bin.get_right();
 
       using namespace operations;
 

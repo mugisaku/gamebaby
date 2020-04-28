@@ -227,7 +227,7 @@ public:
         expression&  get_operand()       noexcept{return *m_operand;}
   const expression&  get_operand() const noexcept{return *m_operand;}
 
-  type_info  get_type_info(const block_statement*  blkst) const noexcept;
+  type_info  get_type_info(const space_node&  nd) const;
 
 };
 
@@ -238,7 +238,7 @@ postfix_unary_operation: public prefix_unary_operation
 public:
   using prefix_unary_operation::prefix_unary_operation;
 
-  type_info  get_type_info(const block_statement*  blkst) const noexcept;
+  type_info  get_type_info(const space_node&  nd) const;
 
 };
 
@@ -268,7 +268,7 @@ public:
         expression&  get_right()       noexcept{return *m_right;}
   const expression&  get_right() const noexcept{return *m_right;}
 
-  type_info  get_type_info(const block_statement*  blkst) const noexcept;
+  type_info  get_type_info(const space_node&  nd) const;
 
 };
 
@@ -315,32 +315,12 @@ expression
 
 public:
   expression() noexcept{}
-  expression(const expression&   rhs) noexcept{assign(rhs);}
-  expression(      expression&&  rhs) noexcept{assign(std::move(rhs));}
-  expression(undefined  u) noexcept{assign(u);}
-  expression(nullptr_t  n) noexcept{assign(n);}
-  expression(bool  b) noexcept{assign(b);}
-  expression(identifier&&  id) noexcept{assign(std::move(id));}
-  expression(std::string_view  sv) noexcept{assign(sv);}
-  expression(int64_t  i) noexcept{assign(i);}
-  expression(double  f) noexcept{assign(f);}
-  expression(prefix_unary_operation&&  op) noexcept{assign(std::move(op));}
-  expression(postfix_unary_operation&&  op) noexcept{assign(std::move(op));}
-  expression(binary_operation&&  op) noexcept{assign(std::move(op));}
+  template<class... Args>
+  expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
  ~expression(){clear();}
 
-  expression&  operator=(const expression&   rhs) noexcept{return assign(rhs);}
-  expression&  operator=(      expression&&  rhs) noexcept{return assign(std::move(rhs));}
-  expression&  operator=(undefined  u) noexcept{return assign(u);}
-  expression&  operator=(nullptr_t  n) noexcept{return assign(n);}
-  expression&  operator=(bool  b) noexcept{return assign(b);}
-  expression&  operator=(identifier&&  id) noexcept{return assign(std::move(id));}
-  expression&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  expression&  operator=(int64_t  i) noexcept{return assign(i);}
-  expression&  operator=(double  f) noexcept{return assign(f);}
-  expression&  operator=(prefix_unary_operation&&  op) noexcept{return assign(std::move(op));}
-  expression&  operator=(postfix_unary_operation&&  op) noexcept{return assign(std::move(op));}
-  expression&  operator=(binary_operation&&  op) noexcept{return assign(std::move(op));}
+  template<class... Args>
+  expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   operator bool() const noexcept{return m_kind != kind::null;}
 
@@ -385,9 +365,9 @@ public:
 
   tepid_object  evaluate(context&  ctx) const noexcept;
 
-  address_t  allocate_address() noexcept;
+  address_t  allocate_address(const space_node&  nd, address_t  end=0);
 
-  type_info  get_type_info(const block_statement*  blkst) const noexcept;
+  type_info  get_type_info(const space_node&  nd) const;
 
   std::vector<const expression*>  get_argument_source_list() const noexcept;
 

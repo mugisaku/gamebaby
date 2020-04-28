@@ -356,6 +356,8 @@ public:
 
   void  push_memo_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));}
 
+  const memo_info*  find_parameter_memo_info(std::string_view  name) const noexcept;
+
   void  print() const noexcept;
 
 };
@@ -369,8 +371,8 @@ global_space: public basic_space
   void  initialize() noexcept;
 
 public:
-  global_space(space_node&  nd) noexcept: basic_space(nd){initialize();}
-  global_space(space_node&  nd, std::string_view  sv): basic_space(nd){  initialize();  assign(sv);}
+  global_space(space_node&  nd) noexcept: basic_space(nd){}
+  global_space(space_node&  nd, std::string_view  sv): basic_space(nd){assign(sv);}
 
   global_space&  assign(std::string_view  sv);
 
@@ -415,14 +417,14 @@ space_node
   type_info   read_struct_type_info(token_iterator&  it) noexcept;
   type_info    read_union_type_info(token_iterator&  it) noexcept;
   type_info     read_enum_type_info(token_iterator&  it) noexcept;
-  type_info  read_derived_type_info(token_iterator&  it) noexcept;
+  type_info  read_derived_type_info(token_iterator&  it);
 
   type_info                    read_alias(token_iterator&  it) noexcept;
   type_info   read_named_struct_type_info(token_iterator&  it) noexcept;
   type_info    read_named_union_type_info(token_iterator&  it) noexcept;
   type_info     read_named_enum_type_info(token_iterator&  it) noexcept;
 
-  const function*  read_function(token_iterator&  it) noexcept;
+  const function*  read_function(token_iterator&  it);
 
   void  read_element_that_begins_with_identifier(token_iterator&  it);
 
@@ -457,6 +459,10 @@ public:
   global_space&  get_global_space() noexcept{return m_data.gsp;}
   function&          get_function() noexcept{return m_data.fn;}
   block_statement&      get_block() noexcept{return m_data.blk;}
+
+  const global_space&  get_global_space() const noexcept{return m_data.gsp;}
+  const function&          get_function() const noexcept{return m_data.fn;}
+  const block_statement&      get_block() const noexcept{return m_data.blk;}
 
   void  print() const noexcept;
 

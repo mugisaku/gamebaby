@@ -302,7 +302,7 @@ read_named_enum_type_info(token_iterator&  it) noexcept
 
 const function*
 space_node::
-read_function(token_iterator&  it) noexcept
+read_function(token_iterator&  it)
 {
    if(it->is_identifier())
    {
@@ -350,7 +350,7 @@ read_function(token_iterator&  it) noexcept
 
 type_info
 space_node::
-read_derived_type_info(token_iterator&  it) noexcept
+read_derived_type_info(token_iterator&  it)
 {
     if(!it->is_identifier())
     {
@@ -362,9 +362,7 @@ read_derived_type_info(token_iterator&  it) noexcept
 
     if(!ti)
     {
-      printf("\"%s\" as typename is not found.\n",it->get_string().data());
-
-      return type_info();
+      throw compile_error(it->get_line_number(),form_string("\"%s\" as typename is not found.\n",it->get_string().data()));
     }
 
 
@@ -383,9 +381,7 @@ read_derived_type_info(token_iterator&  it) noexcept
 
           else
             {
-              report;
-
-              return type_info();
+              throw compile_error(it->get_line_number(),form_string("配列数指定が不正\n"));
             }
         }
 

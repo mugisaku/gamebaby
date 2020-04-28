@@ -19,6 +19,25 @@ m_signature(std::move(sig))
 
 
 
+const memo_info*
+function::
+find_parameter_memo_info(std::string_view  name) const noexcept
+{
+    for(auto&  mi: m_parameter_memo_info_table)
+    {
+        if(mi->get_name() == name)
+        {
+          return mi.get();
+        }
+    }
+
+
+  return nullptr;
+}
+
+
+
+
 void
 function::
 print() const noexcept
