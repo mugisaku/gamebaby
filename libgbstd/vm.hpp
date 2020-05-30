@@ -2,19 +2,7 @@
 #define gbstd_vm_HPP
 
 
-#include<cstdio>
-#include<cstdint>
-#include<cinttypes>
-#include<cstdlib>
-#include<memory>
-#include<string>
-#include<string_view>
-#include<utility>
-#include<vector>
-#include"libgbstd/misc.hpp"
-#include"libgbstd/utility.hpp"
-#include"libgbstd/typesystem.hpp"
-#include"libgbstd/parser.hpp"
+#include"libgbstd/vms/statement.hpp"
 
 
 namespace gbstd{
@@ -33,33 +21,7 @@ using typesystem::struct_type_info;
 using typesystem::union_type_info;
 
 
-class function;
-class context;
-class symbol_table;
-class expression;
-class space_node;
-class statement;
-class return_statement;
-class label_statement;
-class jump_statement;
-class control_statement;
-class block_statement;
-class condition_statement;
-class if_string_statement;
-class expression_statement;
-
-
-using address_t = int32_t;
 using boolean_t =  int8_t;
-
-
-constexpr address_t
-get_aligned_address(address_t  addr) noexcept
-{
-  constexpr auto  align = sizeof(int64_t);
-
-  return (addr+(align-1))/align*align;
-}
 
 
 class
@@ -163,11 +125,6 @@ public:
 
 
 
-#include"libgbstd/vms/vm_expression.hpp"
-
-
-
-
 class
 symbol
 {
@@ -250,241 +207,30 @@ public:
 
 
 class
-memo_info
-{
-  type_info  m_type_info;
-
-  std::string  m_name;
-
-  address_t  m_address=0;
-
-public:
-  memo_info() noexcept{}
-  memo_info(const type_info&  ti, std::string_view  name) noexcept: m_type_info(ti), m_name(name){}
-
-  const type_info&  get_type_info() const noexcept{return m_type_info;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-  void       set_address(address_t  addr)       noexcept{m_address = addr;}
-  address_t  get_addrees(               ) const noexcept{return m_address;}
-
-  void  print() const noexcept{
-    m_type_info.print();
-    printf("  %s",m_name.data());
-  }
-
-};
-
-
-
-
-class
-basic_space
-{
-protected:
-  space_node&  m_node;
-
-  std::vector<type_info>  m_type_info_table;
-
-  std::vector<std::unique_ptr<memo_info>>  m_memo_info_table;
-  std::vector<std::reference_wrapper<function>>  m_function_reference_table;
-
-public:
-  basic_space(space_node&  nd) noexcept: m_node(nd){}
-
-  void  clear() noexcept;
-
-  space_node&  get_node() const noexcept{return m_node;}
-
-  const std::vector<type_info>&  get_type_info_table() const noexcept{return m_type_info_table;}
-  const std::vector<std::unique_ptr<memo_info>>&  get_memo_info_table() const noexcept{return m_memo_info_table;}
-  const std::vector<std::reference_wrapper<function>>&    get_function_reference_table() const noexcept{return m_function_reference_table;}
-
-  void  push_type_info(type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
-  void  push_memo_info(const type_info&  ti, std::string_view  name) noexcept{m_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));}
-  void  push_function(function&  fn) noexcept{m_function_reference_table.emplace_back(fn);}
-
-  const function*  find_function(std::string_view  name) const noexcept;
-
-  type_info  find_type_info_by_name(std::string_view  name) const noexcept;
-  type_info  find_type_info_by_id(  std::string_view    id) const noexcept;
-
-  const memo_info*  find_memo_info(std::string_view  name) const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
-#include"libgbstd/vms/vm_statement.hpp"
-
-
-
-
-class global_space;
-class block_statement;
-
-
-
-
-class
-function
-{
-  space_node&  m_node;
-
-  std::vector<std::unique_ptr<memo_info>>  m_parameter_memo_info_table;
-
-  std::string  m_name;
-
-  function_signature  m_signature;
-
-  const block_statement*  m_main_block=nullptr;
-
-public:
-  function(space_node&  nd, std::string_view  name, function_signature&&  sig) noexcept;
-
-  space_node&  get_node() const noexcept{return m_node;}
-
-  const std::vector<std::unique_ptr<memo_info>>&  get_parameter_memo_info_table() const noexcept {return m_parameter_memo_info_table;}
-
-  void  set_main_block(const block_statement&  blk) noexcept{m_main_block = &blk;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-  const function_signature&  get_signature() const noexcept{return m_signature;}
-
-  void  push_memo_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));}
-
-  const memo_info*  find_parameter_memo_info(std::string_view  name) const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
-class
-global_space: public basic_space
-{
-  std::string  m_source;
-
-  void  initialize() noexcept;
-
-public:
-  global_space(space_node&  nd) noexcept: basic_space(nd){}
-  global_space(space_node&  nd, std::string_view  sv): basic_space(nd){assign(sv);}
-
-  global_space&  assign(std::string_view  sv);
-
-  void  clear() noexcept;
-
-};
-
-
-class
-space_node
-{
-  space_node*  m_parent=nullptr;
-  space_node*  m_root=nullptr;
-
-  std::vector<std::unique_ptr<space_node>>  m_children;
- 
-
-  enum class kinds{
-    null, global_space, function, block
-  } m_kind=kinds::null;
-
-  union data{
-    global_space     gsp;
-    function          fn;
-    block_statement  blk;
-
-    data() noexcept{}
-   ~data(){}
-  } m_data;
-
-  parameter_list  read_parameter_list(token_iterator&  it) noexcept;
-
-  statement    read_return(token_iterator&  it) noexcept;
-  statement    read_jump(token_iterator&  it) noexcept;
-  statement    read_label(token_iterator&  it) noexcept;
-  statement    read_if(token_iterator&  it) noexcept;
-  statement    read_for(token_iterator&  it) noexcept;
-  statement    read_while(token_iterator&  it) noexcept;
-  statement    read_switch(token_iterator&  it) noexcept;
-  statement    read_let(token_iterator&  it);
-
-  type_info   read_struct_type_info(token_iterator&  it) noexcept;
-  type_info    read_union_type_info(token_iterator&  it) noexcept;
-  type_info     read_enum_type_info(token_iterator&  it) noexcept;
-  type_info  read_derived_type_info(token_iterator&  it);
-
-  type_info                    read_alias(token_iterator&  it) noexcept;
-  type_info   read_named_struct_type_info(token_iterator&  it) noexcept;
-  type_info    read_named_union_type_info(token_iterator&  it) noexcept;
-  type_info     read_named_enum_type_info(token_iterator&  it) noexcept;
-
-  const function*  read_function(token_iterator&  it);
-
-  void  read_element_that_begins_with_identifier(token_iterator&  it);
-
-public:
-  space_node() noexcept;
-  space_node(std::string_view  src);
-  space_node(space_node&  parent, std::string_view  name, function_signature&&  fnsig) noexcept;
-  space_node(space_node&  parent, nullptr_t) noexcept;
- ~space_node();
-
-  space_node&  read(token_iterator&  it);
-  space_node&  read(std::string_view  sv);
-
-  pointer_wrapper<function>  create_function(std::string_view  name, function_signature&&  fnsig) noexcept;
-  pointer_wrapper<block_statement>  create_block() noexcept;
-
-  bool  push_type_info(type_info&&  ti) noexcept;
-  bool  push_memo_info(const type_info&  ti, std::string_view  name) noexcept;
-  bool  push_statement(statement&&  st) noexcept;
-
-  const function*  find_function(std::string_view  name) const noexcept;
-
-  type_info  find_type_info_by_name(std::string_view  name) const noexcept;
-  type_info  find_type_info_by_id(  std::string_view    id) const noexcept;
-
-  const memo_info*  find_memo_info(std::string_view  name) const noexcept;
-
-  bool  is_global_space() const noexcept{return m_kind == kinds::global_space;}
-  bool      is_function() const noexcept{return m_kind == kinds::function;}
-  bool         is_block() const noexcept{return m_kind == kinds::block;}
-
-  global_space&  get_global_space() noexcept{return m_data.gsp;}
-  function&          get_function() noexcept{return m_data.fn;}
-  block_statement&      get_block() noexcept{return m_data.blk;}
-
-  const global_space&  get_global_space() const noexcept{return m_data.gsp;}
-  const function&          get_function() const noexcept{return m_data.fn;}
-  const block_statement&      get_block() const noexcept{return m_data.blk;}
-
-  void  print() const noexcept;
-
-};
-
-
-
-
-class
 call_frame
 {
-  const function*  m_function;
+  const function&  m_function;
 
-  struct state{
+  address_t  m_return_value_address;
+  address_t  m_previous_bp;
+
+  struct sub_frame{
+    const block_statement&  m_block;
+
     const statement*  m_begin;
     const statement*  m_current;
     const statement*  m_end;
 
+    sub_frame(const block_statement&  blk) noexcept:
+    m_block(blk),
+    m_begin(blk.get_space().get_statement_list().data()),
+    m_current(blk.get_space().get_statement_list().data()),
+    m_end(blk.get_space().get_statement_list().data()+blk.get_space().get_statement_list().size()){}
+
   };
 
 
-  std::vector<state>  m_state_stack;
+  std::vector<sub_frame>  m_sub_stack;
 
   void  process(const     return_statement&  st, context&  ctx) noexcept;
   void  process(const       jump_statement&  st) noexcept;
@@ -494,9 +240,9 @@ call_frame
   void  process(const  if_string_statement&  st) noexcept;
 
 public:
-  call_frame(const function&  fn) noexcept;
+  call_frame(address_t&  bp, address_t&  sp, const function&  fn) noexcept;
 
-  operator bool() const noexcept{return m_state_stack.size();}
+  operator bool() const noexcept{return m_sub_stack.size();}
 
   void  operator()(context&  ctx) noexcept;
 
@@ -526,13 +272,9 @@ public:
         memory&  get_memory()       noexcept{return m_memory;}
   const memory&  get_memory() const noexcept{return m_memory;}
 
-  void  call_function(std::string_view  fn_name, address_t  return_value_address) noexcept;
+  void  call_function(std::string_view  fn_name) noexcept;
 
-  void  print_stack_frame() const noexcept;
-  void  push_stack_frame(address_t  return_address, address_t  return_value_address, size_t  size) noexcept;
-  void   pop_stack_frame() noexcept;
-
-  void  reset() noexcept;
+  void  reset(std::string_view  fn_name) noexcept;
   bool   step() noexcept;
   void    run() noexcept;
 

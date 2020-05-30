@@ -59,8 +59,7 @@ object
 
 public:
   object() noexcept{}
-  object(                        const token&  tok) noexcept{assign(     tok);}
-  object(std::string_view  name, const token&  tok) noexcept{assign(name,tok);}
+  object(token_iterator&  it) noexcept{assign(it);}
   object(bool  b) noexcept{assign(b);}
   object(int  i) noexcept{assign(i);}
   object(double  f) noexcept{assign(f);}
@@ -82,8 +81,7 @@ public:
   object&  operator=(const object&   rhs) noexcept{return assign(rhs);}
   object&  operator=(      object&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  object&  assign(                        const token&  tok) noexcept;
-  object&  assign(std::string_view  name, const token&  tok) noexcept;
+  object&  assign(token_iterator&  it) noexcept;
   object&  assign(bool  b) noexcept;
   object&  assign(int  i) noexcept;
   object&  assign(double  f) noexcept;

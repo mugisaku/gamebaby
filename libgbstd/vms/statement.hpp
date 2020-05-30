@@ -1,27 +1,39 @@
+#ifndef gbstd_vm_statement_HPP
+#define gbstd_vm_statement_HPP
 
 
+#include<cstdio>
+#include<cstdint>
+#include<cinttypes>
+#include<cstdlib>
+#include<memory>
+#include<string>
+#include<string_view>
+#include<utility>
+#include<vector>
+#include"libgbstd/misc.hpp"
+#include"libgbstd/utility.hpp"
+#include"libgbstd/typesystem.hpp"
+#include"libgbstd/parser.hpp"
+#include"libgbstd/vms/expression.hpp"
+#include"libgbstd/vms/space.hpp"
+
+
+namespace gbstd{
+
+
+
+
+class context;
 
 
 class
-block_statement: public basic_space
+block_statement
 {
-  std::vector<statement>  m_statement_list;
+  pointer_wrapper<block_space>  m_space;
 
 public:
-  block_statement(space_node&  nd) noexcept: basic_space(nd){}
-
-  const statement&  operator[](int  i) const noexcept;
-
-  void  clear() noexcept;
-
-  const std::vector<statement>&  get_statement_list() const noexcept{return m_statement_list;}
-
-  void  push_statement(statement&&  st) noexcept;
-
-  block_statement&  read(token_iterator&  it) noexcept;
-  block_statement&  read(std::string_view  sv) noexcept;
-
-  type_info  create_type_from_string(std::string_view  sv) noexcept;
+  const block_space&  get_space() const noexcept{return *m_space;}
 
   void  print() const noexcept;
 
@@ -172,8 +184,7 @@ statement
     jump_statement         jmp;
     label_statement         lb;
     expression            expr;
-
-    pointer_wrapper<block_statement>  blk;
+    block_statement        blk;
 
    data() noexcept{}
   ~data(){}
@@ -181,20 +192,13 @@ statement
 
 public:
   statement() noexcept{}
-  statement(const statement&   rhs) noexcept=delete;//{assign(rhs);}
-  statement(      statement&&  rhs) noexcept{assign(std::move(rhs));}
-  statement(return_statement&&      st) noexcept{assign(std::move(st));}
-  statement(label_statement&&       st) noexcept{assign(std::move(st));}
-  statement(jump_statement&&        st) noexcept{assign(std::move(st));}
-  statement(if_string_statement&&   st) noexcept{assign(std::move(st));}
-  statement(block_statement&        st) noexcept{assign(st);}
-  statement(control_statement&&     st) noexcept{assign(std::move(st));}
-  statement(let_statement&&         st) noexcept{assign(std::move(st));}
-  statement(expression&&  e) noexcept{assign(std::move(e));}
  ~statement(){clear();}
 
-  statement&  operator=(const statement&   rhs) noexcept=delete;//{return assign(rhs);}
-  statement&  operator=(      statement&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  statement(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  statement&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   operator bool() const noexcept{return m_kind != kind::null;}
 
@@ -204,7 +208,7 @@ public:
   statement&  assign(label_statement&&       st) noexcept;
   statement&  assign(jump_statement&&        st) noexcept;
   statement&  assign(if_string_statement&&   st) noexcept;
-  statement&  assign(block_statement&        st) noexcept;
+  statement&  assign(block_statement&&        st) noexcept;
   statement&  assign(control_statement&&     st) noexcept;
   statement&  assign(let_statement&&         st) noexcept;
   statement&  assign(expression&&  e) noexcept;
@@ -221,11 +225,20 @@ public:
   bool  is_let()        const noexcept{return m_kind == kind::let;}
   bool  is_expression() const noexcept{return m_kind == kind::expression;}
 
+  return_statement&      get_return()     noexcept{return m_data.ret;}
+  label_statement&       get_label()      noexcept{return m_data.lb;}
+  jump_statement&        get_jump()       noexcept{return m_data.jmp;}
+  if_string_statement&   get_if_string()  noexcept{return m_data.ifs;}
+  block_statement&       get_block()      noexcept{return m_data.blk;}
+  control_statement&     get_control()    noexcept{return m_data.ctrl;}
+  let_statement&         get_let()        noexcept{return m_data.let;}
+  expression&            get_expression() noexcept{return m_data.expr;}
+
   const return_statement&      get_return()     const noexcept{return m_data.ret;}
   const label_statement&       get_label()      const noexcept{return m_data.lb;}
   const jump_statement&        get_jump()       const noexcept{return m_data.jmp;}
   const if_string_statement&   get_if_string()  const noexcept{return m_data.ifs;}
-  const block_statement&       get_block()      const noexcept{return *m_data.blk;}
+  const block_statement&       get_block()      const noexcept{return m_data.blk;}
   const control_statement&     get_control()    const noexcept{return m_data.ctrl;}
   const let_statement&         get_let()        const noexcept{return m_data.let;}
   const expression&            get_expression() const noexcept{return m_data.expr;}
@@ -233,6 +246,16 @@ public:
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
+
+
+
+
+}
+
+
+
+
+#endif
 
 
 

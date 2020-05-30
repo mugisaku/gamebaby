@@ -80,38 +80,6 @@ class tokenizer;
 
 
 class
-token_block
-{
-  std::vector<token>  m_container;
-
-  operator_code  m_open ;
-  operator_code  m_close;
-
-public:
-   token_block() noexcept{}
-   token_block(std::string_view  sv);
-   token_block(operator_code  open, operator_code  close) noexcept: m_open(open), m_close(close){}
-  ~token_block(){clear();}
-
-  const token&  operator[](int  i) const noexcept{return m_container[i];}
-
-  token_block&  operator+=(token&&  tok) noexcept{  m_container.emplace_back(std::move(tok));  return *this;}
-
-  void  clear() noexcept;
-
-  bool  test(operator_code  open, operator_code  close) const noexcept{return (m_open == open) && (m_close == close);}
-
-  operator_code   get_open_code() const noexcept{return m_open;}
-  operator_code  get_close_code() const noexcept{return m_close;}
-
-  const std::vector<token>*  operator->() const noexcept{return &m_container;}
-
-  void  print(int  indent=0) const noexcept;
-
-};
-
-
-class
 token
 {
   const char*  m_begin=nullptr;
@@ -127,7 +95,6 @@ token
     integer,
     floating_point_number,
     operator_code,
-    block,
 
   } m_kind=kind::null;
 
@@ -138,8 +105,6 @@ token
 
     operator_code  opco;
 
-    token_block  blk;
-
     data() noexcept{}
    ~data()         {}
   } m_data;
@@ -149,19 +114,15 @@ token
 
 public:
   token() noexcept{}
-  token(const token&   rhs) noexcept{assign(rhs);}
-  token(      token&&  rhs) noexcept{assign(std::move(rhs));}
-  token(const char*  begin, const char*  end, int  ln, uint64_t  n)                noexcept{assign(begin,end,ln,n);}
-  token(const char*  begin, const char*  end, int  ln, double  f)                  noexcept{assign(begin,end,ln,f);}
-  token(const char*  begin, const char*  end, int  ln, std::string&&  s, int  sym) noexcept{assign(begin,end,ln,std::move(s),sym);}
-  token(const char*  begin, const char*  end, int  ln, operator_code  opco)        noexcept{assign(begin,end,ln,opco);}
-  token(const char*  begin, const char*  end, int  ln, token_block&&  blk)         noexcept{assign(begin,end,ln,std::move(blk));}
+
+  template<class...  Args>
+  token(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
  ~token(){clear();}
 
   operator bool() const noexcept{return !is_null();}
 
-  token&  operator=(const token&   rhs) noexcept{return assign(rhs);}
-  token&  operator=(      token&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  token&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   token&  assign(const token&   rhs) noexcept;
   token&  assign(      token&&  rhs) noexcept;
@@ -169,7 +130,6 @@ public:
   token&  assign(const char*  begin, const char*  end, int  ln, double  f) noexcept;
   token&  assign(const char*  begin, const char*  end, int  ln, std::string&&  s, int  sym) noexcept;
   token&  assign(const char*  begin, const char*  end, int  ln, operator_code  opco) noexcept;
-  token&  assign(const char*  begin, const char*  end, int  ln, token_block&&  blk) noexcept;
 
   void  clear() noexcept;
 
@@ -186,8 +146,6 @@ public:
   bool  is_operator_code()                    const noexcept{return m_kind == kind::operator_code;}
   bool  is_operator_code(operator_code  opco) const noexcept{return is_operator_code() && (m_data.opco == opco);}
   bool  is_floating_point_number()            const noexcept{return m_kind == kind::floating_point_number;}
-  bool  is_block()                            const noexcept{return m_kind == kind::block;}
-  bool  is_block(operator_code  open, operator_code  close) const noexcept;
 
   int  get_line_number() const noexcept{return m_line_number;}
 
@@ -195,9 +153,10 @@ public:
   double              get_floating_point_number() const noexcept{return m_data.f;}
   const std::string&  get_string()                const noexcept{return m_data.s;}
   operator_code       get_operator_code()         const noexcept{return m_data.opco;}
-  const token_block&  get_block()                 const noexcept{return m_data.blk;}
 
   void  print(int  indent=0) const noexcept;
+
+  static const token  null;
 
 };
 
@@ -205,15 +164,6 @@ public:
 class
 tokenizer
 {
-  struct element{
-    const char*  m_begin;
-    token_block  m_block;
-
-  element(const char*  begin, operator_code  open, operator_code  close) noexcept: m_begin(begin), m_block(open,close){}
-  };
-
-  std::vector<element>  m_elements;
-
   const char*  m_source_begin=nullptr;
 
   int  m_line_number=0;
@@ -221,6 +171,8 @@ tokenizer
   const char*  m_begin  =nullptr;
   const char*  m_current=nullptr;
   const char*  m_end    =nullptr;
+
+  std::vector<token>  m_buffer;
 
   void       read_binary_number() noexcept;
   void        read_octal_number() noexcept;
@@ -235,8 +187,6 @@ tokenizer
 
   void  read_quoted_string(char  close_char);
 
-  void  read_block(operator_code  open, operator_code  close) noexcept;
-
   static bool  test_head_of_identifier_defaultly(char  c) noexcept;
   static bool  test_body_of_identifier_defaultly(char  c) noexcept;
 
@@ -248,17 +198,19 @@ tokenizer
   void  skip_linestyle_comment() noexcept;
   void  skip_blockstyle_comment();
 
-  void  push(token&&  tok) noexcept{m_elements.back().m_block += std::move(tok);}
+  void  push(token&&  tok) noexcept{m_buffer.emplace_back(std::move(tok));}
 
-
-  void  step(operator_code  close, int close_len);
+  void  step();
 
   int  get_line_number() const noexcept;
 
 public:
-  token_block  operator()(std::string_view  sv);
+  std::vector<token>  operator()(std::string_view  sv);
 
 };
+
+
+std::vector<token>  make_token_string(std::string_view  sv);
 
 
 
@@ -269,22 +221,20 @@ token_iterator
   const token*  m_begin=nullptr;
   const token*  m_end  =nullptr;
 
-  static const token  m_null;
-
   token_iterator(const token*  begin, const token*  end) noexcept:
   m_begin(begin), m_end(end){}
 
 public:
   token_iterator() noexcept{}
-  token_iterator(const token_block&  blk) noexcept:
-  m_begin(blk->data()), m_end(blk->data()+blk->size()){}
+  token_iterator(const std::vector<token>&  ts) noexcept:
+  m_begin(ts.data()), m_end(ts.data()+ts.size()){}
 
   operator bool() const noexcept{return m_begin < m_end;}
 
-  const token&  operator[](int  i) const noexcept{return ((m_begin+i) < m_end)? m_begin[i]:m_null;}
+  const token&  operator[](int  i) const noexcept{return ((m_begin+i) < m_end)? m_begin[i]:token::null;}
 
-  const token&  operator*()  const noexcept{return (m_begin < m_end)? *m_begin: m_null;}
-  const token*  operator->() const noexcept{return (m_begin < m_end)?  m_begin:&m_null;}
+  const token&  operator*()  const noexcept{return (m_begin < m_end)? *m_begin: token::null;}
+  const token*  operator->() const noexcept{return (m_begin < m_end)?  m_begin:&token::null;}
 
   token_iterator&  operator++(   ) noexcept{  ++m_begin;  return *this;}
   token_iterator   operator++(int) noexcept{  auto  ret = *this;  ++m_begin;  return ret;}
@@ -303,139 +253,6 @@ public:
 };
 
 
-
-
-class
-exprrpn_error
-{
-public:
-  int  m_line_number;
-
-  std::string  m_comment;
-
-  exprrpn_error(int  ln, std::string_view  sv) noexcept: m_line_number(ln), m_comment(sv){}
-
-};
-
-
-class
-exprelem
-{
-  char  m_kind=0;
-
-  union data{
-   int64_t  i;
-  uint64_t  u;
-    double  f;
-
-  std::string_view  sv;
-
-    operator_code  o;
-
-  constexpr data(int64_t   i_) noexcept: i(i_){}
-  constexpr data(uint64_t  u_) noexcept: u(u_){}
-  constexpr data(double    f_) noexcept: f(f_){}
-  constexpr data(std::string_view  sv_) noexcept: sv(sv_){}
-  constexpr data(operator_code  o_) noexcept: o(o_){}
-
-  } m_data;
-
-public:
-  constexpr exprelem(int64_t        i=0) noexcept: m_kind('i'), m_data(i){}
-  constexpr exprelem(uint64_t       u  ) noexcept: m_kind('u'), m_data(u){}
-  constexpr exprelem(double         f  ) noexcept: m_kind('f'), m_data(f){}
-  constexpr exprelem(char  k, std::string_view  sv) noexcept: m_kind(k), m_data(sv){}
-  constexpr exprelem(char  k, operator_code  o) noexcept: m_kind(k), m_data(o){}
-
-  constexpr bool  is_integer()                const noexcept{return m_kind == 'i';}
-  constexpr bool  is_unsigned_integer()       const noexcept{return m_kind == 'u';}
-  constexpr bool  is_real_number()            const noexcept{return m_kind == 'f';}
-  constexpr bool  is_string()                 const noexcept{return m_kind == 's';}
-  constexpr bool  is_identifier()             const noexcept{return m_kind == 'I';}
-  constexpr bool  is_operand()                const noexcept{return is_integer() || is_unsigned_integer() || is_real_number() || is_string() || is_identifier();}
-  constexpr bool  is_prefix_unary_operator()  const noexcept{return m_kind == 'p';}
-  constexpr bool  is_postfix_unary_operator() const noexcept{return m_kind == 'P';}
-  constexpr bool  is_binary_operator()        const noexcept{return m_kind == 'B';}
-  constexpr bool  is_operator()               const noexcept{return m_kind == 'o';}
-
-  constexpr  int64_t             get_integer() const noexcept{return m_data.i;}
-  constexpr uint64_t    get_unsigned_integer() const noexcept{return m_data.u;}
-  constexpr   double         get_real_number() const noexcept{return m_data.f;}
-  constexpr std::string_view      get_string() const noexcept{return m_data.sv;}
-  constexpr operator_code  get_operator_code() const noexcept{return m_data.o;}
-
-  constexpr operator  int64_t() const noexcept
-  {
-    return is_integer()?          static_cast<int64_t>(m_data.i)
-          :is_unsigned_integer()? static_cast<int64_t>(m_data.u)
-          :                       static_cast<int64_t>(m_data.f)
-          ;
-  }
-
-  constexpr operator uint64_t() const noexcept
-  {
-    return is_integer()?          static_cast<uint64_t>(m_data.i)
-          :is_unsigned_integer()? static_cast<uint64_t>(m_data.u)
-          :                       static_cast<uint64_t>(m_data.f)
-          ;
-  }
-  constexpr operator double() const noexcept
-  {
-    return is_integer()?          static_cast<double>(m_data.i)
-          :is_unsigned_integer()? static_cast<double>(m_data.u)
-          :                       static_cast<double>(m_data.f)
-          ;
-  }
-
-  void  print() const noexcept
-  {
-         if(is_real_number()           ){printf("%f",m_data.f);}
-    else if(is_unsigned_integer()      ){printf("%" PRIu64,m_data.u);}
-    else if(is_integer()               ){printf("%" PRIi64,m_data.i);}
-    else if(is_string()                ){printf("\"%s\"",m_data.sv.data());}
-    else if(is_identifier()            ){printf("%s",m_data.sv.data());}
-    else if(is_prefix_unary_operator() ){printf("p%s",m_data.o.get_string());}
-    else if(is_postfix_unary_operator()){printf("P%s",m_data.o.get_string());}
-    else if(is_binary_operator()       ){printf("B%s",m_data.o.get_string());}
-    else if(is_operator()              ){printf("%s",m_data.o.get_string());}
-    else                                {printf("<NULL>");}
-  }
-
-};
-
-
-class
-exprrpn
-{
-  std::vector<std::string>  m_strings;
-
-  std::vector<exprelem>  m_stack;
-
-  void  finish(std::vector<exprelem>&&  opstack, std::vector<exprelem>&  dst) noexcept;
-
-  void   preprocess(token_iterator&  top_it) noexcept;
-  void  postprocess();
-
-public:
-  exprrpn() noexcept{}
-  exprrpn(const exprrpn&) noexcept=delete;
-  exprrpn(std::string_view  sv){assign(sv);}
-  exprrpn(token_iterator&  it){assign(it);}
-
-  exprrpn&  operator=(const exprrpn&) noexcept=delete;
-  exprrpn&  operator=(std::string_view  sv){return assign(sv);}
-  exprrpn&  operator=(token_iterator&  it){return assign(it);}
-
-  exprrpn&  assign(std::string_view  sv);
-  exprrpn&  assign(token_iterator&  it);
-
-  const std::vector<exprelem>&  get_stack() const noexcept{return m_stack;}
-
-  void  print() const noexcept;
-
-  static exprelem  evaluate(const exprrpn&  rpn) noexcept;
-
-};
 
 
 }

@@ -29,11 +29,11 @@ extern int  reporting_counter;
 inline void  printnl() noexcept{printf("\n");}
 
 
-template<typename  T>
-inline void
-destruct(T&  t) noexcept
+template<typename  T, typename...  Args>
+inline T*
+create_at(T*  t, Args&&...  args) noexcept
 {
-  t.~T();
+  return new(t) T(std::forward<Args>(args)...);
 }
 
 

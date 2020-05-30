@@ -49,94 +49,17 @@ m_global_space(&gsp)
 
 void
 context::
-call_function(std::string_view  fn_name, address_t  return_value_address) noexcept
+call_function(std::string_view  fn_name) noexcept
 {
-/*
-  auto  fn = m_block.find_function(fn_name);
+  auto  fn = m_global_space->find_function(fn_name);
 
     if(fn)
     {
-      auto  retti = fn->get_return_type_info();
-
-        if(!return_value_address)
-        {
-          m_bp = get_aligned_address(retti.get_size());
-        }
-
-
-      auto  sz = fn->get_block_statement()->get_symbol_table().get_end_address();
-
-      push_stack_frame(0,return_value_address,sz);
-
-      m_call_stack.emplace_back(*fn);
-    }
-*/
-}
-
-
-
-
-void
-context::
-print_stack_frame() const noexcept
-{
-  constexpr auto  address_size = sizeof(address_t);
-
-    if(m_bp >= (address_size*4))
-    {
-      auto  return_value_address = *m_memory.get_pointer<address_t>(m_bp-(address_size  ));
-      auto  return_address       = *m_memory.get_pointer<address_t>(m_bp-(address_size*2));
-      auto  previous_bp          = *m_memory.get_pointer<address_t>(m_bp-(address_size*3));
-      auto  code                 = *m_memory.get_pointer<address_t>(m_bp-(address_size*4));
-
-      printf("stack_frame:{\n  code:%X,\n  return_address:%d,\n  return_value_address:%d,\n  previous_bp:%d\n}\n",
-        code,
-        return_address,
-        return_value_address,
-        previous_bp
-      )
-      ;
+      m_call_stack.emplace_back(m_bp,m_sp,*fn);
     }
 }
 
 
-void
-context::
-push_stack_frame(address_t  return_address, address_t  return_value_address, size_t  size) noexcept
-{
-  constexpr auto  address_size = sizeof(address_t);
-
-  *m_memory.get_pointer<address_t>(m_sp                 ) = 0xDEADC0DE;
-  *m_memory.get_pointer<address_t>(m_sp+(address_size  )) = m_bp;
-  *m_memory.get_pointer<address_t>(m_sp+(address_size*2)) = return_address;
-  *m_memory.get_pointer<address_t>(m_sp+(address_size*3)) = return_value_address;
-
-  m_bp = get_aligned_address(m_sp+(address_size*4));
-  m_sp = get_aligned_address(m_bp+size            );
-}
-
-
-void
-context::
-pop_stack_frame() noexcept
-{
-  constexpr auto  address_size = sizeof(address_t);
-
-  auto  return_value_address = *m_memory.get_pointer<address_t>(m_bp-(address_size  ));
-  auto  return_address       = *m_memory.get_pointer<address_t>(m_bp-(address_size*2));
-  auto  previous_bp          = *m_memory.get_pointer<address_t>(m_bp-(address_size*3));
-  auto  code                 = *m_memory.get_pointer<address_t>(m_bp-(address_size*4));
-
-  m_sp = m_bp-(address_size*4);
-  m_bp = previous_bp;
-
-
-  printf("stack_frame:{\n  bp:%d\n  sp:%d\n}\n",
-    m_bp,
-    m_sp
-  )
-  ;
-}
 
 
 void
@@ -151,12 +74,27 @@ print() const noexcept
 
 void
 context::
-reset() noexcept
+reset(std::string_view  fn_name) noexcept
 {
-  m_call_stack.clear();
-
   m_bp = 0;
   m_sp = 0;
+
+  m_call_stack.clear();
+
+  auto&  mi_tbl = m_global_space->get_memo_info_table();
+
+    if(mi_tbl.size())
+    {
+      auto&  mi = *mi_tbl.back();
+
+      m_bp = get_aligned_address(mi.get_address()+mi.get_type_info().get_size());
+
+      m_sp = m_bp;
+    }
+
+
+
+  call_function(fn_name);
 }
 
 

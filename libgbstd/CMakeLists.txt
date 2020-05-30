@@ -15,9 +15,7 @@ set(SOURCES
   sns/sns_timeline_node.cpp
   sns/sns_tester.cpp
   sns/sns_index_list.cpp
-  parsers/exprrpn.cpp
   parsers/token.cpp
-  parsers/token_block.cpp
   parsers/tokenizer.cpp
   parsers/tokenizer__skip.cpp
   parsers/tokenizer__read_number.cpp
@@ -79,24 +77,25 @@ set(SOURCES
   typesystems/enum_type_info.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
+  vms/expressions/expression.cpp
+  vms/expressions/expression_element.cpp
+  vms/expressions/primary_expression.cpp
+  vms/expressions/primary_expression_element.cpp
+  vms/expressions/unary_expression.cpp
+  vms/expressions/operand.cpp
+  vms/spaces/function.cpp
+  vms/spaces/basic_space.cpp
+  vms/spaces/basic_space__read.cpp
+  vms/spaces/global_space.cpp
+  vms/spaces/block_space.cpp
+  vms/spaces/block_space__read.cpp
+  vms/spaces/space_node.cpp
+  vms/statement.cpp
   vms/vm_memory.cpp
-  vms/vm_tepid_object.cpp
-  vms/vm_cold_object.cpp
-  vms/vm_hot_object.cpp
-  vms/vm_function.cpp
-  vms/vm_basic_space.cpp
-  vms/vm_global_space.cpp
-  vms/vm_symbol_table.cpp
+#  vms/vm_symbol_table.cpp
   vms/vm_context.cpp
   vms/vm_call_frame.cpp
-  vms/vm_operations_callback.cpp
-  vms/vm_expression.cpp
-  vms/vm_make_expression.cpp
-  vms/vm_block_statement.cpp
-  vms/vm_space_node.cpp
-  vms/vm_space_node__create_type.cpp
-  vms/vm_space_node__read_block.cpp
-  vms/vm_statement.cpp
+#  vms/vm_operations_callback.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

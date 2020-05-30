@@ -11,6 +11,11 @@ namespace gbstd{
 
 
 
+const token
+token::
+null;
+
+
 token&
 token::
 assign(const token&  rhs) noexcept
@@ -41,9 +46,6 @@ assign(const token&  rhs) noexcept
       case(kind::single_quoted):
       case(kind::double_quoted):
           new(&m_data) std::string(rhs.m_data.s);
-          break;
-      case(kind::block):
-          new(&m_data) token_block(rhs.m_data.blk);
           break;
         }
     }
@@ -83,9 +85,6 @@ assign(token&&  rhs) noexcept
       case(kind::single_quoted):
       case(kind::double_quoted):
           new(&m_data) std::string(std::move(rhs.m_data.s));
-          break;
-      case(kind::block):
-          new(&m_data) token_block(std::move(rhs.m_data.blk));
           break;
         }
     }
@@ -176,25 +175,6 @@ assign(const char*  begin, const char*  end, int  ln, operator_code  opco) noexc
 }
 
 
-token&
-token::
-assign(const char*  begin, const char*  end, int  ln, token_block&&  blk) noexcept
-{
-  clear();
-
-  m_begin       = begin;
-  m_end         =   end;
-  m_line_number =    ln;
-
-  new(&m_data) token_block(std::move(blk));
-
-  m_kind = kind::block;
-
-
-  return *this;
-}
-
-
 
 
 void
@@ -213,9 +193,6 @@ clear() noexcept
   case(kind::double_quoted):
       m_data.s.~basic_string();
       break;
-  case(kind::block):
-      m_data.blk.~token_block();
-      break;
     }
 
 
@@ -226,14 +203,6 @@ clear() noexcept
 }
 
 
-
-
-bool
-token::
-is_block(operator_code  open, operator_code  close) const noexcept
-{
-  return (m_kind == kind::block) && m_data.blk.test(open,close);
-}
 
 
 void
@@ -286,7 +255,6 @@ print(int  indent) const noexcept
   case(kind::double_quoted): print_string(m_data.s,'\"');break;
   case(kind::floating_point_number): printf("%f",m_data.f);break;
   case(kind::operator_code): printf("%s",m_data.opco.get_string());break;
-  case(kind::block): m_data.blk.print(indent+2);break;
   default: printf("UNKNOWN");break;
     }
 }

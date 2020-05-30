@@ -167,7 +167,13 @@ read_operator_code()
     operator_code("##"),
     operator_code("#"),
     operator_code("@"),
-    operator_code("$"),
+    operator_code("("),
+    operator_code("[["),
+    operator_code("["),
+    operator_code("{"),
+    operator_code(")"),
+    operator_code("]"),
+    operator_code("}"),
   };
 
 
@@ -194,37 +200,12 @@ read_operator_code()
 
 void
 tokenizer::
-read_block(operator_code  open, operator_code  close) noexcept
-{
-  m_elements.emplace_back(m_begin,open,close);
-
-  m_current += open.get_length();
-}
-
-
-void
-tokenizer::
-step(operator_code  close, int close_len)
+step()
 {
   auto  c = *m_current;
 
     if(!c)
     {
-      return;
-    }
-
-  else
-    if(close_len && (std::memcmp(m_current,close.get_string(),close_len) == 0))
-    {
-      m_current += close_len;
-
-
-      auto  e = std::move(m_elements.back());
-
-      m_elements.pop_back();
-
-      push(token(e.m_begin,m_current,get_line_number(),std::move(e.m_block)));
-
       return;
     }
 
@@ -304,33 +285,16 @@ step(operator_code  close, int close_len)
        (c == '~') ||
        (c == '#') ||
        (c == '@') ||
+       (c == '$') ||
+       (c == '(') ||
+       (c == '[') ||
+       (c == '{') ||
+       (c == ')') ||
+       (c == ']') ||
+       (c == '}') ||
        (c == '$'))
     {
       read_operator_code();
-
-      return;
-    }
-
-  else
-    if(c == '(')
-    {
-      read_block(operator_code("("),operator_code(")"));
-
-      return;
-    }
-
-  else
-    if(c == '[')
-    {
-      read_block(operator_code("["),operator_code("]"));
-
-      return;
-    }
-
-  else
-    if(c == '{')
-    {
-      read_block(operator_code("{"),operator_code("}"));
 
       return;
     }
@@ -350,10 +314,12 @@ get_line_number() const noexcept
 }
 
 
-token_block
+std::vector<token>
 tokenizer::
 operator()(std::string_view  sv)
 {
+  m_buffer.clear();
+
   m_source_begin = sv.data();
   m_begin        = sv.data();
   m_current      = sv.data();
@@ -363,37 +329,24 @@ operator()(std::string_view  sv)
 
   skip_spaces();
 
-  m_elements.emplace_back(m_begin,"","");
-
-    for(;;)
+    while(m_current < m_end)
     {
-        if(m_current < m_end)
-        {
-          auto&  blk = m_elements.back().m_block;
+      step();
 
-          m_begin = m_current;
-
-          step(blk.get_close_code(),blk.get_close_code().get_length());
-
-          skip_spaces();
-        }
-
-      else
-        {
-            if(m_elements.size() == 1)
-            {
-              return std::move(m_elements.back().m_block);
-            }
-
-          else
-            {
-              break;
-            }
-        }
+      skip_spaces();
     }
 
 
-  throw parse_error(get_line_number(),"parse is failed");
+  return std::move(m_buffer);
+}
+
+
+std::vector<token>
+make_token_string(std::string_view  sv)
+{
+  tokenizer  tknz;
+
+  return tknz(sv);
 }
 
 

@@ -31,25 +31,21 @@ assign(token_iterator&  it) noexcept
 
     while(it)
     {
-        if(it[0].is_string() && it[1].is_operator_code(":") && it[2])
+        if(it->is_operator_code(")") || it->is_operator_code("]"))
         {
-          push_back(object(it[0].get_string(),it[2]));
+          printf("list::assign error");
 
-          it += 3;
+          break;
         }
 
       else
-        if(it[0].is_operator_code(","))
+        if(it->is_operator_code("}"))
         {
-          ++it;
+          break;
         }
 
-      else
-        {
-          push_back(object(it[0]));
 
-          ++it;
-        }
+      push_back(object(it));
     }
 
 

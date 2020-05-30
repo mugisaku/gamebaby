@@ -12,29 +12,32 @@ namespace values{
 
 object&
 object::
-assign(const token&  tok) noexcept
+assign(token_iterator&  it) noexcept
 {
   clear();
+
+    if(it[0].is_string() && it[1].is_operator_code(":"))
+    {
+      set_name(it->get_string());
+
+      it += 2;
+    }
+
+
+  auto&  tok = *it;
 
        if(tok.is_keyword("null")){}
   else if(tok.is_keyword("true")){assign(true);}
   else if(tok.is_keyword("false")){assign(false);}
   else if(tok.is_integer()){assign(static_cast<int>(tok.get_integer()));}
   else if(tok.is_floating_point_number()){assign(tok.get_floating_point_number());}
-  else if(tok.is_block("{","}")){  token_iterator  it(tok.get_block());  assign( list(it));}
-  else if(tok.is_block("[","]")){  token_iterator  it(tok.get_block());  assign(array(it));}
+  else if(tok.is_operator_code("{")){assign(list(++it));}
+  else if(tok.is_operator_code("[")){assign(array(++it));}
+  else if(tok.is_operator_code(",")){}
   else if(tok.is_string()){assign(tok.get_string());}
   else {  printf("[object assign error]");  tok.print();}
 
   return *this;
-}
-
-
-object&
-object::
-assign(std::string_view  name, const token&  tok) noexcept
-{
-  return assign(tok).set_name(name);
 }
 
 
@@ -212,8 +215,8 @@ clear() noexcept
   case(kind::boolean): break;
   case(kind::integer): break;
   case(kind::real_number): break;
-  case(kind::string ): gbstd::destruct(m_data.s);break;
-  case(kind::u16string): gbstd::destruct(m_data.u16s);break;
+  case(kind::string ): std::destroy_at(&m_data.s);break;
+  case(kind::u16string): std::destroy_at(&m_data.u16s);break;
   case(kind::array): delete m_data.arr;break;
   case(kind::list): delete m_data.ls;break;
     }

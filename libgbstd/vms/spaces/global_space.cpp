@@ -38,11 +38,13 @@ assign(std::string_view  sv)
 
   m_source = sv;
 
-  token_block  blk(m_source);
+  auto  toks = make_token_string(m_source);
 
-  token_iterator  it(blk);
+  token_iterator  it(toks);
 
-  m_node.read(it);
+  read(it,"");
+
+  allocate_address();
 
   return *this;
 }
@@ -57,6 +59,28 @@ clear() noexcept
   m_source.clear();
 
   basic_space::clear();
+}
+
+
+void
+global_space::
+allocate_address() noexcept
+{
+  address_t  end = 0;
+
+    for(auto&  mi: m_memo_info_table)
+    {
+      end = mi->set_address(end);
+    }
+
+
+    for(auto&  child: m_node.get_children())
+    {
+        if(child->is_function())
+        {
+          child->get_function().allocate_address(end);
+        }
+    }
 }
 
 

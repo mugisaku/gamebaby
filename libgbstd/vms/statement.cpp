@@ -1,4 +1,4 @@
-#include"libgbstd/vm.hpp"
+#include"libgbstd/vms/statement.hpp"
 
 
 
@@ -54,7 +54,7 @@ assign(statement&&  rhs) noexcept
       case(kind::label     ): new(&m_data) label_statement(std::move(rhs.m_data.lb));break;
       case(kind::jump      ): new(&m_data) jump_statement(std::move(rhs.m_data.jmp));break;
       case(kind::if_string ): new(&m_data) if_string_statement(std::move(rhs.m_data.ifs));break;
-      case(kind::block     ): new(&m_data) pointer_wrapper<block_statement>(std::move(rhs.m_data.blk));break;
+      case(kind::block     ): new(&m_data) block_statement(std::move(rhs.m_data.blk));break;
       case(kind::control   ): new(&m_data) control_statement(std::move(rhs.m_data.ctrl));break;
       case(kind::let       ): new(&m_data) let_statement(std::move(rhs.m_data.let));break;
       case(kind::expression): new(&m_data) expression(std::move(rhs.m_data.expr));break;
@@ -130,11 +130,11 @@ assign(if_string_statement&&  st) noexcept
 
 statement&
 statement::
-assign(block_statement&  st) noexcept
+assign(block_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) pointer_wrapper<block_statement>(&st);
+  new(&m_data) block_statement(std::move(st));
 
   m_kind = kind::block;
 
@@ -209,6 +209,8 @@ clear() noexcept
 
   m_kind = kind::null;
 }
+
+
 
 
 void
