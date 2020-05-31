@@ -85,10 +85,10 @@ set(SOURCES
   vms/expressions/operand.cpp
   vms/spaces/function.cpp
   vms/spaces/basic_space.cpp
-  vms/spaces/basic_space__read.cpp
+  vms/spaces/basic_space__read_type.cpp
+  vms/spaces/basic_space__read_statement.cpp
   vms/spaces/global_space.cpp
   vms/spaces/block_space.cpp
-  vms/spaces/block_space__read.cpp
   vms/spaces/space_node.cpp
   vms/statement.cpp
   vms/vm_memory.cpp

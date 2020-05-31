@@ -458,12 +458,6 @@ read_element_that_begins_with_identifier(token_iterator&  it)
     }
 
   else
-    if(m_node.is_block_space())
-    {
-      m_node.get_block_space().read_statement(first,it);
-    }
-
-  else
     if(first == std::string_view("alias"))
     {
       read_alias(++it);
@@ -486,6 +480,11 @@ read_element_that_begins_with_identifier(token_iterator&  it)
     {
       read_named_enum_type_info(++it);
     }
+
+  else
+    {
+      read_statement(first,it);
+    }
 }
 
 
@@ -495,8 +494,18 @@ read(token_iterator&  it, operator_code  close_code)
 {
     while(it)
     {
+      token_iterator  tmp = it;
+
       auto&  tok = *it;
 
+        if(tok.is_operator_code(close_code))
+        {
+          ++it;
+
+          break;
+        }
+
+      else
         if(tok.is_operator_code(";"))
         {
           ++it;
@@ -543,14 +552,6 @@ read(token_iterator&  it, operator_code  close_code)
         }
 
       else
-        if(tok.is_operator_code(close_code))
-        {
-          ++it;
-
-          break;
-        }
-
-      else
         if(tok.is_operator_code(")") ||
            tok.is_operator_code("]") ||
            tok.is_operator_code("}"))
@@ -561,6 +562,12 @@ read(token_iterator&  it, operator_code  close_code)
       else
         {
           throw compile_error(tok.get_line_number(),"unknown element");
+        }
+
+
+        if(it == tmp)
+        {
+          throw compile_error(tok.get_line_number(),"token iterator is not advanced.");
         }
     }
 

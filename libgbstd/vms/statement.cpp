@@ -1,4 +1,4 @@
-#include"libgbstd/vms/statement.hpp"
+#include"libgbstd/vm.hpp"
 
 
 
@@ -50,14 +50,14 @@ assign(statement&&  rhs) noexcept
 
         switch(m_kind)
         {
-      case(kind::return_   ): new(&m_data) return_statement(std::move(rhs.m_data.ret));break;
-      case(kind::label     ): new(&m_data) label_statement(std::move(rhs.m_data.lb));break;
-      case(kind::jump      ): new(&m_data) jump_statement(std::move(rhs.m_data.jmp));break;
-      case(kind::if_string ): new(&m_data) if_string_statement(std::move(rhs.m_data.ifs));break;
-      case(kind::block     ): new(&m_data) block_statement(std::move(rhs.m_data.blk));break;
-      case(kind::control   ): new(&m_data) control_statement(std::move(rhs.m_data.ctrl));break;
-      case(kind::let       ): new(&m_data) let_statement(std::move(rhs.m_data.let));break;
-      case(kind::expression): new(&m_data) expression(std::move(rhs.m_data.expr));break;
+      case(kind::return_   ): create_at(&m_data.ret,std::move(rhs.m_data.ret));break;
+      case(kind::label     ): create_at(&m_data.lb,std::move(rhs.m_data.lb));break;
+      case(kind::jump      ): create_at(&m_data.jmp,std::move(rhs.m_data.jmp));break;
+      case(kind::if_string ): create_at(&m_data.ifs,std::move(rhs.m_data.ifs));break;
+      case(kind::block     ): create_at(&m_data.blk,std::move(rhs.m_data.blk));break;
+      case(kind::control   ): create_at(&m_data.ctrl,std::move(rhs.m_data.ctrl));break;
+      case(kind::let       ): create_at(&m_data.let,std::move(rhs.m_data.let));break;
+      case(kind::expression): create_at(&m_data.expr,std::move(rhs.m_data.expr));break;
         }
     }
 
@@ -74,7 +74,7 @@ assign(return_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) return_statement(std::move(st));
+  create_at(&m_data.ret,std::move(st));
 
   m_kind = kind::return_;
 
@@ -89,7 +89,7 @@ assign(label_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) label_statement(std::move(st));
+  create_at(&m_data.lb,std::move(st));
 
   m_kind = kind::label;
 
@@ -104,7 +104,7 @@ assign(jump_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) jump_statement(std::move(st));
+  create_at(&m_data.jmp,std::move(st));
 
   m_kind = kind::jump;
 
@@ -119,7 +119,7 @@ assign(if_string_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) if_string_statement(std::move(st));
+  create_at(&m_data.ifs,std::move(st));
 
   m_kind = kind::if_string;
 
@@ -134,7 +134,7 @@ assign(block_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) block_statement(std::move(st));
+  create_at(&m_data.blk,std::move(st));
 
   m_kind = kind::block;
 
@@ -149,7 +149,7 @@ assign(control_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) control_statement(std::move(st));
+  create_at(&m_data.ctrl,std::move(st));
 
   m_kind = kind::control;
 
@@ -164,7 +164,7 @@ assign(let_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) let_statement(std::move(st));
+  create_at(&m_data.let,std::move(st));
 
   m_kind = kind::let;
 
@@ -175,11 +175,11 @@ assign(let_statement&&  st) noexcept
 
 statement&
 statement::
-assign(expression&&  st) noexcept
+assign(expression_statement&&  st) noexcept
 {
   clear();
 
-  new(&m_data) expression(std::move(st));
+  create_at(&m_data.expr,std::move(st));
 
   m_kind = kind::expression;
 
@@ -232,6 +232,22 @@ print(const context*  ctx, const function*  fn) const noexcept
       printf("}\n");
       break;
     }
+}
+
+
+
+
+value
+expression_statement::
+evaluate(const context&  ctx) const noexcept
+{
+  auto&  ls = m_expression.get_elements();
+
+  auto    p = ls.data();
+  auto  end = ls.data()+ls.size();
+
+    
+  return value();
 }
 
 

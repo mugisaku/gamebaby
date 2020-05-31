@@ -84,6 +84,14 @@ allocate_address() noexcept
 }
 
 
+void
+global_space::
+print() const noexcept
+{
+  basic_space::print();
+}
+
+
 
 
 }

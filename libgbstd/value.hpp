@@ -59,27 +59,15 @@ object
 
 public:
   object() noexcept{}
-  object(token_iterator&  it) noexcept{assign(it);}
-  object(bool  b) noexcept{assign(b);}
-  object(int  i) noexcept{assign(i);}
-  object(double  f) noexcept{assign(f);}
-  object(std::string_view  sv) noexcept{assign(sv);}
-  object(std::u16string_view  sv) noexcept{assign(sv);}
-  object(array&&  arr) noexcept{assign(std::move(arr));}
-  object(list&&  ls) noexcept{assign(std::move(ls));}
-  object(const object&   rhs) noexcept{*this = rhs;}
-  object(      object&&  rhs) noexcept{*this = std::move(rhs);}
+  object(const object&   rhs) noexcept{assign(rhs);}
+  object(      object&&  rhs) noexcept{assign(std::move(rhs));}
  ~object(){clear();}
 
-  object&  operator=(bool  b) noexcept{return assign(b);}
-  object&  operator=(int  i) noexcept{return assign(i);}
-  object&  operator=(double  f) noexcept{return assign(f);}
-  object&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  object&  operator=(std::u16string_view  sv) noexcept{return assign(sv);}
-  object&  operator=(array&&  arr) noexcept{return assign(std::move(arr));}
-  object&  operator=(list&&  ls) noexcept{return assign(std::move(ls));}
-  object&  operator=(const object&   rhs) noexcept{return assign(rhs);}
-  object&  operator=(      object&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  explicit object(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  object&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   object&  assign(token_iterator&  it) noexcept;
   object&  assign(bool  b) noexcept;
@@ -147,18 +135,15 @@ array
 
 public:
   array() noexcept{}
-  array(std::string_view  sv) noexcept{assign(sv);}
-  array(token_iterator&  it) noexcept{assign(it);}
-  array(std::initializer_list<object>  ls) noexcept{assign(ls);}
   array(const array&   rhs) noexcept{assign(rhs);}
   array(      array&&  rhs) noexcept{assign(std::move(rhs));}
  ~array(){clear();}
 
-  array&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  array&  operator=(token_iterator&  it) noexcept{return assign(it);}
-  array&  operator=(std::initializer_list<object>  ls) noexcept{return assign(ls);}
-  array&  operator=(const array&   rhs) noexcept{return assign(rhs);}
-  array&  operator=(      array&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  explicit array(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  array&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   object&  operator[](int  i) const noexcept{return m_data[i];}
   object&  operator[](std::string_view  sv) const noexcept;
@@ -210,18 +195,15 @@ list
 
 public:
   list() noexcept{}
-  list(std::string_view  sv) noexcept{assign(sv);}
-  list(token_iterator&  it) noexcept{assign(it);}
-  list(std::initializer_list<object>  ls) noexcept{assign(ls);}
   list(const list&   rhs) noexcept{assign(rhs);}
   list(      list&&  rhs) noexcept{assign(std::move(rhs));}
  ~list(){clear();}
 
-  list&  operator=(std::string_view  sv) noexcept{return assign(sv);}
-  list&  operator=(token_iterator&  it) noexcept{return assign(it);}
-  list&  operator=(std::initializer_list<object>  ls) noexcept{return assign(ls);}
-  list&  operator=(const list&   rhs) noexcept{return assign(rhs);}
-  list&  operator=(      list&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  explicit list(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  list&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   list&  assign(std::string_view  sv) noexcept;
   list&  assign(token_iterator&  it) noexcept;

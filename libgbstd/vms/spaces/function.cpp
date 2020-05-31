@@ -13,7 +13,7 @@ function(space_node&  nd, std::string_view  name, function_signature&&  sig) noe
 m_node(nd),
 m_name(name),
 m_signature(std::move(sig)),
-m_main_block(std::make_unique<block_space>(nd.create_child()))
+m_main_block(&nd.create_block_space())
 {
     for(auto&  para: m_signature.get_parameter_list())
     {

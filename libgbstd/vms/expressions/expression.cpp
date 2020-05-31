@@ -109,6 +109,14 @@ get_elements() noexcept
 }
 
 
+const std::vector<expression_element>&
+expression::
+get_elements() const noexcept
+{
+  return m_data->m_elements;
+}
+
+
 simple_value
 expression::
 evaluate() const noexcept
@@ -176,20 +184,20 @@ read_operand(token_iterator&  it)
 {
     if(it->is_integer())
     {
-      return static_cast<int64_t>(it++->get_integer());
+      return operand(static_cast<int64_t>(it++->get_integer()));
     }
 
   else
     if(it->is_floating_point_number())
     {
-      return it++->get_floating_point_number();
+      return operand(it++->get_floating_point_number());
     }
 
   else
     if(it->is_single_quoted() ||
        it->is_double_quoted())
     {
-      return std::string_view(it++->get_string());
+      return operand(std::string_view(it++->get_string()));
     }
 
   else
@@ -199,24 +207,24 @@ read_operand(token_iterator&  it)
 
         if(s == std::string_view("nullptr"))
         {
-          return nullptr;
+          return operand(nullptr);
         }
 
       else
         if(s == std::string_view("false"))
         {
-          return false;
+          return operand(false);
         }
 
       else
         if(s == std::string_view("true"))
         {
-          return true;
+          return operand(true);
         }
 
       else
         {
-          return identifier(s);
+          return operand(identifier(s));
         }
     }
 
@@ -225,7 +233,7 @@ read_operand(token_iterator&  it)
     {
         if(it->is_operator_code("("))
         {
-          return read_expression(++it,")");
+          return operand(read_expression(++it,")"));
         }
     }
 

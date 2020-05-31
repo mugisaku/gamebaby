@@ -35,7 +35,7 @@ block_statement
 public:
   const block_space&  get_space() const noexcept{return *m_space;}
 
-  void  print() const noexcept;
+  void  print() const noexcept{}
 
 };
 
@@ -161,6 +161,29 @@ public:
 
 
 class
+value
+{
+};
+
+
+class
+expression_statement
+{
+  expression  m_expression;
+
+public:
+  expression_statement(expression&&  e) noexcept: m_expression(e){}
+
+  const expression&  get_expression() const noexcept{return m_expression;}
+
+  value  evaluate(const context&  ctx) const noexcept;
+
+  void  print() const noexcept{m_expression.print();}
+
+};
+
+
+class
 statement
 {
   enum class kind{
@@ -183,7 +206,7 @@ statement
     if_string_statement    ifs;
     jump_statement         jmp;
     label_statement         lb;
-    expression            expr;
+    expression_statement  expr;
     block_statement        blk;
 
    data() noexcept{}
@@ -192,10 +215,11 @@ statement
 
 public:
   statement() noexcept{}
+  statement(statement&&  rhs) noexcept{assign(std::move(rhs));}
  ~statement(){clear();}
 
   template<class...  Args>
-  statement(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit statement(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
   statement&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -204,14 +228,14 @@ public:
 
 //  statement&  assign(const statement&   rhs) noexcept;
   statement&  assign(      statement&&  rhs) noexcept;
-  statement&  assign(return_statement&&       st) noexcept;
+  statement&  assign(return_statement&&      st) noexcept;
   statement&  assign(label_statement&&       st) noexcept;
   statement&  assign(jump_statement&&        st) noexcept;
   statement&  assign(if_string_statement&&   st) noexcept;
-  statement&  assign(block_statement&&        st) noexcept;
+  statement&  assign(block_statement&&       st) noexcept;
   statement&  assign(control_statement&&     st) noexcept;
   statement&  assign(let_statement&&         st) noexcept;
-  statement&  assign(expression&&  e) noexcept;
+  statement&  assign(expression_statement&&  st) noexcept;
 
   void  clear() noexcept;
 
@@ -232,7 +256,7 @@ public:
   block_statement&       get_block()      noexcept{return m_data.blk;}
   control_statement&     get_control()    noexcept{return m_data.ctrl;}
   let_statement&         get_let()        noexcept{return m_data.let;}
-  expression&            get_expression() noexcept{return m_data.expr;}
+  expression_statement&  get_expression() noexcept{return m_data.expr;}
 
   const return_statement&      get_return()     const noexcept{return m_data.ret;}
   const label_statement&       get_label()      const noexcept{return m_data.lb;}
@@ -241,7 +265,7 @@ public:
   const block_statement&       get_block()      const noexcept{return m_data.blk;}
   const control_statement&     get_control()    const noexcept{return m_data.ctrl;}
   const let_statement&         get_let()        const noexcept{return m_data.let;}
-  const expression&            get_expression() const noexcept{return m_data.expr;}
+  const expression_statement&  get_expression() const noexcept{return m_data.expr;}
 
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 

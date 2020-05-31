@@ -114,10 +114,12 @@ token
 
 public:
   token() noexcept{}
+  token(const token&   rhs) noexcept{assign(rhs);}
+  token(      token&&  rhs) noexcept{assign(std::move(rhs));}
+ ~token(){clear();}
 
   template<class...  Args>
-  token(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
- ~token(){clear();}
+  explicit token(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   operator bool() const noexcept{return !is_null();}
 
@@ -235,6 +237,13 @@ public:
 
   const token&  operator*()  const noexcept{return (m_begin < m_end)? *m_begin: token::null;}
   const token*  operator->() const noexcept{return (m_begin < m_end)?  m_begin:&token::null;}
+
+  bool  operator==(const token_iterator&  rhs) const noexcept{return m_begin == rhs.m_begin;}
+  bool  operator!=(const token_iterator&  rhs) const noexcept{return m_begin != rhs.m_begin;}
+  bool  operator< (const token_iterator&  rhs) const noexcept{return m_begin <  rhs.m_begin;}
+  bool  operator<=(const token_iterator&  rhs) const noexcept{return m_begin <= rhs.m_begin;}
+  bool  operator> (const token_iterator&  rhs) const noexcept{return m_begin >  rhs.m_begin;}
+  bool  operator>=(const token_iterator&  rhs) const noexcept{return m_begin >= rhs.m_begin;}
 
   token_iterator&  operator++(   ) noexcept{  ++m_begin;  return *this;}
   token_iterator   operator++(int) noexcept{  auto  ret = *this;  ++m_begin;  return ret;}

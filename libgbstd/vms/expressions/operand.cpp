@@ -148,7 +148,7 @@ assign(expression&&  e) noexcept
 {
   clear();
 
-  create_at(&m_data.expr,make_clone<expression>(std::move(e)));
+  create_at(&m_data.expr,std::move(e));
 
   m_kind = kinds::expression;
 
@@ -187,10 +187,10 @@ evaluate() const noexcept
     {
   case(kinds::null        ): break;
   case(kinds::null_pointer): break;
-  case(kinds::boolean     ): return m_data.b;break;
+  case(kinds::boolean     ): return simple_value(m_data.b);break;
   case(kinds::string      ): break;
-  case(kinds::integer     ): return m_data.i;break;
-  case(kinds::fpn         ): return m_data.f;break;
+  case(kinds::integer     ): return simple_value(m_data.i);break;
+  case(kinds::fpn         ): return simple_value(m_data.f);break;
   case(kinds::identifier  ): printf("%s",m_data.s.data());break;
   case(kinds::expression  ): return m_data.expr.evaluate();break;
     }

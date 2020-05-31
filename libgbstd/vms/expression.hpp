@@ -110,7 +110,7 @@ public:
   simple_value() noexcept{}
 
   template<class...  Args>
-  simple_value(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit simple_value(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
   simple_value&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -166,7 +166,7 @@ public:
  ~primary_expression(){clear();}
 
   template<class... Args>
-  primary_expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit primary_expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
   primary_expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -181,7 +181,8 @@ public:
 
   operand&  get_operand() noexcept;
 
-  std::vector<primary_expression_element>&  get_elements() noexcept;
+        std::vector<primary_expression_element>&  get_elements()       noexcept;
+  const std::vector<primary_expression_element>&  get_elements() const noexcept;
 
   simple_value  evaluate() const noexcept;
 
@@ -204,7 +205,7 @@ public:
  ~expression(){clear();}
 
   template<class... Args>
-  expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
   expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -222,7 +223,8 @@ public:
 
   expression&  clear() noexcept;
 
-  std::vector<expression_element>&  get_elements() noexcept;
+        std::vector<expression_element>&  get_elements()       noexcept;
+  const std::vector<expression_element>&  get_elements() const noexcept;
 
   simple_value  evaluate() const noexcept;
 
@@ -282,10 +284,10 @@ public:
   operand() noexcept{}
   operand(const operand&   rhs) noexcept{assign(rhs);}
   operand(      operand&&  rhs) noexcept{assign(std::move(rhs));}
+ ~operand(){clear();}
 
   template<class... Args>
-  operand(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
- ~operand(){clear();}
+  explicit operand(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
   operand&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -351,10 +353,10 @@ public:
   primary_expression_element() noexcept{}
   primary_expression_element(const primary_expression_element&   rhs) noexcept{assign(rhs);}
   primary_expression_element(      primary_expression_element&&  rhs) noexcept{assign(std::move(rhs));}
+ ~primary_expression_element(){clear();}
 
   template<class... Args>
-  primary_expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
- ~primary_expression_element(){clear();}
+  explicit primary_expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
   primary_expression_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
@@ -420,7 +422,7 @@ expression_element
 
 public:
   template<class... Args>
-  expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
   expression_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}

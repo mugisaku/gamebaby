@@ -62,14 +62,6 @@ get_parent_function() const noexcept
 
 void
 block_space::
-push_statement(statement&&  st) noexcept
-{
-  m_statement_list.emplace_back(std::move(st));
-}
-
-
-void
-block_space::
 allocate_address(address_t&  global_end, address_t&  local_end, address_t&  operation_stack_size) noexcept
 {
     for(auto&  mi: m_memo_info_table)
@@ -117,12 +109,7 @@ void
 block_space::
 print() const noexcept
 {
-    for(auto&  st: m_statement_list)
-    {
-      st.print();
-
-      printf(";\n");
-    }
+  basic_space::print();
 }
 
 

@@ -16,6 +16,8 @@ clear() noexcept
   m_memo_info_table.clear();
 
   m_function_table.clear();
+
+  m_statement_list.clear();
 }
 
 
@@ -25,7 +27,8 @@ function&
 basic_space::
 create_function(std::string_view  name, function_signature&&  sig) noexcept
 {
-  return *m_function_table.emplace_back(std::make_unique<function>(m_node,name,std::move(sig)));
+//  return *m_function_table.emplace_back(std::make_unique<function>(m_node,name,std::move(sig)));
+  return *m_function_table.emplace_back(new function(m_node,name,std::move(sig)));
 }
 
 
@@ -144,6 +147,24 @@ print() const noexcept
           fn->print();
 
           printf("\n");
+        }
+
+
+      printf("}\n");
+    }
+
+
+    if(m_statement_list.size())
+    {
+      printf("{\n");
+
+        for(auto&  st: m_statement_list)
+        {
+          printf("  ");
+
+          st.print();
+
+          printf(";\n");
         }
 
 

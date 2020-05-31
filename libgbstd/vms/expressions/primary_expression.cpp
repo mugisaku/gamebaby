@@ -16,6 +16,11 @@ data
 
   std::vector<primary_expression_element>  m_elements;
 
+  data() noexcept{}
+  data(const data&  rhs) noexcept:
+  m_operand(rhs.m_operand),
+  m_elements(rhs.m_elements){}
+
 };
 
 
@@ -60,11 +65,9 @@ primary_expression&
 primary_expression::
 assign(operand&&  o, std::vector<primary_expression_element>&&  els) noexcept
 {
-    if(!m_data)
-    {
-      m_data = new data;
-    }
+  clear();
 
+  m_data = new data;
 
   m_data->m_operand = std::move(o);
 
@@ -97,6 +100,13 @@ get_operand() noexcept
 std::vector<primary_expression_element>&
 primary_expression::
 get_elements() noexcept
+{
+  return m_data->m_elements;
+}
+
+const std::vector<primary_expression_element>&
+primary_expression::
+get_elements() const noexcept
 {
   return m_data->m_elements;
 }

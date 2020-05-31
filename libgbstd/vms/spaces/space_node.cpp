@@ -10,16 +10,46 @@ namespace gbstd{
 
 space_node::
 space_node() noexcept:
-m_root(this)
+m_root(this),
+m_kind(kinds::global_space)
 {
+  new(&m_data) global_space(*this);
 }
 
 
+
+
+function&
 space_node::
-space_node(space_node&  parent) noexcept:
-m_parent(&parent),
-m_root(parent.m_root)
+create_function(std::string_view  name, typesystem::function_signature&&  sig) noexcept
 {
+  auto&  nd = m_children.emplace_back(std::make_unique<space_node>());
+
+  nd->m_parent =   this;
+  nd->m_root   = m_root;
+
+  new(&nd->m_data) function(*nd,name,std::move(sig));
+
+  nd->m_kind = kinds::function;
+
+  return nd->m_data.fn;
+}
+
+
+block_space&
+space_node::
+create_block_space() noexcept
+{
+  auto&  nd = m_children.emplace_back(std::make_unique<space_node>());
+
+  nd->m_parent =   this;
+  nd->m_root   = m_root;
+
+  new(&nd->m_data) block_space(*nd);
+
+  nd->m_kind = kinds::block_space;
+
+  return nd->m_data.bsp;
 }
 
 
@@ -27,47 +57,21 @@ m_root(parent.m_root)
 
 space_node&
 space_node::
-assign(global_space&  gsp) noexcept
+clear() noexcept
 {
-  m_data.gsp = &gsp;
+    switch(m_kind)
+    {
+  case(kinds::global_space): std::destroy_at(&m_data.gsp);break;
+  case(kinds::function    ): std::destroy_at(&m_data.fn);break;
+  case(kinds::block_space ): std::destroy_at(&m_data.bsp);break;
+    }
 
-  m_kind = kinds::global_space;
+
+  m_kind = kinds::null;
+
+  m_children.clear();
 
   return *this;
-}
-
-
-space_node&
-space_node::
-assign(function&  fn) noexcept
-{
-  m_data.fn = &fn;
-
-  m_kind = kinds::function;
-
-  return *this;
-}
-
-
-space_node&
-space_node::
-assign(block_space&   bsp) noexcept
-{
-  m_data.bsp = &bsp;
-
-  m_kind = kinds::block_space;
-
-  return *this;
-}
-
-
-
-
-space_node&
-space_node::
-create_child() noexcept
-{
-  return *m_children.emplace_back(std::make_unique<space_node>(*this));
 }
 
 
@@ -83,13 +87,13 @@ find_function(std::string_view  name) const noexcept
 
         if(nd->is_block_space())
         {
-          fn = nd->m_data.bsp->find_function(name);
+          fn = nd->m_data.bsp.find_function(name);
         }
 
       else
         if(nd->is_global_space())
         {
-          fn = nd->m_data.gsp->find_function(name);
+          fn = nd->m_data.gsp.find_function(name);
         }
 
       else
@@ -131,13 +135,13 @@ find_type_info_by_name(std::string_view  name) const noexcept
         {
             if(nd->is_block_space())
             {
-              ti = nd->m_data.bsp->find_type_info_by_name(name);
+              ti = nd->m_data.bsp.find_type_info_by_name(name);
             }
 
           else
             if(nd->is_global_space())
             {
-              ti = nd->m_data.gsp->find_type_info_by_name(name);
+              ti = nd->m_data.gsp.find_type_info_by_name(name);
             }
 
 
@@ -175,13 +179,13 @@ find_type_info_by_id(std::string_view  id) const noexcept
         {
             if(nd->is_block_space())
             {
-              ti = nd->m_data.bsp->find_type_info_by_id(id);
+              ti = nd->m_data.bsp.find_type_info_by_id(id);
             }
 
           else
             if(nd->is_global_space())
             {
-              ti = nd->m_data.gsp->find_type_info_by_id(id);
+              ti = nd->m_data.gsp.find_type_info_by_id(id);
             }
 
 
@@ -212,7 +216,7 @@ find_memo_info(std::string_view  name) const noexcept
 
         if(nd->is_function())
         {
-          mi = nd->m_data.fn->find_parameter_memo_info(name);
+          mi = nd->m_data.fn.find_parameter_memo_info(name);
 
             if(mi)
             {
@@ -227,13 +231,13 @@ find_memo_info(std::string_view  name) const noexcept
         {
             if(nd->is_block_space())
             {
-              mi = nd->m_data.bsp->find_memo_info(name);
+              mi = nd->m_data.bsp.find_memo_info(name);
             }
 
           else
             if(nd->is_global_space())
             {
-              mi = nd->m_data.gsp->find_memo_info(name);
+              mi = nd->m_data.gsp.find_memo_info(name);
             }
 
 
@@ -290,10 +294,23 @@ print() const noexcept
 {
     switch(m_kind)
     {
-  case(kinds::global_space): m_data.gsp->print();break;
-  case(kinds::function    ): m_data.fn->print();break;
-  case(kinds::block_space ): m_data.bsp->print();break;
+  case(kinds::global_space): m_data.gsp.print();break;
+  case(kinds::function    ): m_data.fn.print();break;
+  case(kinds::block_space ): m_data.bsp.print();break;
     }
+
+
+  printf("{\n");
+
+    for(auto&  child: m_children)
+    {
+      child->print();
+
+      printf("\n");
+    }
+
+
+  printf("}\n");
 }
 
 
