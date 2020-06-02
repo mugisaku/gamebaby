@@ -2,7 +2,7 @@
 #define gbstd_vm_HPP
 
 
-#include"libgbstd/vms/statement.hpp"
+#include"libgbstd/vms/space.hpp"
 
 
 namespace gbstd{

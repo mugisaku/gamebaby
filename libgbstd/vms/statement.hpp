@@ -16,7 +16,7 @@
 #include"libgbstd/typesystem.hpp"
 #include"libgbstd/parser.hpp"
 #include"libgbstd/vms/expression.hpp"
-#include"libgbstd/vms/space.hpp"
+#include"libgbstd/vms/value.hpp"
 
 
 namespace gbstd{
@@ -25,6 +25,27 @@ namespace gbstd{
 
 
 class context;
+class function;
+class block_space;
+
+
+
+
+class
+expression_statement
+{
+  expression  m_expression;
+
+public:
+  expression_statement(expression&&  e) noexcept: m_expression(e){}
+
+  const expression&  get_expression() const noexcept{return m_expression;}
+
+  value  evaluate(const context&  ctx) const noexcept;
+
+  void  print() const noexcept;
+
+};
 
 
 class
@@ -33,26 +54,114 @@ block_statement
   pointer_wrapper<block_space>  m_space;
 
 public:
+  block_statement() noexcept{}
+  block_statement(block_space&  bsp) noexcept: m_space(&bsp){}
+
   const block_space&  get_space() const noexcept{return *m_space;}
 
-  void  print() const noexcept{}
+  void  print() const noexcept;
 
 };
 
 
 class
-return_statement
+if_statement: public block_statement
 {
   expression  m_expression;
 
 public:
-  return_statement() noexcept{}
-  return_statement(expression&&  e) noexcept: m_expression(std::move(e)){}
+  if_statement(expression&&  e, block_space&  bsp) noexcept: block_statement(bsp), m_expression(std::move(e)){}
 
-        expression&  get_expression()       noexcept{return m_expression;}
   const expression&  get_expression() const noexcept{return m_expression;}
 
-  void  print() const noexcept{  printf("return ");  m_expression.print();}
+  void  print() const noexcept;
+
+};
+
+
+class
+if_string_statement
+{
+  std::vector<if_statement>  m_if_list;
+
+  pointer_wrapper<block_space>  m_else_block_space;
+
+public:
+  if_string_statement(std::vector<if_statement>&&  ls) noexcept:
+  m_if_list(std::move(ls)){}
+
+  if_string_statement(std::vector<if_statement>&&  ls, block_space&  els) noexcept:
+  m_if_list(std::move(ls)), m_else_block_space(&els){}
+
+  const std::vector<if_statement>&  get_if_list() const noexcept{return m_if_list;}
+
+  pointer_wrapper<block_space>  get_else_block_space() const noexcept{return m_else_block_space;}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+for_statement: public block_statement
+{
+  expression  m_init;
+  expression  m_cond;
+  expression  m_loop;
+
+public:
+  for_statement(expression&&  init, expression&&  cond, expression&&  loop, block_space&  bsp) noexcept:
+  block_statement(bsp), m_init(std::move(init)), m_cond(std::move(cond)), m_loop(std::move(loop)){}
+
+  const expression&  get_init() const noexcept{return m_init;}
+  const expression&  get_cond() const noexcept{return m_cond;}
+  const expression&  get_loop() const noexcept{return m_loop;}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+while_statement: public if_statement
+{
+public:
+  using if_statement::if_statement;
+
+  void  print() const noexcept;
+
+};
+
+
+class
+case_statement: public expression_statement
+{
+public:
+  using expression_statement::expression_statement;
+
+  void  print() const noexcept;
+
+};
+
+
+class
+switch_statement: public if_statement
+{
+public:
+  using if_statement::if_statement;
+
+  void  print() const noexcept;
+
+};
+
+
+class
+return_statement: public expression_statement
+{
+public:
+  using expression_statement::expression_statement;
+
+  void  print() const noexcept;
 
 };
 
@@ -68,7 +177,7 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
-  void  print() const noexcept{printf("label:%s",m_string.data());}
+  void  print() const noexcept;
 
 };
 
@@ -84,7 +193,7 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
-  void  print() const noexcept{printf("jump %s",m_string.data());}
+  void  print() const noexcept;
 
 };
 
@@ -101,7 +210,7 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
-  void  print() const noexcept{printf("%s",m_string.data());}
+  void  print() const noexcept;
 
 };
 
@@ -122,63 +231,7 @@ public:
         expression&  get_expression()       noexcept{return m_expression;}
   const expression&  get_expression() const noexcept{return m_expression;}
 
-  void  print() const noexcept{
-    printf("let %s",m_target_name.data());
-      if(m_expression){  printf(" = (");  m_expression.print();  printf(")");}
-  }
-
-};
-
-
-class
-condition_statement
-{
-  expression  m_expression;
-
-  pointer_wrapper<block_statement>  m_block;
-
-public:
-  const expression&  get_expression() const noexcept{return m_expression;}
-
-  const block_statement&  get_block() const noexcept{return *m_block;}
-
-};
-
-
-class
-if_string_statement
-{
-  std::vector<condition_statement>  m_if_list;
-
-  pointer_wrapper<block_statement>  m_else_block;
-
-public:
-  const block_statement&  get_else_block() const noexcept{return *m_else_block;}
-
-  void  print() const noexcept{}
-
-};
-
-
-class
-value
-{
-};
-
-
-class
-expression_statement
-{
-  expression  m_expression;
-
-public:
-  expression_statement(expression&&  e) noexcept: m_expression(e){}
-
-  const expression&  get_expression() const noexcept{return m_expression;}
-
-  value  evaluate(const context&  ctx) const noexcept;
-
-  void  print() const noexcept{m_expression.print();}
+  void  print() const noexcept;
 
 };
 
@@ -192,6 +245,10 @@ statement
     block,
     control,
     let,
+    while_,
+    for_,
+    switch_,
+    case_,
     if_string,
     expression,
     jump,
@@ -204,6 +261,10 @@ statement
     control_statement     ctrl;
     let_statement          let;
     if_string_statement    ifs;
+    for_statement           fo;
+    while_statement        whi;
+    switch_statement       swi;
+    case_statement         cas;
     jump_statement         jmp;
     label_statement         lb;
     expression_statement  expr;
@@ -233,6 +294,10 @@ public:
   statement&  assign(jump_statement&&        st) noexcept;
   statement&  assign(if_string_statement&&   st) noexcept;
   statement&  assign(block_statement&&       st) noexcept;
+  statement&  assign(for_statement&&         st) noexcept;
+  statement&  assign(while_statement&&       st) noexcept;
+  statement&  assign(switch_statement&&      st) noexcept;
+  statement&  assign(case_statement&&        st) noexcept;
   statement&  assign(control_statement&&     st) noexcept;
   statement&  assign(let_statement&&         st) noexcept;
   statement&  assign(expression_statement&&  st) noexcept;
@@ -245,6 +310,10 @@ public:
   bool  is_jump()       const noexcept{return m_kind == kind::jump;}
   bool  is_if_string()  const noexcept{return m_kind == kind::if_string;}
   bool  is_block()      const noexcept{return m_kind == kind::block;}
+  bool  is_for()        const noexcept{return m_kind == kind::for_;}
+  bool  is_while()      const noexcept{return m_kind == kind::while_;}
+  bool  is_switch()     const noexcept{return m_kind == kind::switch_;}
+  bool  is_case()       const noexcept{return m_kind == kind::case_;}
   bool  is_control()    const noexcept{return m_kind == kind::control;}
   bool  is_let()        const noexcept{return m_kind == kind::let;}
   bool  is_expression() const noexcept{return m_kind == kind::expression;}
@@ -254,6 +323,10 @@ public:
   jump_statement&        get_jump()       noexcept{return m_data.jmp;}
   if_string_statement&   get_if_string()  noexcept{return m_data.ifs;}
   block_statement&       get_block()      noexcept{return m_data.blk;}
+  for_statement&         get_for()        noexcept{return m_data.fo;}
+  while_statement&       get_while()      noexcept{return m_data.whi;}
+  switch_statement&      get_switch()     noexcept{return m_data.swi;}
+  case_statement&        get_case()       noexcept{return m_data.cas;}
   control_statement&     get_control()    noexcept{return m_data.ctrl;}
   let_statement&         get_let()        noexcept{return m_data.let;}
   expression_statement&  get_expression() noexcept{return m_data.expr;}
@@ -263,6 +336,10 @@ public:
   const jump_statement&        get_jump()       const noexcept{return m_data.jmp;}
   const if_string_statement&   get_if_string()  const noexcept{return m_data.ifs;}
   const block_statement&       get_block()      const noexcept{return m_data.blk;}
+  const for_statement&         get_for()        const noexcept{return m_data.fo;}
+  const while_statement&       get_while()      const noexcept{return m_data.whi;}
+  const switch_statement&      get_switch()     const noexcept{return m_data.swi;}
+  const case_statement&        get_case()       const noexcept{return m_data.cas;}
   const control_statement&     get_control()    const noexcept{return m_data.ctrl;}
   const let_statement&         get_let()        const noexcept{return m_data.let;}
   const expression_statement&  get_expression() const noexcept{return m_data.expr;}

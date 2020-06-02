@@ -2,7 +2,7 @@
 #define gbstd_vm_space_HPP
 
 
-#include"libgbstd/vms/expression.hpp"
+#include"libgbstd/vms/statement.hpp"
 
 
 namespace gbstd{
@@ -78,12 +78,14 @@ protected:
   const function*  read_function(token_iterator&  it);
 
   statement  read_return(token_iterator&  it);
-  statement  read_jump(token_iterator&  it) noexcept;
-  statement  read_label(token_iterator&  it) noexcept;
-  statement  read_if(token_iterator&  it) noexcept;
-  statement  read_for(token_iterator&  it) noexcept;
-  statement  read_while(token_iterator&  it) noexcept;
-  statement  read_switch(token_iterator&  it) noexcept;
+  statement  read_jump(token_iterator&  it);
+  statement  read_label(token_iterator&  it);
+  statement  read_if_string(token_iterator&  it);
+  if_statement  read_if(token_iterator&  it);
+  statement  read_for(token_iterator&  it);
+  statement  read_while(token_iterator&  it);
+  statement  read_switch(token_iterator&  it);
+  statement  read_case(token_iterator&  it);
   statement  read_let(token_iterator&  it);
 
   void  read_statement(std::string_view  keyword, token_iterator&  it);

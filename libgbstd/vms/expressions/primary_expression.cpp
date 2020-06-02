@@ -97,6 +97,15 @@ get_operand() noexcept
   return m_data->m_operand;
 }
 
+
+const operand&
+primary_expression::
+get_operand() const noexcept
+{
+  return m_data->m_operand;
+}
+
+
 std::vector<primary_expression_element>&
 primary_expression::
 get_elements() noexcept

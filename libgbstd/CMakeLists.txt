@@ -91,11 +91,12 @@ set(SOURCES
   vms/spaces/block_space.cpp
   vms/spaces/space_node.cpp
   vms/statement.cpp
+  vms/statement__print.cpp
+  vms/value.cpp
+  vms/value__evaluate.cpp
   vms/vm_memory.cpp
-#  vms/vm_symbol_table.cpp
   vms/vm_context.cpp
   vms/vm_call_frame.cpp
-#  vms/vm_operations_callback.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

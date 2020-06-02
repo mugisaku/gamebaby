@@ -15,13 +15,15 @@ statement
 basic_space::
 read_return(token_iterator&  it)
 {
-  return statement(return_statement(read_expression(it,";")));
+  auto  e = read_expression(it,";");
+
+  return statement(return_statement(std::move(e)));
 }
 
 
 statement
 basic_space::
-read_jump(token_iterator&  it) noexcept
+read_jump(token_iterator&  it)
 {
    if(it->is_identifier())
    {
@@ -40,18 +42,123 @@ read_jump(token_iterator&  it) noexcept
 
 statement
 basic_space::
-read_label(token_iterator&  it) noexcept
+read_label(token_iterator&  it)
 {
+   if(it->is_identifier())
+   {
+     return statement(label_statement(it++->get_string()));
+   }
+
+ else
+   {
+     report;
+   }
+
+
   return statement();
 }
 
 
 statement
 basic_space::
-read_if(token_iterator&  it) noexcept
+read_if_string(token_iterator&  it)
+{
+  std::vector<if_statement>  ls;
+
+  ls.emplace_back(read_if(it));
+
+    for(;;)
+    {
+        if(it->is_keyword("else"))
+        {
+          ++it;
+
+            if(it->is_keyword("if"))
+            {
+              ls.emplace_back(read_if(++it));
+            }
+
+          else
+            if(it->is_operator_code("{"))
+            {
+                if(m_node.is_block_space())
+                {
+                  auto&  bsp = m_node.get_block_space().create_block_space();
+
+                  bsp.read(++it,"}");
+
+                  return statement(if_string_statement(std::move(ls),bsp));
+                }
+            }
+
+          else
+            {
+              throw compile_error(it->get_line_number(),"");
+            }
+        }
+
+      else
+        {
+          return statement(if_string_statement(std::move(ls)));
+        }
+    }
+
+
+  throw compile_error(it->get_line_number(),"");
+}
+
+
+if_statement
+basic_space::
+read_if(token_iterator&  it)
 {
     if(it->is_operator_code("("))
     {
+      auto  e = read_expression(++it,")");
+
+        if(it->is_operator_code("{") && m_node.is_block_space())
+        {
+          auto&  bsp = m_node.get_block_space().create_block_space();
+
+          bsp.read(++it,"}");
+
+          return if_statement(std::move(e),bsp);
+        }
+
+      else
+        {
+          report;
+        }
+    }
+
+  else
+    {
+      report;
+    }
+
+
+  throw compile_error(it->get_line_number(),"");
+}
+
+
+statement
+basic_space::
+read_for(token_iterator&  it)
+{
+    if(it->is_operator_code("("))
+    {
+      auto  init = read_expression(++it,";");
+      auto  cond = read_expression(++it,";");
+      auto  loop = read_expression(++it,")");
+
+        if(it->is_operator_code("{") && m_node.is_block_space())
+        {
+          auto&  bsp = m_node.get_block_space().create_block_space();
+
+          bsp.read(++it,"}");
+
+          return statement(for_statement(std::move(init),std::move(cond),std::move(loop),bsp));
+        }
     }
 
   else
@@ -66,10 +173,20 @@ read_if(token_iterator&  it) noexcept
 
 statement
 basic_space::
-read_for(token_iterator&  it) noexcept
+read_while(token_iterator&  it)
 {
     if(it->is_operator_code("("))
     {
+      auto  e = read_expression(++it,")");
+
+        if(it->is_operator_code("{") && m_node.is_block_space())
+        {
+          auto&  bsp = m_node.get_block_space().create_block_space();
+
+          bsp.read(++it,"}");
+
+          return statement(while_statement(std::move(e),bsp));
+        }
     }
 
   else
@@ -84,10 +201,20 @@ read_for(token_iterator&  it) noexcept
 
 statement
 basic_space::
-read_while(token_iterator&  it) noexcept
+read_switch(token_iterator&  it)
 {
     if(it->is_operator_code("("))
     {
+      auto  e = read_expression(++it,")");
+
+        if(it->is_operator_code("{") && m_node.is_block_space())
+        {
+          auto&  bsp = m_node.get_block_space().create_block_space();
+
+          bsp.read(++it,"}");
+
+          return statement(switch_statement(std::move(e),bsp));
+        }
     }
 
   else
@@ -102,19 +229,11 @@ read_while(token_iterator&  it) noexcept
 
 statement
 basic_space::
-read_switch(token_iterator&  it) noexcept
+read_case(token_iterator&  it)
 {
-    if(it->is_operator_code("("))
-    {
-    }
+  auto  e = read_expression(it,":");
 
-  else
-    {
-      report;
-    }
-
-
-  return statement();
+  return statement(case_statement(std::move(e)));
 }
 
 
@@ -164,6 +283,12 @@ read_statement(std::string_view  keyword, token_iterator&  it)
     }
 
   else
+    if(keyword == std::string_view("label"))
+    {
+      push_statement(read_label(++it));
+    }
+
+  else
     if(keyword == std::string_view("jump"))
     {
       push_statement(read_jump(++it));
@@ -182,7 +307,7 @@ read_statement(std::string_view  keyword, token_iterator&  it)
   else
     if(keyword == std::string_view("if"))
     {
-      push_statement(read_if(++it));
+      push_statement(read_if_string(++it));
     }
 
   else
@@ -201,6 +326,12 @@ read_statement(std::string_view  keyword, token_iterator&  it)
     if(keyword == std::string_view("switch"))
     {
       push_statement(read_switch(++it));
+    }
+
+  else
+    if(keyword == std::string_view("case"))
+    {
+      push_statement(read_case(++it));
     }
 
   else

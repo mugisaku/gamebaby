@@ -55,6 +55,10 @@ assign(statement&&  rhs) noexcept
       case(kind::jump      ): create_at(&m_data.jmp,std::move(rhs.m_data.jmp));break;
       case(kind::if_string ): create_at(&m_data.ifs,std::move(rhs.m_data.ifs));break;
       case(kind::block     ): create_at(&m_data.blk,std::move(rhs.m_data.blk));break;
+      case(kind::for_      ): create_at(&m_data.fo ,std::move(rhs.m_data.fo));break;
+      case(kind::while_    ): create_at(&m_data.whi,std::move(rhs.m_data.whi));break;
+      case(kind::switch_   ): create_at(&m_data.swi,std::move(rhs.m_data.swi));break;
+      case(kind::case_     ): create_at(&m_data.cas,std::move(rhs.m_data.cas));break;
       case(kind::control   ): create_at(&m_data.ctrl,std::move(rhs.m_data.ctrl));break;
       case(kind::let       ): create_at(&m_data.let,std::move(rhs.m_data.let));break;
       case(kind::expression): create_at(&m_data.expr,std::move(rhs.m_data.expr));break;
@@ -145,6 +149,66 @@ assign(block_statement&&  st) noexcept
 
 statement&
 statement::
+assign(for_statement&&  st) noexcept
+{
+  clear();
+
+  create_at(&m_data.fo,std::move(st));
+
+  m_kind = kind::for_;
+
+
+  return *this;
+}
+
+
+statement&
+statement::
+assign(while_statement&&  st) noexcept
+{
+  clear();
+
+  create_at(&m_data.whi,std::move(st));
+
+  m_kind = kind::while_;
+
+
+  return *this;
+}
+
+
+statement&
+statement::
+assign(switch_statement&&  st) noexcept
+{
+  clear();
+
+  create_at(&m_data.swi,std::move(st));
+
+  m_kind = kind::switch_;
+
+
+  return *this;
+}
+
+
+statement&
+statement::
+assign(case_statement&&  st) noexcept
+{
+  clear();
+
+  create_at(&m_data.cas,std::move(st));
+
+  m_kind = kind::case_;
+
+
+  return *this;
+}
+
+
+statement&
+statement::
 assign(control_statement&&  st) noexcept
 {
   clear();
@@ -201,6 +265,10 @@ clear() noexcept
   case(kind::jump      ): std::destroy_at(&m_data.jmp);break;
   case(kind::if_string ): std::destroy_at(&m_data.ifs);break;
   case(kind::block     ): std::destroy_at(&m_data.blk);break;
+  case(kind::for_      ): std::destroy_at(&m_data.fo);break;
+  case(kind::while_    ): std::destroy_at(&m_data.whi);break;
+  case(kind::switch_   ): std::destroy_at(&m_data.swi);break;
+  case(kind::case_     ): std::destroy_at(&m_data.cas);break;
   case(kind::control   ): std::destroy_at(&m_data.ctrl);break;
   case(kind::let       ): std::destroy_at(&m_data.let);break;
   case(kind::expression): std::destroy_at(&m_data.expr);break;
@@ -226,28 +294,16 @@ print(const context*  ctx, const function*  fn) const noexcept
   case(kind::control   ): get_control().print();break;
   case(kind::let       ): get_let().print();break;
   case(kind::expression): get_expression().print();break;
+  case(kind::for_      ): m_data.fo.print();break;
+  case(kind::while_    ): m_data.whi.print();break;
+  case(kind::switch_   ): m_data.swi.print();break;
+  case(kind::case_     ): m_data.cas.print();break;
   case(kind::block     ):
       printf("{\n");
       get_block().print();
       printf("}\n");
       break;
     }
-}
-
-
-
-
-value
-expression_statement::
-evaluate(const context&  ctx) const noexcept
-{
-  auto&  ls = m_expression.get_elements();
-
-  auto    p = ls.data();
-  auto  end = ls.data()+ls.size();
-
-    
-  return value();
 }
 
 

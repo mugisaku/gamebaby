@@ -179,7 +179,8 @@ public:
 
   primary_expression&  clear() noexcept;
 
-  operand&  get_operand() noexcept;
+        operand&  get_operand()       noexcept;
+  const operand&  get_operand() const noexcept;
 
         std::vector<primary_expression_element>&  get_elements()       noexcept;
   const std::vector<primary_expression_element>&  get_elements() const noexcept;
