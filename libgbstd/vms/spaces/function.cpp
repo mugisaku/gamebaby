@@ -17,24 +17,24 @@ m_main_block(&nd.create_block_space())
 {
     for(auto&  para: m_signature.get_parameter_list())
     {
-      auto  mi = std::make_unique<memo_info>(para.get_type_info(),para.get_name());
+      auto  vi = std::make_unique<variable_info>(variable_scopes::parameter,para.get_type_info(),para.get_name());
 
-      m_parameter_memo_info_table.emplace_back(std::move(mi));
+      m_parameter_variable_info_table.emplace_back(std::move(vi));
     }
 }
 
 
 
 
-const memo_info*
+const variable_info*
 function::
-find_parameter_memo_info(std::string_view  name) const noexcept
+find_parameter_variable_info(std::string_view  name) const noexcept
 {
-    for(auto&  mi: m_parameter_memo_info_table)
+    for(auto&  vi: m_parameter_variable_info_table)
     {
-        if(mi->get_name() == name)
+        if(vi->get_name() == name)
         {
-          return mi.get();
+          return vi.get();
         }
     }
 
@@ -45,25 +45,13 @@ find_parameter_memo_info(std::string_view  name) const noexcept
 
 void
 function::
-allocate_address(address_t&  global_end) noexcept
+compile(compile_context&  ctx) const
 {
-  address_t  local_end = 0;
+  ctx.m_asm_context.add_label("%s__begin",ctx.get_base_name().data());
 
-  m_operation_stack_size = 0;
+  m_main_block->compile(ctx);
 
-    for(auto&  child: m_node.get_children())
-    {
-        if(child->is_block_space())
-        {
-          child->get_block_space().allocate_address(global_end,local_end,m_operation_stack_size);
-        }
-    }
-
-
-    for(auto&  mi: m_parameter_memo_info_table)
-    {
-      local_end = mi->set_address(local_end);
-    }
+  ctx.m_asm_context.add_label("%s__end",ctx.get_base_name().data());
 }
 
 
@@ -73,15 +61,15 @@ print() const noexcept
 {
   printf("function %s = %s(",m_name.data(),m_signature.get_return_type_info().get_name().data());
 
-    for(auto&  mi: m_parameter_memo_info_table)
+    for(auto&  vi: m_parameter_variable_info_table)
     {
-      mi->print();
+      vi->print();
 
       printf(", ");
     }
 
 
-  printf(")\noperation stack size: %d\n{\n",m_operation_stack_size);
+  printf(")\n{\n");
 
     if(m_main_block)
     {

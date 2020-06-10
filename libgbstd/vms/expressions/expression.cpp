@@ -233,12 +233,16 @@ read_operand(token_iterator&  it)
     {
         if(it->is_operator_code("("))
         {
-          return operand(read_expression(++it,")"));
+          auto  e = read_expression(++it,")");
+
+          ++it;
+
+          return operand(std::move(e));
         }
     }
 
 
-  throw expression_error();
+  throw expression_error("operand error");
 }
 
 
@@ -298,6 +302,8 @@ read_primary_expression(token_iterator&  it)
         {
           auto  e = read_expression(++it,")");
 
+          ++it;
+
           auto  ls = convert_to_expression_list(std::move(e));
 
           els.emplace_back(std::move(ls));
@@ -307,6 +313,8 @@ read_primary_expression(token_iterator&  it)
         if(it->is_operator_code("["))
         {
           els.emplace_back(read_expression(++it,"]"));
+
+          ++it;
         }
 
       else
@@ -319,6 +327,33 @@ read_primary_expression(token_iterator&  it)
             {
               els.emplace_back(std::string_view(it++->get_string()));
             }
+        }
+
+      else
+        if(it->is_operator_code("=") ||
+           it->is_operator_code("+=") ||
+           it->is_operator_code("-=") ||
+           it->is_operator_code("*=") ||
+           it->is_operator_code("/=") ||
+           it->is_operator_code("%=") ||
+           it->is_operator_code("<<=") ||
+           it->is_operator_code(">>=") ||
+           it->is_operator_code("|=") ||
+           it->is_operator_code("&=") ||
+           it->is_operator_code("^="))
+        {
+          auto  op = it++->get_operator_code();
+
+          auto  e = read_expression(it,";");
+
+          els.emplace_back(assignment(op,std::move(e)));
+        }
+
+      else
+        if(it->is_operator_code("++") ||
+           it->is_operator_code("--"))
+        {
+          els.emplace_back(assignment(it++->get_operator_code(),expression()));
         }
 
       else
@@ -403,6 +438,7 @@ read_binary_operator(token_iterator&  it)
            (opco == "|") ||
            (opco == "&") ||
            (opco == "^") ||
+/*
            (opco == "=") ||
            (opco == "+=") ||
            (opco == "-=") ||
@@ -414,6 +450,7 @@ read_binary_operator(token_iterator&  it)
            (opco == "|=") ||
            (opco == "&=") ||
            (opco == "^=") ||
+*/
            (opco == "||") ||
            (opco == "&&") ||
            (opco == ",") ||
@@ -445,8 +482,6 @@ read_expression(token_iterator&  it, operator_code  close_code)
 
     if(it->is_operator_code(close_code))
     {
-      ++it;
-
       goto QUIT;
     }
 
@@ -457,8 +492,6 @@ read_expression(token_iterator&  it, operator_code  close_code)
     {
         if(it->is_operator_code(close_code))
         {
-          ++it;
-
           goto QUIT;
         }
 

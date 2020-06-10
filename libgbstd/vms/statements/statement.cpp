@@ -283,6 +283,53 @@ clear() noexcept
 
 void
 statement::
+compile(compile_context&  ctx) const
+{
+    switch(m_kind)
+    {
+  case(kind::return_):
+       gbstd::compile(m_data.ret.get_expression(),ctx);
+       break;
+  case(kind::label):
+       break;
+  case(kind::jump):
+       break;
+  case(kind::if_string):
+      ctx.m_asm_context.add_label("%s_IF__begin",ctx.get_base_name().data());
+      ctx.m_asm_context.add_label("%s_IF__end",ctx.get_base_name().data());
+      break;
+  case(kind::control):
+      break;
+  case(kind::let):
+      gbstd::compile(m_data.let.get_expression(),ctx);
+      break;
+  case(kind::expression):
+      gbstd::compile(m_data.expr.get_expression(),ctx);
+      break;
+  case(kind::for_):
+      ctx.m_asm_context.add_label("%s_FOR__begin",ctx.get_base_name().data());
+      ctx.m_asm_context.add_label("%s_FOR__end",ctx.get_base_name().data());
+      break;
+  case(kind::while_):
+      ctx.m_asm_context.add_label("%s_WHILE__begin",ctx.get_base_name().data());
+      ctx.m_asm_context.add_label("%s_WHILE__end",ctx.get_base_name().data());
+      break;
+  case(kind::switch_):
+      ctx.m_asm_context.add_label("%s_SWITCH__begin",ctx.get_base_name().data());
+      ctx.m_asm_context.add_label("%s_SWITCH__end",ctx.get_base_name().data());
+      break;
+  case(kind::case_):
+      ctx.m_asm_context.add_label("%s_CASE__begin",ctx.get_base_name().data());
+      break;
+  case(kind::block):
+      get_block().get_space().compile(ctx);
+      break;
+    }
+}
+
+
+void
+statement::
 print(const context*  ctx, const function*  fn) const noexcept
 {
     switch(m_kind)

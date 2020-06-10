@@ -17,6 +17,8 @@ read_return(token_iterator&  it)
 {
   auto  e = read_expression(it,";");
 
+  ++it;
+
   return statement(return_statement(std::move(e)));
 }
 
@@ -104,7 +106,7 @@ read_if_string(token_iterator&  it)
     }
 
 
-  throw compile_error(it->get_line_number(),"");
+  throw compile_error(it->get_line_number(),"if_string error");
 }
 
 
@@ -115,6 +117,8 @@ read_if(token_iterator&  it)
     if(it->is_operator_code("("))
     {
       auto  e = read_expression(++it,")");
+
+      ++it;
 
         if(it->is_operator_code("{") && m_node.is_block_space())
         {
@@ -137,7 +141,7 @@ read_if(token_iterator&  it)
     }
 
 
-  throw compile_error(it->get_line_number(),"");
+  throw compile_error(it->get_line_number(),"if error");
 }
 
 
@@ -150,6 +154,8 @@ read_for(token_iterator&  it)
       auto  init = read_expression(++it,";");
       auto  cond = read_expression(++it,";");
       auto  loop = read_expression(++it,")");
+
+      ++it;
 
         if(it->is_operator_code("{") && m_node.is_block_space())
         {
@@ -179,6 +185,8 @@ read_while(token_iterator&  it)
     {
       auto  e = read_expression(++it,")");
 
+      ++it;
+
         if(it->is_operator_code("{") && m_node.is_block_space())
         {
           auto&  bsp = m_node.get_block_space().create_block_space();
@@ -207,6 +215,8 @@ read_switch(token_iterator&  it)
     {
       auto  e = read_expression(++it,")");
 
+      ++it;
+
         if(it->is_operator_code("{") && m_node.is_block_space())
         {
           auto&  bsp = m_node.get_block_space().create_block_space();
@@ -233,6 +243,8 @@ read_case(token_iterator&  it)
 {
   auto  e = read_expression(it,":");
 
+  ++it;
+
   return statement(case_statement(std::move(e)));
 }
 
@@ -256,11 +268,17 @@ read_let(token_iterator&  it)
         {
           expression  e;
 
-          push_memo_info(ti,name);
+          auto  scp = m_node.is_global_space()? variable_scopes::global
+                     :                          variable_scopes::local
+                     ;
+
+          push_variable_info(scp,ti,name);
 
             if(it->is_operator_code("("))
             {
               e = read_expression(++it,")");
+
+              ++it;
             }
 
 
@@ -342,7 +360,11 @@ read_statement(std::string_view  keyword, token_iterator&  it)
 
   else
     {
-      push_statement(expression_statement(read_expression(it,";")));
+      auto  e = read_expression(it,";");
+
+      ++it;
+
+      push_statement(expression_statement(std::move(e)));
     }
 }
 

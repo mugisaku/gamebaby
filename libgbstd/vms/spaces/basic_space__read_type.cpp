@@ -155,7 +155,7 @@ type_info
 basic_space::
 read_enum_type_info(token_iterator&  it) noexcept
 {
-  enum_type_info  eti(gbstd::type_infos::enum_size);
+  enum_type_info  eti(g_enum_size);
 
   int  next = 0;
 
@@ -349,11 +349,7 @@ read_function(token_iterator&  it)
 
                if(it->is_operator_code("{"))
                {
-                 auto&  sp = m_node.is_global_space()? static_cast<basic_space&>(m_node.get_global_space())
-                            :                          static_cast<basic_space&>(m_node.get_block_space())
-                            ;
-
-                 auto&  fn = sp.create_function(name,std::move(fnsig));
+                 auto&  fn = m_node.create_function(name,std::move(fnsig));
 
                  auto&  blk = fn.get_main_block();
 
@@ -414,7 +410,7 @@ read_derived_type_info(token_iterator&  it)
       else
         if(it->is_operator_code("*"))
         {
-          ti = ti.form_pointer_type(gbstd::type_infos::pointer_size);
+          ti = ti.form_pointer_type(g_pointer_size);
 
           ++it;
         }
@@ -422,7 +418,7 @@ read_derived_type_info(token_iterator&  it)
       else
         if(it->is_operator_code("&"))
         {
-          ti = ti.form_reference_type(gbstd::type_infos::pointer_size);
+          ti = ti.form_reference_type(g_pointer_size);
 
           ++it;
         }

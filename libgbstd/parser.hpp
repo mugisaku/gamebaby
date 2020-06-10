@@ -72,6 +72,11 @@ public:
     return !(*this == rhs);
   }
 
+  void  print() const noexcept
+  {
+    printf("%s",m_data);
+  }
+
 };
 
 

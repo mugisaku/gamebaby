@@ -92,6 +92,27 @@ form_string(const char*  fmt, ...) noexcept
 }
 
 
+std::string_view
+form_string(size_t  n, const char*  fmt, ...) noexcept
+{
+  auto  p = static_cast<char*>(malloc(n));
+
+  va_list  ap;
+
+  va_start(ap,fmt);
+
+  vsnprintf(p,n,fmt,ap);
+
+  va_end(ap);
+
+  strings.emplace_back(p);
+
+  delete[] p;
+
+  return strings.back();
+}
+
+
 int
 get_number_of_newlines(const char*  begin, const char*  end) noexcept
 {

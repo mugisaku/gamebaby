@@ -6,25 +6,24 @@
 namespace gbstd{
 
 
+using namespace typesystem;
 
 
 void
 global_space::
 initialize() noexcept
 {
-  m_type_info_table.emplace_back(type_infos::int_);
+  m_type_info_table.emplace_back(integer_type_info(4),"int");
 
-  m_type_info_table.emplace_back(type_infos::i8);
-  m_type_info_table.emplace_back(type_infos::i16);
-  m_type_info_table.emplace_back(type_infos::i32);
-  m_type_info_table.emplace_back(type_infos::i64);
-  m_type_info_table.emplace_back(type_infos::f32);
-  m_type_info_table.emplace_back(type_infos::f64);
-  m_type_info_table.emplace_back(type_infos::void_);
-  m_type_info_table.emplace_back(type_infos::null_pointer);
-  m_type_info_table.emplace_back(type_infos::generic_pointer);
-  m_type_info_table.emplace_back(type_infos::boolean);
-  m_type_info_table.emplace_back(type_infos::undefined);
+  m_type_info_table.emplace_back(integer_type_info(1),"int8_t");
+  m_type_info_table.emplace_back(integer_type_info(2),"int16_t");
+  m_type_info_table.emplace_back(integer_type_info(4),"int32_t");
+  m_type_info_table.emplace_back(integer_type_info(8),"int64_t");
+  m_type_info_table.emplace_back(fpn_type_info(4),"f32_t");
+  m_type_info_table.emplace_back(fpn_type_info(8),"f64_t");
+  m_type_info_table.emplace_back(null_pointer_type_info(),"nullptr_t");
+  m_type_info_table.emplace_back(boolean_type_info(1),"bool");
+  m_type_info_table.emplace_back(void_type_info(),"void");
 }
 
 
@@ -36,15 +35,11 @@ assign(std::string_view  sv)
 
   initialize();
 
-  m_source = sv;
-
-  auto  toks = make_token_string(m_source);
+  auto  toks = make_token_string(sv);
 
   token_iterator  it(toks);
 
   read(it,"");
-
-  allocate_address();
 
   return *this;
 }
@@ -54,32 +49,36 @@ assign(std::string_view  sv)
 
 void
 global_space::
-clear() noexcept
+compile(compile_context&  ctx) const
 {
-  m_source.clear();
+  std::vector<std::reference_wrapper<function>>           fn_list;
+  std::vector<std::reference_wrapper<variable_info>>  glovar_list;
 
-  basic_space::clear();
-}
+  m_node.collect_functions(fn_list);
+  m_node.collect_global_variables(glovar_list);
 
-
-void
-global_space::
-allocate_address() noexcept
-{
-  address_t  end = 0;
-
-    for(auto&  mi: m_memo_info_table)
+    for(auto&  glovarref: glovar_list)
     {
-      end = mi->set_address(end);
     }
 
 
-    for(auto&  child: m_node.get_children())
+    for(auto&  st: m_statement_list)
     {
-        if(child->is_function())
-        {
-          child->get_function().allocate_address(end);
-        }
+      st.compile(ctx);
+
+      ctx.m_block_number++;
+    }
+
+
+    for(auto&  fnref: fn_list)
+    {
+      char  buf[256];
+
+      snprintf(buf,sizeof(buf),"FN_%04d",ctx.m_block_number);
+
+      ctx.m_block_number++;
+
+      fnref.get().compile(ctx);
     }
 }
 

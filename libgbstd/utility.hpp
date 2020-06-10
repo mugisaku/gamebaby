@@ -76,7 +76,8 @@ bool  is_webp(const void*  ptr) noexcept;
 void  printf_with_indent(int  indent, const char*  fmt, ...) noexcept;
 
 void  clear_formed_strings() noexcept;
-std::string_view  form_string(const char*  fmt, ...) noexcept;
+std::string_view  form_string(           const char*  fmt, ...) noexcept;
+std::string_view  form_string(size_t  n, const char*  fmt, ...) noexcept;
 
 int  get_number_of_newlines(const char*  begin, const char*  end) noexcept;
 

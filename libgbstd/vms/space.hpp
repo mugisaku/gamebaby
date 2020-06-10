@@ -8,6 +8,11 @@
 namespace gbstd{
 
 
+constexpr int  g_enum_size = 4;
+constexpr int  g_pointer_size = 4;
+constexpr int  g_boolean_size = 1;
+
+
 using typesystem::type_info;
 using typesystem::parameter_list;
 using typesystem::function_signature;
@@ -17,35 +22,83 @@ class function;
 class space_node;
 
 
+
+
+enum class
+variable_scopes
+{
+  global,
+  local,
+  parameter,
+
+};
+
+
+class
+variable_info
+{
+  type_info  m_type_info;
+
+  std::string  m_name;
+
+  std::vector<uint8_t>  m_content;
+
+  variable_scopes  m_scope;
+
+public:
+  variable_info() noexcept{}
+  variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept:
+  m_scope(scp), m_type_info(ti), m_name(name){}
+
+  const type_info&  get_type_info() const noexcept{return m_type_info;}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+  void                         set_content(std::vector<uint8_t>&&  c)       noexcept{       m_content = std::move(c);}
+  const std::vector<uint8_t>&  get_content(                         ) const noexcept{return m_content;}
+
+  bool  is_global_scope()    const noexcept{return m_scope == variable_scopes::global;}
+  bool  is_local_scope()     const noexcept{return m_scope == variable_scopes::local;}
+  bool  is_parameter_scope() const noexcept{return m_scope == variable_scopes::parameter;}
+
+  void  print() const noexcept{  m_type_info.print();  printf("  %s",m_name.data());}
+
+};
+
+
 class
 found_info
 {
   enum class kinds{
-    null, type_info, memo_info, function, namespace_,
+    null,
+    type_info,
+    variable_info,
+    function,
+
   } m_kind=kinds::null;
 
   union data{
-    const type_info*  ti;
-    const memo_info*  mi;
-    const function*   fn;
+    const type_info*      ti;
+    const variable_info*  vi;
+    const function*       fn;
 
   } m_data;
 
 public:
   found_info() noexcept{}
   found_info(const type_info&  ti) noexcept: m_kind(kinds::type_info){m_data.ti = &ti;}
-  found_info(const memo_info&  mi) noexcept: m_kind(kinds::memo_info){m_data.mi = &mi;}
+  found_info(const variable_info&  vi) noexcept: m_kind(kinds::variable_info){m_data.vi = &vi;}
   found_info(const function&  fn) noexcept: m_kind(kinds::function){m_data.fn = &fn;}
 
   operator bool() const noexcept{return m_kind != kinds::null;}
 
-  bool  is_type_info() const noexcept{return m_kind == kinds::type_info;}
-  bool  is_memo_info() const noexcept{return m_kind == kinds::memo_info;}
-  bool  is_function() const noexcept{return m_kind == kinds::function;}
+  bool  is_type_info()     const noexcept{return m_kind == kinds::type_info;}
+  bool  is_variable_info() const noexcept{return m_kind == kinds::variable_info;}
+  bool  is_function()      const noexcept{return m_kind == kinds::function;}
 
-  const type_info&  get_type_info() const noexcept{return *m_data.ti;}
-  const memo_info&  get_memo_info() const noexcept{return *m_data.mi;}
-  const function&   get_function() const noexcept{return *m_data.fn;}
+  const type_info&          get_type_info() const noexcept{return *m_data.ti;}
+  const variable_info&  get_variable_info() const noexcept{return *m_data.vi;}
+  const function&            get_function() const noexcept{return *m_data.fn;}
 
 };
 
@@ -56,10 +109,8 @@ basic_space
 protected:
   space_node&  m_node;
 
-  std::vector<type_info>  m_type_info_table;
-
-  std::vector<std::unique_ptr<memo_info>>  m_memo_info_table;
-  std::vector<std::unique_ptr<function>>  m_function_table;
+  std::vector<type_info>                       m_type_info_table;
+  std::vector<std::unique_ptr<variable_info>>  m_variable_info_table;
 
   std::vector<statement>  m_statement_list;
 
@@ -104,25 +155,20 @@ public:
   basic_space&  read(token_iterator&  it, operator_code  close_code);
   basic_space&  read(std::string_view  sv);
 
-  const std::vector<type_info>&                   get_type_info_table() const noexcept{return m_type_info_table;}
-  const std::vector<std::unique_ptr<memo_info>>&  get_memo_info_table() const noexcept{return m_memo_info_table;}
-  const std::vector<std::unique_ptr<function>>&    get_function_table() const noexcept{return m_function_table;}
-  const std::vector<statement>&                    get_statement_list() const noexcept{return m_statement_list;}
+  const std::vector<type_info>&                   get_type_info_table()         const noexcept{return m_type_info_table;}
+  const std::vector<std::unique_ptr<variable_info>>&  get_variable_info_table() const noexcept{return m_variable_info_table;}
+  const std::vector<statement>&                    get_statement_list()         const noexcept{return m_statement_list;}
 
   template<class...  Args>
   void  push_statement(Args&&...  args) noexcept{m_statement_list.emplace_back(std::forward<Args>(args)...);}
 
   void  push_type_info(type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
-  void  push_memo_info(const type_info&  ti, std::string_view  name) noexcept{m_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));}
-
-  function&  create_function(std::string_view  name, function_signature&&  sig) noexcept;
-
-  const function*  find_function(std::string_view  name) const noexcept;
+  void  push_variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept{m_variable_info_table.emplace_back(std::make_unique<variable_info>(scp,ti,name));}
 
   const type_info*  find_type_info_by_name(std::string_view  name) const noexcept;
   const type_info*  find_type_info_by_id(  std::string_view    id) const noexcept;
 
-  const memo_info*  find_memo_info(std::string_view  name) const noexcept;
+  const variable_info*  find_variable_info(std::string_view  name) const noexcept;
 
   void  print() const noexcept;
 
@@ -142,11 +188,9 @@ function
 {
   space_node&  m_node;
 
-  std::vector<std::unique_ptr<memo_info>>  m_parameter_memo_info_table;
+  std::vector<std::unique_ptr<variable_info>>  m_parameter_variable_info_table;
 
   std::string  m_name;
-
-  address_t  m_operation_stack_size=0;
 
   function_signature  m_signature;
 
@@ -159,17 +203,17 @@ public:
 
   block_space&  get_main_block() const noexcept{return *m_main_block;}
 
-  const std::vector<std::unique_ptr<memo_info>>&  get_parameter_memo_info_table() const noexcept {return m_parameter_memo_info_table;}
+  const std::vector<std::unique_ptr<variable_info>>&  get_parameter_variable_info_table() const noexcept {return m_parameter_variable_info_table;}
 
   const std::string&  get_name() const noexcept{return m_name;}
 
   const function_signature&  get_signature() const noexcept{return m_signature;}
 
-  void  push_memo_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_memo_info_table.emplace_back(std::make_unique<memo_info>(ti,name));}
+  void  push_variable_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_variable_info_table.emplace_back(std::make_unique<variable_info>(variable_scopes::parameter,ti,name));}
 
-  const memo_info*  find_parameter_memo_info(std::string_view  name) const noexcept;
+  const variable_info*  find_parameter_variable_info(std::string_view  name) const noexcept;
 
-  void  allocate_address(address_t&  global_end) noexcept;
+  void  compile(compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -179,8 +223,6 @@ public:
 class
 global_space: public basic_space
 {
-  std::string  m_source;
-
   void  initialize() noexcept;
 
 public:
@@ -188,9 +230,7 @@ public:
 
   global_space&  assign(std::string_view  sv);
 
-  void  clear() noexcept;
-
-  void  allocate_address() noexcept;
+  void  compile(compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -213,7 +253,7 @@ public:
 
   const function*  get_parent_function() const noexcept;
 
-  void  allocate_address(address_t&  global_end, address_t&  local_end, address_t&  operation_stack_size) noexcept;
+  void  compile(compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -268,7 +308,7 @@ public:
   const type_info*  find_type_info_by_name(std::string_view  name) const noexcept;
   const type_info*  find_type_info_by_id(  std::string_view    id) const noexcept;
 
-  const memo_info*  find_memo_info(std::string_view  name) const noexcept;
+  const variable_info*  find_variable_info(std::string_view  name) const noexcept;
 
   found_info  find_all(std::string_view  name) const noexcept;
 
@@ -278,6 +318,9 @@ public:
 
   const std::vector<std::unique_ptr<space_node>>&  get_children() const noexcept{return m_children;}
 
+  void  collect_functions(std::vector<std::reference_wrapper<function>>&  buf) const noexcept;
+  void  collect_global_variables(std::vector<std::reference_wrapper<variable_info>>&  buf) const noexcept;
+
   global_space&  get_global_space() noexcept{return m_data.gsp;}
   function&          get_function() noexcept{return m_data.fn;}
   block_space&    get_block_space() noexcept{return m_data.bsp;}
@@ -285,6 +328,40 @@ public:
   const global_space&  get_global_space() const noexcept{return m_data.gsp;}
   const function&          get_function() const noexcept{return m_data.fn;}
   const block_space&    get_block_space() const noexcept{return m_data.bsp;}
+
+  void  print() const noexcept;
+
+};
+
+
+
+
+class
+compile_context
+{
+public:
+  struct frame{
+    std::string  m_base_name;
+
+    const space_node&  m_node;
+
+  };
+
+
+  std::string  m_source;
+
+  space_node  m_root_node;
+
+  int  m_block_number;
+
+  std::vector<frame>  m_stack;
+
+  asm_context  m_asm_context;
+
+  compile_context&  assign(std::string_view  src_code);
+
+  const std::string&  get_base_name() const noexcept{return m_stack.back().m_base_name;}
+  const space_node&        get_node() const noexcept{return m_stack.back().m_node;}
 
   void  print() const noexcept;
 

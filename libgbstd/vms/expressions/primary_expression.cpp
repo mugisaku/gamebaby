@@ -65,9 +65,11 @@ primary_expression&
 primary_expression::
 assign(operand&&  o, std::vector<primary_expression_element>&&  els) noexcept
 {
-  clear();
+    if(!m_data)
+    {
+      m_data = new data;
+    }
 
-  m_data = new data;
 
   m_data->m_operand = std::move(o);
 

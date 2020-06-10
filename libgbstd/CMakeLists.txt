@@ -90,13 +90,26 @@ set(SOURCES
   vms/spaces/global_space.cpp
   vms/spaces/block_space.cpp
   vms/spaces/space_node.cpp
-  vms/statement.cpp
-  vms/statement__print.cpp
-  vms/value.cpp
-  vms/value__evaluate.cpp
-  vms/vm_memory.cpp
-  vms/vm_context.cpp
-  vms/vm_call_frame.cpp
+  vms/statements/statement.cpp
+  vms/statements/statement__compile.cpp
+  vms/statements/expression_statement.cpp
+  vms/statements/block_statement.cpp
+  vms/statements/return_statement.cpp
+  vms/statements/let_statement.cpp
+  vms/statements/label_statement.cpp
+  vms/statements/jump_statement.cpp
+  vms/statements/control_statement.cpp
+  vms/statements/if_statement.cpp
+  vms/statements/if_string_statement.cpp
+  vms/statements/for_statement.cpp
+  vms/statements/while_statement.cpp
+  vms/statements/switch_statement.cpp
+  vms/statements/case_statement.cpp
+  vms/assemblies/asm_parameter.cpp
+  vms/assemblies/asm_line.cpp
+  vms/assemblies/asm_context.cpp
+  vms/assemblies/asm_processor.cpp
+  vms/compile_context.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

@@ -132,6 +132,8 @@ public:
   template<typename  U>constexpr bool  operator> (const U*  ptr) const noexcept{return m_data >  static_cast<const T*>(ptr);}
   template<typename  U>constexpr bool  operator>=(const U*  ptr) const noexcept{return m_data >= static_cast<const T*>(ptr);}
 
+  T*  get_raw() const noexcept{return m_data;}
+
 };
 
 

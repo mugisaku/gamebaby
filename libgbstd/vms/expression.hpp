@@ -330,6 +330,35 @@ public:
 
 
 class
+assignment
+{
+  operator_code  m_operator_code;
+
+  expression  m_expression;
+
+public:
+  assignment() noexcept{}
+  assignment(expression&&  e) noexcept{assign("",std::move(e));}
+  assignment(operator_code  op, expression&&  e) noexcept{assign(op,std::move(e));}
+
+  assignment&  assign(operator_code  op, expression&&  e) noexcept{
+    m_operator_code =           op;
+    m_expression    = std::move(e);
+
+    return *this;
+  }
+
+  operator_code  get_operator_code() const noexcept{return m_operator_code;}
+
+        expression&  get_expression()       noexcept{return m_expression;}
+  const expression&  get_expression() const noexcept{return m_expression;}
+
+  void  print() const noexcept{  m_operator_code.print();  m_expression.print();}
+
+};
+
+
+class
 primary_expression_element
 {
   enum class kinds{
@@ -337,6 +366,7 @@ primary_expression_element
     selector,
     index,
     call,
+    assignment,
 
   } m_kind=kinds::null;
 
@@ -344,6 +374,7 @@ primary_expression_element
     std::string                   s;
     expression                 expr;
     std::vector<expression>  exprls;
+    assignment                  ass;
 
     data() noexcept{}
    ~data(){}
@@ -369,16 +400,19 @@ public:
   primary_expression_element&  assign(std::string_view  id) noexcept;
   primary_expression_element&  assign(expression&&  e) noexcept;
   primary_expression_element&  assign(std::vector<expression>&&  els) noexcept;
+  primary_expression_element&  assign(assignment&&  ass) noexcept;
 
   primary_expression_element&  clear() noexcept;
 
   const std::string&                       get_string() const noexcept{return m_data.s;}
   const expression&                    get_expression() const noexcept{return m_data.expr;}
   const std::vector<expression>&  get_expression_list() const noexcept{return m_data.exprls;}
+  const assignment&                    get_assignment() const noexcept{return m_data.ass;}
 
   bool  is_selector() const noexcept{return m_kind == kinds::selector;}
   bool  is_index()    const noexcept{return m_kind == kinds::index;}
   bool  is_call()     const noexcept{return m_kind == kinds::call;}
+  bool  is_assignment() const noexcept{return m_kind == kinds::assignment;}
 
   void  print() const noexcept;
 

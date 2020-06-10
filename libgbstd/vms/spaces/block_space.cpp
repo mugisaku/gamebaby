@@ -58,49 +58,17 @@ get_parent_function() const noexcept
 }
 
 
-
-
 void
 block_space::
-allocate_address(address_t&  global_end, address_t&  local_end, address_t&  operation_stack_size) noexcept
+compile(compile_context&  ctx) const
 {
-    for(auto&  mi: m_memo_info_table)
-    {
-      local_end = mi->set_address(local_end);
-    }
+  char  buf[256];
 
-
-    for(auto&  child: m_node.get_children())
-    {
-        if(child->is_function())
-        {
-          child->get_function().allocate_address(global_end);
-        }
-
-      else
-        if(child->is_block_space())
-        {
-          child->get_block_space().allocate_address(global_end,local_end,operation_stack_size);
-        }
-    }
-
+  snprintf(buf,sizeof(buf),"%s_%04d",ctx.get_base_name().data(),ctx.m_block_number);
 
     for(auto&  st: m_statement_list)
     {
-/*
-      pointer_wrapper<expression>  ep = st.is_return()?     &st.get_return().get_expression()
-                                       :st.is_expression()? &st.get_expression()
-                                       :nullptr
-                                       ;
-
-
-        if(ep)
-        {
-          auto  sz = ep->allocate_address(get_node(),0);
-
-          operation_stack_size = std::max(operation_stack_size,sz);
-        }
-*/
+      st.compile(ctx);
     }
 }
 

@@ -85,20 +85,25 @@ find_function(std::string_view  name) const noexcept
     {
       const function*  fn = nullptr;
 
-        if(nd->is_block_space())
-        {
-          fn = nd->m_data.bsp.find_function(name);
-        }
-
-      else
-        if(nd->is_global_space())
-        {
-          fn = nd->m_data.gsp.find_function(name);
-        }
-
-      else
         if(nd->is_function())
         {
+            if(nd->get_function().get_name() == name)
+            {
+               fn = &nd->get_function();
+            }
+        }
+
+      else
+        {
+            for(auto&  child: m_children)
+            {
+                if(child->is_function() && (child->get_function().get_name() == name))
+                {
+                  fn = &child->get_function();
+
+                  break;
+                }
+            }
         }
 
 
@@ -204,23 +209,23 @@ find_type_info_by_id(std::string_view  id) const noexcept
 }
 
 
-const memo_info*
+const variable_info*
 space_node::
-find_memo_info(std::string_view  name) const noexcept
+find_variable_info(std::string_view  name) const noexcept
 {
   auto  nd = this;
 
     while(nd)
     {
-      const memo_info*  mi = nullptr;
+      const variable_info*  vi = nullptr;
 
         if(nd->is_function())
         {
-          mi = nd->m_data.fn.find_parameter_memo_info(name);
+          vi = nd->m_data.fn.find_parameter_variable_info(name);
 
-            if(mi)
+            if(vi)
             {
-              return mi;
+              return vi;
             }
 
 
@@ -231,19 +236,19 @@ find_memo_info(std::string_view  name) const noexcept
         {
             if(nd->is_block_space())
             {
-              mi = nd->m_data.bsp.find_memo_info(name);
+              vi = nd->m_data.bsp.find_variable_info(name);
             }
 
           else
             if(nd->is_global_space())
             {
-              mi = nd->m_data.gsp.find_memo_info(name);
+              vi = nd->m_data.gsp.find_variable_info(name);
             }
 
 
-            if(mi)
+            if(vi)
             {
-              return mi;
+              return vi;
             }
 
 
@@ -276,16 +281,67 @@ find_all(std::string_view  name) const noexcept
     }
 
 
-  auto  mi = find_memo_info(name);
+  auto  vi = find_variable_info(name);
 
-    if(mi)
+    if(vi)
     {
-      return {*mi};
+      return {*vi};
     }
 
 
   return {};
 }
+
+
+
+
+void
+space_node::
+collect_functions(std::vector<std::reference_wrapper<function>>&  buf) const noexcept
+{
+    for(auto&  child: m_children)
+    {
+    }
+
+
+    for(auto&  child: m_children)
+    {
+        if(child->is_function())
+        {
+          buf.emplace_back(child->get_function());
+        }
+
+
+      child->collect_functions(buf);
+    }
+}
+
+
+void
+space_node::
+collect_global_variables(std::vector<std::reference_wrapper<variable_info>>&  buf) const noexcept
+{
+    for(auto&  child: m_children)
+    {
+        if(child->is_block_space())
+        {
+          auto&  var_ls = child->get_block_space().get_variable_info_table();
+
+            for(auto&  var: var_ls)
+            {
+                if(var->is_global_scope())
+                {
+                  buf.emplace_back(*var);
+                }
+            }
+        }
+
+
+      child->collect_global_variables(buf);
+    }
+}
+
+
 
 
 void

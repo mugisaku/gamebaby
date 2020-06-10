@@ -16,7 +16,7 @@
 #include"libgbstd/typesystem.hpp"
 #include"libgbstd/parser.hpp"
 #include"libgbstd/vms/expression.hpp"
-#include"libgbstd/vms/value.hpp"
+#include"libgbstd/vms/assembly.hpp"
 
 
 namespace gbstd{
@@ -27,6 +27,8 @@ namespace gbstd{
 class context;
 class function;
 class block_space;
+class space_node;
+class compile_context;
 
 
 
@@ -40,8 +42,6 @@ public:
   expression_statement(expression&&  e) noexcept: m_expression(e){}
 
   const expression&  get_expression() const noexcept{return m_expression;}
-
-  value  evaluate(const context&  ctx) const noexcept;
 
   void  print() const noexcept;
 
@@ -169,46 +169,38 @@ public:
 class
 label_statement
 {
+protected:
   std::string  m_string;
 
 public:
   label_statement() noexcept{}
   label_statement(std::string_view  sv) noexcept: m_string(sv){}
 
-  const std::string&  get_string() const noexcept{return m_string;}
-
-  void  print() const noexcept;
-
-};
-
-
-class
-jump_statement
-{
-  std::string  m_string;
-
-public:
-  jump_statement() noexcept{}
-  jump_statement(std::string_view  sv) noexcept: m_string(sv){}
-
-  const std::string&  get_string() const noexcept{return m_string;}
-
-  void  print() const noexcept;
-
-};
-
-
-class
-control_statement
-{
-  std::string  m_string;
-
-public:
-  control_statement(std::string_view  sv) noexcept: m_string(sv){}
-
   bool  operator==(std::string_view  sv) const noexcept{return m_string == sv;}
 
   const std::string&  get_string() const noexcept{return m_string;}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+jump_statement: public label_statement
+{
+public:
+  using label_statement::label_statement;
+
+  void  print() const noexcept;
+
+};
+
+
+class
+control_statement: public label_statement
+{
+public:
+  using label_statement::label_statement;
 
   void  print() const noexcept;
 
@@ -344,11 +336,14 @@ public:
   const let_statement&         get_let()        const noexcept{return m_data.let;}
   const expression_statement&  get_expression() const noexcept{return m_data.expr;}
 
+  void  compile(compile_context&  ctx) const;
+
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
 
 
+typesystem::type_info  compile(const expression&  e, compile_context&  ctx);
 
 
 }
