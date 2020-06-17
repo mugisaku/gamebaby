@@ -47,11 +47,13 @@ void
 function::
 compile(compile_context&  ctx) const
 {
-  ctx.m_asm_context.add_label("%s__begin",ctx.get_base_name().data());
+  auto  s = m_name.data();
+
+  ctx->add_label("%s__begin",s);
 
   m_main_block->compile(ctx);
 
-  ctx.m_asm_context.add_label("%s__end",ctx.get_base_name().data());
+  ctx->add_label("%s__end",s);
 }
 
 

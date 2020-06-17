@@ -16,6 +16,7 @@
 #include"libgbstd/typesystem.hpp"
 #include"libgbstd/parser.hpp"
 #include"libgbstd/vms/expression.hpp"
+#include"libgbstd/vms/ir.hpp"
 #include"libgbstd/vms/assembly.hpp"
 
 
@@ -43,6 +44,8 @@ public:
 
   const expression&  get_expression() const noexcept{return m_expression;}
 
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -59,6 +62,8 @@ public:
 
   const block_space&  get_space() const noexcept{return *m_space;}
 
+  void  compile(compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -73,6 +78,8 @@ public:
   if_statement(expression&&  e, block_space&  bsp) noexcept: block_statement(bsp), m_expression(std::move(e)){}
 
   const expression&  get_expression() const noexcept{return m_expression;}
+
+  void  compile(const space_node&  nd, compile_context&  ctx, const char*  base, int  number) const;
 
   void  print() const noexcept;
 
@@ -97,6 +104,8 @@ public:
 
   pointer_wrapper<block_space>  get_else_block_space() const noexcept{return m_else_block_space;}
 
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -117,6 +126,8 @@ public:
   const expression&  get_cond() const noexcept{return m_cond;}
   const expression&  get_loop() const noexcept{return m_loop;}
 
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -127,6 +138,8 @@ while_statement: public if_statement
 {
 public:
   using if_statement::if_statement;
+
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -139,6 +152,8 @@ case_statement: public expression_statement
 public:
   using expression_statement::expression_statement;
 
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -150,6 +165,8 @@ switch_statement: public if_statement
 public:
   using if_statement::if_statement;
 
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -160,6 +177,8 @@ return_statement: public expression_statement
 {
 public:
   using expression_statement::expression_statement;
+
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -180,6 +199,8 @@ public:
 
   const std::string&  get_string() const noexcept{return m_string;}
 
+  void  compile(compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
@@ -190,6 +211,8 @@ jump_statement: public label_statement
 {
 public:
   using label_statement::label_statement;
+
+  void  compile(compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -202,26 +225,25 @@ control_statement: public label_statement
 public:
   using label_statement::label_statement;
 
+  void  compile(compile_context&  ctx) const;
+
   void  print() const noexcept;
 
 };
 
 
 class
-let_statement
+let_statement: public expression_statement
 {
   std::string  m_target_name;
 
-  expression  m_expression;
-
 public:
   let_statement(std::string_view  sv, expression&&  e) noexcept:
-  m_target_name(sv), m_expression(std::move(e)){}
+  m_target_name(sv), expression_statement(std::move(e)){}
 
   const std::string&  get_target_name() const noexcept{return m_target_name;}
 
-        expression&  get_expression()       noexcept{return m_expression;}
-  const expression&  get_expression() const noexcept{return m_expression;}
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
 
   void  print() const noexcept;
 
@@ -336,14 +358,14 @@ public:
   const let_statement&         get_let()        const noexcept{return m_data.let;}
   const expression_statement&  get_expression() const noexcept{return m_data.expr;}
 
-  void  compile(compile_context&  ctx) const;
+  void  compile(const space_node&  nd, compile_context&  ctx) const;
 
   void  print(const context*  ctx=nullptr, const function*  fn=nullptr) const noexcept;
 
 };
 
 
-typesystem::type_info  compile(const expression&  e, compile_context&  ctx);
+typesystem::type_info  compile_expression(const expression&  e, const space_node&  nd, compile_context&  ctx);
 
 
 }

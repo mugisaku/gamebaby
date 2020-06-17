@@ -83,6 +83,14 @@ set(SOURCES
   vms/expressions/primary_expression_element.cpp
   vms/expressions/unary_expression.cpp
   vms/expressions/operand.cpp
+  vms/irs/ir_operand.cpp
+  vms/irs/ir_function.cpp
+  vms/irs/ir_context.cpp
+  vms/irs/ir_processor.cpp
+  vms/assemblies/asm_parameter.cpp
+  vms/assemblies/asm_line.cpp
+  vms/assemblies/asm_context.cpp
+  vms/assemblies/asm_processor.cpp
   vms/spaces/function.cpp
   vms/spaces/basic_space.cpp
   vms/spaces/basic_space__read_type.cpp
@@ -105,10 +113,6 @@ set(SOURCES
   vms/statements/while_statement.cpp
   vms/statements/switch_statement.cpp
   vms/statements/case_statement.cpp
-  vms/assemblies/asm_parameter.cpp
-  vms/assemblies/asm_line.cpp
-  vms/assemblies/asm_context.cpp
-  vms/assemblies/asm_processor.cpp
   vms/compile_context.cpp
   ilc_javascript.cpp
   utility.cpp

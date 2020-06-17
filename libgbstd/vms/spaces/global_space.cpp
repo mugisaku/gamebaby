@@ -64,20 +64,12 @@ compile(compile_context&  ctx) const
 
     for(auto&  st: m_statement_list)
     {
-      st.compile(ctx);
-
-      ctx.m_block_number++;
+      st.compile(m_node,ctx);
     }
 
 
     for(auto&  fnref: fn_list)
     {
-      char  buf[256];
-
-      snprintf(buf,sizeof(buf),"FN_%04d",ctx.m_block_number);
-
-      ctx.m_block_number++;
-
       fnref.get().compile(ctx);
     }
 }

@@ -10,15 +10,23 @@ namespace gbstd{
 
 void
 let_statement::
+compile(const space_node&  nd, compile_context&  ctx) const
+{
+  expression_statement::compile(nd,ctx);
+}
+
+
+void
+let_statement::
 print() const noexcept
 {
   printf("let %s",m_target_name.data());
 
-    if(m_expression)
+    if(get_expression())
     {
       printf(" = (");
 
-      m_expression.print();
+      get_expression().print();
 
       printf(")");
     }

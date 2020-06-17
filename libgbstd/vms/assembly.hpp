@@ -47,19 +47,11 @@ asm_opcode
   negi,
   negf,
 
-  setpc,
-  pshpc,
-  addpc,
+  brz,
+  brnz,
 
-  setbp,
-  pshbp,
-  addbp,
-
-  setsp,
-  pshsp,
-  addsp,
-
-  br,
+   jmp,
+  rjmp,
 
   pshz,
   pshnz,
@@ -73,12 +65,20 @@ asm_opcode
   ld32,
   ld64,
 
+  ldpc,
+  ldbp,
+  ldsp,
+
   sti8,
   sti16,
   sti32,
   sti64,
   stf32,
   stf64,
+
+  stpc,
+  stbp,
+  stsp,
 
   pop,
   dup,
@@ -156,6 +156,8 @@ asm_line
 
   asm_parameter  m_parameter;
 
+  std::string  m_comment;
+
 public:
   asm_line(asm_opcode  opco, asm_parameter&&  para) noexcept:
   m_opcode(opco), m_parameter(std::move(para)){}
@@ -165,6 +167,8 @@ public:
   asm_opcode  get_opcode() const noexcept{return m_opcode;}
 
   const asm_parameter&  get_parameter() const noexcept{return m_parameter;}
+
+  void  set_comment(std::string_view  sv) noexcept{m_comment = sv;}
 
   void  print() const noexcept;
 
@@ -200,9 +204,12 @@ public:
 
   void  add_label(const char*  fmt, ...) noexcept;
 
+  void  add_comment(const char*  fmt, ...) noexcept;
+
   void  add_line(asm_opcode  opco) noexcept{m_block_list.back().m_line_list.emplace_back(opco,asm_parameter(static_cast<int64_t>(0)));}
-  void  add_line(asm_opcode  opco, int64_t  i) noexcept{m_block_list.back().m_line_list.emplace_back(opco,asm_parameter(i));}
-  void  add_line(asm_opcode  opco, std::string_view  lb) noexcept{m_block_list.back().m_line_list.emplace_back(opco,asm_parameter(lb));}
+
+  void  add_pshi(int64_t  i) noexcept;
+  void  add_pshi(const char*  fmt, ...) noexcept;
 
   void  print() const noexcept;
 

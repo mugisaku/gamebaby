@@ -62,13 +62,9 @@ void
 block_space::
 compile(compile_context&  ctx) const
 {
-  char  buf[256];
-
-  snprintf(buf,sizeof(buf),"%s_%04d",ctx.get_base_name().data(),ctx.m_block_number);
-
     for(auto&  st: m_statement_list)
     {
-      st.compile(ctx);
+      st.compile(m_node,ctx);
     }
 }
 

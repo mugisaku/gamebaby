@@ -13,28 +13,22 @@ namespace{
 
 
 type_info
-compile_operand(const operand&  o, compile_context&  ctx)
+compile_operand(const operand&  o, const space_node&  nd, compile_context&  ctx)
 {
     if(o.is_null_pointer())
     {
-      ctx.m_asm_context.add_line(asm_opcode::pshi8,0);
-
       return type_info(null_pointer_type_info());
     }
 
   else
     if(o.is_boolean())
     {
-      ctx.m_asm_context.add_line(asm_opcode::pshi8,static_cast<int64_t>(o.get_boolean()));
-
       return type_info(boolean_type_info(g_boolean_size));
     }
 
   else
     if(o.is_integer())
     {
-      ctx.m_asm_context.add_line(asm_opcode::pshi64,o.get_integer());
-
       return type_info(integer_type_info(sizeof(int64_t)));
     }
 
@@ -46,8 +40,6 @@ compile_operand(const operand&  o, compile_context&  ctx)
   else
     if(o.is_string())
     {
-      ctx.m_asm_context.add_line(asm_opcode::pshi64,o.get_integer());
-
       type_info  base(integer_type_info(sizeof(int8_t)));
 
       return base.form_pointer_type(g_pointer_size);
@@ -56,7 +48,7 @@ compile_operand(const operand&  o, compile_context&  ctx)
   else
     if(o.is_identifier())
     {
-      auto  fi = ctx.get_node().find_all(o.get_string());
+      auto  fi = nd.find_all(o.get_string());
 
         if(fi.is_type_info())
         {
@@ -76,7 +68,7 @@ compile_operand(const operand&  o, compile_context&  ctx)
   else
     if(o.is_expression())
     {
-      return compile(o.get_expression(),ctx);
+      return compile_expression(o.get_expression(),nd,ctx);
     }
 
 
@@ -85,7 +77,7 @@ compile_operand(const operand&  o, compile_context&  ctx)
 
 
 type_info
-compile_selector_in_struct(const struct_type_info&  sti, std::string_view  id, asm_context&  ctx)
+compile_selector_in_struct(const struct_type_info&  sti, std::string_view  id, compile_context&  ctx)
 {
   auto  m = sti.find(id);
 
@@ -95,15 +87,13 @@ compile_selector_in_struct(const struct_type_info&  sti, std::string_view  id, a
     }
 
 
-  ctx.add_line(asm_opcode::pshi64,m->get_offset());
-  ctx.add_line(asm_opcode::addi,0);
 
   return m->get_type_info().form_reference_type(g_pointer_size);
 }
 
 
 type_info
-compile_selector_in_union(const union_type_info&  uti, std::string_view  id, asm_context&  ctx)
+compile_selector_in_union(const union_type_info&  uti, std::string_view  id, compile_context&  ctx)
 {
   auto  m = uti.find(id);
 
@@ -118,7 +108,7 @@ compile_selector_in_union(const union_type_info&  uti, std::string_view  id, asm
 
 
 void
-compile_assignment(const assignment&  ass, type_info  lti, asm_context&  ctx)
+compile_assignment(const assignment&  ass, type_info  lti, compile_context&  ctx)
 {
   auto  op = ass.get_operator_code();
 
@@ -134,9 +124,9 @@ compile_assignment(const assignment&  ass, type_info  lti, asm_context&  ctx)
 
 
 type_info
-compile_expression(const primary_expression&  e, compile_context&  ctx)
+compile_expression(const primary_expression&  e, const space_node&  nd, compile_context&  ctx)
 {
-  auto  ti = compile_operand(e.get_operand(),ctx);
+  auto  ti = compile_operand(e.get_operand(),nd,ctx);
 
     for(auto&  e: e.get_elements())
     {
@@ -148,13 +138,13 @@ compile_expression(const primary_expression&  e, compile_context&  ctx)
 
                 if(ti.is_struct())
                 {
-                  ti = compile_selector_in_struct(ti.get_struct_type_info(),e.get_string(),ctx.m_asm_context);
+                  ti = compile_selector_in_struct(ti.get_struct_type_info(),e.get_string(),ctx);
                 }
 
               else
                 if(ti.is_union())
                 {
-                  ti = compile_selector_in_union(ti.get_union_type_info(),e.get_string(),ctx.m_asm_context);
+                  ti = compile_selector_in_union(ti.get_union_type_info(),e.get_string(),ctx);
                 }
             }
         }
@@ -176,7 +166,7 @@ compile_expression(const primary_expression&  e, compile_context&  ctx)
 
             if(ti.is_reference())
             {
-              compile_assignment(ass,ti.strip_reference_type(),ctx.m_asm_context);
+              compile_assignment(ass,ti.strip_reference_type(),ctx);
             }
         }
     }
@@ -187,12 +177,12 @@ compile_expression(const primary_expression&  e, compile_context&  ctx)
 
 
 type_info
-compile_expression(const unary_expression&  e, compile_context&  ctx)
+compile_expression(const unary_expression&  e, const space_node&  nd, compile_context&  ctx)
 {
   auto  it     = e.get_operator_code_list().rbegin();
   auto  it_end = e.get_operator_code_list().rend();
 
-  auto  ti = compile_expression(e.get_primary_expression(),ctx);
+  auto  ti = compile_expression(e.get_primary_expression(),nd,ctx);
 
     while(it != it_end)
     {
@@ -212,7 +202,7 @@ compile_expression(const unary_expression&  e, compile_context&  ctx)
 
 
 type_info
-compile(const expression&  e, compile_context&  ctx)
+compile_expression(const expression&  e, const space_node&  nd, compile_context&  ctx)
 {
   auto&  ls = e.get_elements();
 
@@ -223,13 +213,13 @@ compile(const expression&  e, compile_context&  ctx)
 
     if(p != end)
     {
-      lti = compile_expression(p++->get_expression(),ctx);
+      lti = compile_expression(p++->get_expression(),nd,ctx);
 
         while(p != end)
         {
           auto  op = p->get_operator_code();
 
-          auto  rti = compile_expression(p++->get_expression(),ctx);
+          auto  rti = compile_expression(p++->get_expression(),nd,ctx);
 
                if(op == operator_code("+")  ){;}
           else if(op == operator_code("-")  ){;}

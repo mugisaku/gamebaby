@@ -181,6 +181,7 @@ void
 asm_processor::
 step()
 {
+/*
   auto  opcode = static_cast<asm_opcode>(m_memory[m_pc++]);
 
     switch(opcode)
@@ -220,19 +221,26 @@ step()
   case(asm_opcode::negi): operate_unary_i([](int64_t  a)->int64_t{return -a;});break;
   case(asm_opcode::negf): operate_unary_f([](double  a)->double{return -a;});break;
 
-  case(asm_opcode::setpc): m_pc  = pop_i64();break;
-  case(asm_opcode::addpc): m_pc += pop_i64();break;
-  case(asm_opcode::pshpc): push_i64(m_pc);break;
+  case(asm_opcode::stpc): m_pc  = pop_i64();break;
+  case(asm_opcode::ldpc): push_i64(m_pc);break;
 
-  case(asm_opcode::setbp): m_bp  = pop_i64();break;
-  case(asm_opcode::addbp): m_bp += pop_i64();break;
-  case(asm_opcode::pshbp): push_i64(m_bp);break;
+  case(asm_opcode::stbp): m_bp  = pop_i64();break;
+  case(asm_opcode::ldbp): push_i64(m_bp);break;
 
-  case(asm_opcode::setsp): m_sp  = pop_i64();break;
-  case(asm_opcode::addsp): m_sp += pop_i64();break;
-  case(asm_opcode::pshsp): push_i64(m_sp);break;
+  case(asm_opcode::stsp): m_sp  = pop_i64();break;
+  case(asm_opcode::ldsp): push_i64(m_sp);break;
 
-  case(asm_opcode::br): {
+  case(asm_opcode::brz): {
+      auto   val = pop_i64();
+      auto  addr = pop_i64();
+
+        if(!val)
+        {
+          m_pc += val;
+        }
+    } break;
+
+  case(asm_opcode::brnz): {
       auto   val = pop_i64();
       auto  addr = pop_i64();
 
@@ -241,6 +249,9 @@ step()
           m_pc += val;
         }
     } break;
+
+  case(asm_opcode::jmp ): m_pc  = pop_i64();break;
+  case(asm_opcode::rjmp): m_pc += pop_i64();break;
 
   case(asm_opcode::pshz  ): push_i64(0);break;
   case(asm_opcode::pshnz ): push_i64(1);break;
@@ -313,6 +324,7 @@ step()
   case(asm_opcode::f2i):
       break;
     }
+*/
 }
 
 

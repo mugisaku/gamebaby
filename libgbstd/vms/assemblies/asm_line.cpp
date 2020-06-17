@@ -12,6 +12,7 @@ void
 asm_line::
 print() const noexcept
 {
+/*
   static const std::pair<asm_opcode,std::string_view>  table[] = {
     std::make_pair(asm_opcode::nop,std::string_view("nop")),
     std::make_pair(asm_opcode::addi,std::string_view("addi")),
@@ -57,7 +58,8 @@ print() const noexcept
     std::make_pair(asm_opcode::pshsp,std::string_view("pshsp")),
     std::make_pair(asm_opcode::addsp,std::string_view("addsp")),
 
-    std::make_pair(asm_opcode::br,std::string_view("br")),
+    std::make_pair(asm_opcode::brz,std::string_view("brz")),
+    std::make_pair(asm_opcode::brnz,std::string_view("brnz")),
 
     std::make_pair(asm_opcode::pshz,std::string_view("pshz")),
     std::make_pair(asm_opcode::pshnz,std::string_view("pshnz")),
@@ -93,11 +95,17 @@ print() const noexcept
     {
         if(p.first == m_opcode)
         {
-          printf("%s",p.second.data());
+          printf("%s ",p.second.data());
 
           break;
         }
     }
+
+
+  m_parameter.print();
+
+  printf(";%s",m_comment.data());
+*/
 }
 
 

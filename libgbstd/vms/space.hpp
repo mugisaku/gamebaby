@@ -340,28 +340,36 @@ class
 compile_context
 {
 public:
-  struct frame{
-    std::string  m_base_name;
-
-    const space_node&  m_node;
-
-  };
-
-
   std::string  m_source;
 
   space_node  m_root_node;
 
-  int  m_block_number;
+  int  m_if_string_counter=0;
+  int  m_for_counter=0;
+  int  m_while_counter=0;
+  int  m_switch_counter=0;
 
-  std::vector<frame>  m_stack;
+  std::vector<std::pair<std::string,std::string>>  m_control_block_name_stack;
 
-  asm_context  m_asm_context;
+  ir_context  m_ir_context;
+
+  ir_function*  m_ir_function;
+
+  ir_function*  operator->() noexcept{return m_ir_function;}
 
   compile_context&  assign(std::string_view  src_code);
 
-  const std::string&  get_base_name() const noexcept{return m_stack.back().m_base_name;}
-  const space_node&        get_node() const noexcept{return m_stack.back().m_node;}
+  const char*  add_begin_label(std::string_view  base_sv) noexcept;
+
+  const char*  enter_while_block() noexcept;
+  const char*  enter_for_block() noexcept;
+  const char*  enter_switch_block() noexcept;
+  const char*  enter_if_string_block() noexcept;
+
+  void  leave_control_block();
+
+  const char*  get_control_block_base_label() const noexcept{return m_control_block_name_stack.back().first.data();}
+  const char*  get_control_block_end_label()  const noexcept{return m_control_block_name_stack.back().second.data();}
 
   void  print() const noexcept;
 

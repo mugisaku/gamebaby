@@ -283,47 +283,22 @@ clear() noexcept
 
 void
 statement::
-compile(compile_context&  ctx) const
+compile(const space_node&  nd, compile_context&  ctx) const
 {
     switch(m_kind)
     {
-  case(kind::return_):
-       gbstd::compile(m_data.ret.get_expression(),ctx);
-       break;
-  case(kind::label):
-       break;
-  case(kind::jump):
-       break;
-  case(kind::if_string):
-      ctx.m_asm_context.add_label("%s_IF__begin",ctx.get_base_name().data());
-      ctx.m_asm_context.add_label("%s_IF__end",ctx.get_base_name().data());
-      break;
-  case(kind::control):
-      break;
-  case(kind::let):
-      gbstd::compile(m_data.let.get_expression(),ctx);
-      break;
-  case(kind::expression):
-      gbstd::compile(m_data.expr.get_expression(),ctx);
-      break;
-  case(kind::for_):
-      ctx.m_asm_context.add_label("%s_FOR__begin",ctx.get_base_name().data());
-      ctx.m_asm_context.add_label("%s_FOR__end",ctx.get_base_name().data());
-      break;
-  case(kind::while_):
-      ctx.m_asm_context.add_label("%s_WHILE__begin",ctx.get_base_name().data());
-      ctx.m_asm_context.add_label("%s_WHILE__end",ctx.get_base_name().data());
-      break;
-  case(kind::switch_):
-      ctx.m_asm_context.add_label("%s_SWITCH__begin",ctx.get_base_name().data());
-      ctx.m_asm_context.add_label("%s_SWITCH__end",ctx.get_base_name().data());
-      break;
-  case(kind::case_):
-      ctx.m_asm_context.add_label("%s_CASE__begin",ctx.get_base_name().data());
-      break;
-  case(kind::block):
-      get_block().get_space().compile(ctx);
-      break;
+  case(kind::return_   ): m_data.ret.compile(nd,ctx);break;
+  case(kind::label     ): m_data.lb.compile(ctx);break;
+  case(kind::jump      ): m_data.jmp.compile(ctx);break;
+  case(kind::if_string ): m_data.ifs.compile(nd,ctx);break;
+  case(kind::control   ): m_data.ctrl.compile(ctx);break;
+  case(kind::let       ): m_data.let.compile(nd,ctx);break;
+  case(kind::expression): m_data.expr.compile(nd,ctx);break;
+  case(kind::for_      ): m_data.fo.compile(nd,ctx);break;
+  case(kind::while_    ): m_data.whi.compile(nd,ctx);break;
+  case(kind::switch_   ): m_data.swi.compile(nd,ctx);break;
+  case(kind::case_     ): m_data.cas.compile(nd,ctx);break;
+  case(kind::block     ): m_data.blk.compile(ctx);break;
     }
 }
 
