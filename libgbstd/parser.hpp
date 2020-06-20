@@ -58,6 +58,8 @@ public:
   constexpr const char*  get_string() const noexcept{return m_data;}
   constexpr int  get_length() const noexcept{return len(m_data);}
 
+  void  clear() noexcept{reinterpret_cast<int32_t&>(m_data[0]) = 0;}
+
   constexpr  operator uint32_t() const noexcept{return (m_data[0]<<24)|(m_data[1]<<16)|(m_data[2]<<8);}
 
   constexpr bool  operator==(operator_code  rhs) const noexcept

@@ -84,6 +84,8 @@ set(SOURCES
   vms/expressions/unary_expression.cpp
   vms/expressions/operand.cpp
   vms/irs/ir_operand.cpp
+  vms/irs/ir_operation.cpp
+  vms/irs/ir_block_info.cpp
   vms/irs/ir_function.cpp
   vms/irs/ir_context.cpp
   vms/irs/ir_processor.cpp

@@ -49,11 +49,11 @@ compile(compile_context&  ctx) const
 {
   auto  s = m_name.data();
 
-  ctx->add_label("%s__begin",s);
+  ctx.enter_function(m_name,{});
 
   m_main_block->compile(ctx);
 
-  ctx->add_label("%s__end",s);
+  ctx.leave_function();
 }
 
 

@@ -8,6 +8,25 @@ namespace gbstd{
 
 
 
+template<class  T>
+pointer_wrapper<ir_register>
+find(T&  map, std::string_view  label) noexcept
+{
+    for(auto&  reg: map)
+    {
+        if(reg == label)
+        {
+          return &reg;
+        }
+    }
+
+
+  return &map.emplace_back(label);
+}
+
+
+
+
 void
 ir_processor::
 assign(const ir_context&  ctx) noexcept
@@ -18,14 +37,16 @@ assign(const ir_context&  ctx) noexcept
 }
 
 
-int64_t
+void
 ir_processor::
-operate(const ir_operation&  op, bool&  returned)
+operate(const ir_operation&  op)
 {
   auto  opco = op.get_operator_code();
 
-  auto&    lb = op.get_label();
+  auto     lb = op.get_label();
   auto&  opls = op.get_operand_list();
+
+  auto  regptr = find(m_frame_stack.back().m_register_map,lb);
 
     if(opco == operator_code("nop"))
     {
@@ -36,8 +57,8 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
-
-      return l+r;
+      
+      regptr->set_value(l+r);
     }
 
   else
@@ -46,7 +67,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l-r;
+      regptr->set_value(l-r);
     }
 
   else
@@ -55,7 +76,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l*r;
+      regptr->set_value(l*r);
     }
 
   else
@@ -66,11 +87,11 @@ operate(const ir_operation&  op, bool&  returned)
 
         if(!r)
         {
-          throw 0;
+          throw ir_error("div error");
         }
 
 
-      return l/r;
+      regptr->set_value(l/r);
     }
 
   else
@@ -81,11 +102,11 @@ operate(const ir_operation&  op, bool&  returned)
 
         if(!r)
         {
-          throw 0;
+          throw ir_error("rem error");
         }
 
 
-      return l%r;
+      regptr->set_value(l%r);
     }
 
   else
@@ -94,7 +115,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l<<r;
+      regptr->set_value(l<<r);
     }
 
   else
@@ -103,7 +124,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l>>r;
+      regptr->set_value(l>>r);
     }
 
   else
@@ -112,7 +133,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l|r;
+      regptr->set_value(l|r);
     }
 
   else
@@ -121,7 +142,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l&r;
+      regptr->set_value(l&r);
     }
 
   else
@@ -130,7 +151,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l^r;
+      regptr->set_value(l^r);
     }
 
   else
@@ -138,7 +159,7 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  l = evaluate(opls[0]);
 
-      return ~l;
+      regptr->set_value(~l);
     }
 
   else
@@ -147,7 +168,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l == r;
+      regptr->set_value(l == r);
     }
 
   else
@@ -156,7 +177,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l != r;
+      regptr->set_value(l != r);
     }
 
   else
@@ -165,7 +186,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l < r;
+      regptr->set_value(l < r);
     }
 
   else
@@ -174,7 +195,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l <= r;
+      regptr->set_value(l <= r);
     }
 
   else
@@ -183,7 +204,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l > r;
+      regptr->set_value(l > r);
     }
 
   else
@@ -192,7 +213,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l >= r;
+      regptr->set_value(l >= r);
     }
 
   else
@@ -201,7 +222,7 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l || r;
+      regptr->set_value(l || r);
     }
 
   else
@@ -210,37 +231,37 @@ operate(const ir_operation&  op, bool&  returned)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      return l && r;
+      regptr->set_value(l && r);
     }
 
   else
     if(opco == operator_code("ret"))
     {
-      auto  val = evaluate(opls[0]);
+      auto  v = opls.size()? evaluate(opls[0])
+               :0
+               ;
+
+      m_frame_stack.back().m_return_register->set_value(v);
 
       m_frame_stack.pop_back();
-
-      returned = true;
-
-      return val;
     }
 
   else
     if(opco == operator_code("cal"))
     {
-      return operate_call(opls);
+      operate_cal(opls,*regptr);
     }
 
   else
     if(opco == operator_code("br"))
     {
-      return operate_br(opls);
+      operate_br(opls);
     }
 
   else
     if(opco == operator_code("phi"))
     {
-      return operate_phi(opls);
+      operate_phi(opls,*regptr);
     }
 
   else
@@ -248,7 +269,7 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  addr = evaluate(opls[0]);
 
-      return reinterpret_cast<int8_t&>(m_memory[addr]);
+      regptr->set_value(reinterpret_cast<int8_t&>(m_memory[addr]));
     }
 
   else
@@ -256,7 +277,7 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  addr = evaluate(opls[0]);
 
-      return reinterpret_cast<int16_t&>(m_memory[addr]);
+      regptr->set_value(reinterpret_cast<int16_t&>(m_memory[addr]));
     }
 
   else
@@ -264,7 +285,7 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  addr = evaluate(opls[0]);
 
-      return reinterpret_cast<int32_t&>(m_memory[addr]);
+      regptr->set_value(reinterpret_cast<int32_t&>(m_memory[addr]));
     }
 
   else
@@ -272,7 +293,7 @@ operate(const ir_operation&  op, bool&  returned)
     {
       auto  addr = evaluate(opls[0]);
 
-      return reinterpret_cast<int64_t&>(m_memory[addr]);
+      regptr->set_value(reinterpret_cast<int64_t&>(m_memory[addr]));
     }
 
   else
@@ -282,8 +303,6 @@ operate(const ir_operation&  op, bool&  returned)
       auto   val = evaluate(opls[1]);
 
       reinterpret_cast<int8_t&>(m_memory[addr]) = val;
-
-      return 0;
     }
 
   else
@@ -293,8 +312,6 @@ operate(const ir_operation&  op, bool&  returned)
       auto   val = evaluate(opls[1]);
 
       reinterpret_cast<int16_t&>(m_memory[addr]) = val;
-
-      return 0;
     }
 
   else
@@ -304,8 +321,6 @@ operate(const ir_operation&  op, bool&  returned)
       auto   val = evaluate(opls[1]);
 
       reinterpret_cast<int32_t&>(m_memory[addr]) = val;
-
-      return 0;
     }
 
   else
@@ -315,18 +330,18 @@ operate(const ir_operation&  op, bool&  returned)
       auto   val = evaluate(opls[1]);
 
       reinterpret_cast<int64_t&>(m_memory[addr]) = val;
-
-      return 0;
     }
 
-
-  throw 0;
+  else
+    {
+      throw ir_error("operate error, unknown operator");
+    }
 }
 
 
-int64_t
+void
 ir_processor::
-operate_call(const std::vector<ir_operand>&  opls)
+operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
   auto  it     = opls.begin();
   auto  it_end = opls.end();
@@ -345,15 +360,17 @@ operate_call(const std::vector<ir_operand>&  opls)
         }
 
 
-      return call(fn_name,args);
+      call(&reg,fn_name,args);
+
+      return;
     }
 
 
-  throw 0;
+  throw ir_error("cal error");
 }
 
 
-int64_t
+void
 ir_processor::
 operate_br(const std::vector<ir_operand>&  opls)
 {
@@ -366,8 +383,6 @@ operate_br(const std::vector<ir_operand>&  opls)
         if(o.is_label())
         {
           jump(o.get_string());
-
-          return 0;
         }
     }
 
@@ -386,22 +401,22 @@ operate_br(const std::vector<ir_operand>&  opls)
             if(dst.is_label())
             {
               jump(dst.get_string());
-
-              return 0;
             }
         }
     }
 
-
-  throw 0;
+  else
+    {
+      throw ir_error("br error");
+    }
 }
 
 
-int64_t
+void
 ir_processor::
-operate_phi(const std::vector<ir_operand>&  opls)
+operate_phi(const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-  auto&  blk = *m_frame_stack.back().m_previous_block;
+  auto  bi = m_frame_stack.back().m_previous_block_info;
 
     for(auto&  o: opls)
     {
@@ -409,15 +424,19 @@ operate_phi(const std::vector<ir_operand>&  opls)
         {
           auto&  e = o.get_phi_element();
 
-            if(blk.test_label(e.get_label()))
+            if(bi->test_label(e.get_label()))
             {
-              return evaluate(e.get_operand());
+              auto  v = evaluate(e.get_operand());
+
+              reg.set_value(v);
+
+              return;
             }
         }
-    }    
+    }
 
 
-  throw 0;
+  throw ir_error("phi error");
 }
 
 
@@ -435,27 +454,19 @@ evaluate(const ir_operand&  o)
     {
       auto&  lb = o.get_string();
 
-        for(auto&  arg: m_frame_stack.back().m_argument_list)
+      auto  regptr = find(m_frame_stack.back().m_register_map,lb);
+
+        if(regptr)
         {
-            if(arg.m_label == lb)
-            {
-              return arg.m_value;
-            }
+          return regptr->get_value();
         }
 
 
-      auto  op = m_frame_stack.back().m_function->find_operation(lb,nullptr);
-
-        if(op)
-        {
-          bool  returned = true;
-
-          return operate(*op,returned);
-        }
+      printf("%s not found in %s",lb.data(),m_frame_stack.back().m_function->get_name().data());
     }
 
 
-  throw 0;
+  throw ir_error("evaluate error");
 }
 
 
@@ -465,48 +476,26 @@ jump(std::string_view  label)
 {
   auto&  frm = m_frame_stack.back();
 
-  auto  blk = frm.m_function->find_block(label);
+  auto  bi = frm.m_function->find_block_info(label);
 
-    if(blk)
+    if(bi)
     {
-      jump(*blk);
+      m_frame_stack.back().m_current = bi->get_entry();
     }
 }
 
 
 void
 ir_processor::
-jump(const ir_block&  blk)
-{
-  auto&  frm = m_frame_stack.back();
-
-    if(frm.m_current_block)
-    {
-      frm.m_previous_block = frm.m_current_block       ;
-                             frm.m_current_block = &blk;
-    }
-
-  else
-    {
-      frm.m_previous_block = &blk;
-      frm.m_current_block  = &blk;
-    }
-
-
-  frm.m_current = &blk.m_operation_list.back();
-  frm.m_end     = frm.m_current+blk.m_operation_list.size();
-}
-
-
-int64_t
-ir_processor::
-call(std::string_view  fn_name, const std::vector<int64_t>&  args)
+call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, const std::vector<int64_t>&  args)
 {
   auto  fn = m_context->find_function(fn_name);
 
     if(fn)
     {
       auto&  frm = m_frame_stack.emplace_back();
+
+      frm.m_return_register = retreg;
 
       frm.m_function = fn;
 
@@ -516,28 +505,34 @@ call(std::string_view  fn_name, const std::vector<int64_t>&  args)
         {
           auto  it = paras.begin();
 
+          auto&  regmap = frm.m_register_map;
+
             for(auto&  v: args)
             {
-              auto&  arg = frm.m_argument_list.emplace_back();
-
-              arg.m_label = *it++;
-              arg.m_value =     v;
+              regmap.emplace_back(it++->get_label(),v);
             }
         }
 
       else
         {
-          throw 0;
+          throw ir_error("call error");
         }
 
 
-      jump(fn->get_block_list().back());
+      frm.m_current =               fn->get_operation_list().data();
+      frm.m_end     = frm.m_current+fn->get_operation_list().size();
 
-      return run();
+
+      auto  biptr = &frm.m_current->get_block_info();
+
+      frm.m_previous_block_info = biptr;
+      frm.m_current_block_info  = biptr;
+
+      return;
     }
 
 
-  throw 0;
+  throw ir_error("call error");
 }
 
 
@@ -549,26 +544,46 @@ reset() noexcept
 }
 
 
-int64_t
+void
+ir_processor::
+step()
+{
+    if(m_frame_stack.size())
+    {
+      auto&  frm = m_frame_stack.back();
+
+        if(frm.m_current < frm.m_end)
+        {
+          auto&  op = *frm.m_current++;
+
+          auto&  bi = op.get_block_info();
+
+            if(frm.m_current_block_info != &bi)
+            {
+              frm.m_previous_block_info = frm.m_current_block_info      ;
+                                          frm.m_current_block_info = &bi;
+            }
+
+
+          operate(op);
+        }
+
+      else
+        {
+          m_frame_stack.pop_back();
+        }
+    }
+}
+
+
+void
 ir_processor::
 run()
 {
     while(m_frame_stack.size())
     {
-      auto&  frm = m_frame_stack.back();
-
-      bool  returned = false;
-
-      auto  val = operate(*frm.m_current++,returned);
-
-        if(returned)
-        {
-          return val;
-        }
+      step();
     }
-
-
-  return 0;
 }
 
 

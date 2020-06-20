@@ -18,6 +18,10 @@ assign(std::string_view  src_code)
 
   gsp.assign(src_code);
 
+  m_ir_context.clear();
+
+  enter_function("GLOBAL",{});
+
   gsp.compile(*this);
 
   return *this;
@@ -30,18 +34,29 @@ const char*
 compile_context::
 add_begin_label(std::string_view  base_sv) noexcept
 {
-  char  begin_buf[32];
-  char    end_buf[32];
+  m_stack.back().m_base_name_stack.emplace_back(base_sv);
 
-  snprintf(begin_buf,sizeof(begin_buf),"%s__begin",base_sv.data());
 
-  int  n = snprintf(end_buf,sizeof(end_buf),"%s__end"  ,base_sv.data());
+  auto  s = get_control_block_start_label();
 
-  m_ir_function->add_label(begin_buf);
+  (**this).add_label("%s",s);
 
-  auto  p = std::make_pair(std::string(base_sv),std::string(end_buf,n));
+  return s;
+}
 
-  return m_control_block_name_stack.emplace_back(std::move(p)).first.data();
+
+void
+compile_context::
+enter_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept
+{
+  auto&  st = m_stack.emplace_back();
+
+  st.m_ir_function = &m_ir_context.create_function(fn_name,std::move(parals));
+
+  st.m_if_string_counter = 0;
+  st.m_for_counter       = 0;
+  st.m_while_counter     = 0;
+  st.m_switch_counter    = 0;
 }
 
 
@@ -49,11 +64,9 @@ const char*
 compile_context::
 enter_while_block() noexcept
 {
-  char  buf[32];
+  int  n = snprintf(m_buffer,sizeof(m_buffer),"WHILE%04d",m_stack.back().m_while_counter++);
 
-  int  n = snprintf(buf,sizeof(buf),"WHILE%04d",m_while_counter++);
-
-  return add_begin_label(std::string_view(buf,n));
+  return add_begin_label(std::string_view(m_buffer,n));
 }
 
 
@@ -61,11 +74,9 @@ const char*
 compile_context::
 enter_for_block() noexcept
 {
-  char  buf[32];
+  int  n = snprintf(m_buffer,sizeof(m_buffer),"FOR%04d",m_stack.back().m_for_counter++);
 
-  int  n = snprintf(buf,sizeof(buf),"FOR%04d",m_while_counter++);
-
-  return add_begin_label(std::string_view(buf,n));
+  return add_begin_label(std::string_view(m_buffer,n));
 }
 
 
@@ -73,11 +84,9 @@ const char*
 compile_context::
 enter_switch_block() noexcept
 {
-  char  buf[32];
+  int  n = snprintf(m_buffer,sizeof(m_buffer),"SWITCH%04d",m_stack.back().m_switch_counter++);
 
-  int  n = snprintf(buf,sizeof(buf),"SWITCH%04d",m_while_counter++);
-
-  return add_begin_label(std::string_view(buf,n));
+  return add_begin_label(std::string_view(m_buffer,n));
 }
 
 
@@ -85,11 +94,9 @@ const char*
 compile_context::
 enter_if_string_block() noexcept
 {
-  char  buf[32];
+  int  n = snprintf(m_buffer,sizeof(m_buffer),"IFS%04d",m_stack.back().m_if_string_counter++);
 
-  int  n = snprintf(buf,sizeof(buf),"IFS%04d",m_while_counter++);
-
-  return add_begin_label(std::string_view(buf,n));
+  return add_begin_label(std::string_view(m_buffer,n));
 }
 
 
@@ -97,20 +104,34 @@ void
 compile_context::
 leave_control_block()
 {
-    if(m_control_block_name_stack.empty())
-    {
-      throw compile_error(0,"制御ブロック名スタックが空");
-    }
+  (**this).add_label("%s",get_control_block_end_label());
 
-
-  auto&  name = m_control_block_name_stack.back();
-
-  m_ir_function->add_label("%s",name.second.data());
-
-  m_control_block_name_stack.pop_back();
+  m_stack.back().m_base_name_stack.pop_back();
 }
 
 
+const char*
+compile_context::
+get_control_block_start_label() noexcept
+{
+  auto  s = get_control_block_base_name();
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s__start",s);
+
+  return m_buffer;
+}
+
+
+const char*
+compile_context::
+get_control_block_end_label() noexcept
+{
+  auto  s = get_control_block_base_name();
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s__end",s);
+
+  return m_buffer;
+}
 
 
 void

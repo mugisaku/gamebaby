@@ -339,27 +339,39 @@ public:
 class
 compile_context
 {
-public:
   std::string  m_source;
 
   space_node  m_root_node;
 
-  int  m_if_string_counter=0;
-  int  m_for_counter=0;
-  int  m_while_counter=0;
-  int  m_switch_counter=0;
-
-  std::vector<std::pair<std::string,std::string>>  m_control_block_name_stack;
-
   ir_context  m_ir_context;
 
-  ir_function*  m_ir_function;
+  struct state{
+    pointer_wrapper<ir_function>  m_ir_function;
 
-  ir_function*  operator->() noexcept{return m_ir_function;}
+    int  m_if_string_counter=0;
+    int  m_for_counter=0;
+    int  m_while_counter=0;
+    int  m_switch_counter=0;
+
+    std::vector<std::string>  m_base_name_stack;
+
+  };
+
+  char  m_buffer[1024];
+
+  std::vector<state>  m_stack;
+
+public:
+  compile_context() noexcept{}
+
+  ir_function&                   operator*() const noexcept{return *m_stack.back().m_ir_function;}
+  pointer_wrapper<ir_function>  operator->() const noexcept{return  m_stack.back().m_ir_function;}
 
   compile_context&  assign(std::string_view  src_code);
 
   const char*  add_begin_label(std::string_view  base_sv) noexcept;
+
+  void  enter_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept;
 
   const char*  enter_while_block() noexcept;
   const char*  enter_for_block() noexcept;
@@ -368,8 +380,11 @@ public:
 
   void  leave_control_block();
 
-  const char*  get_control_block_base_label() const noexcept{return m_control_block_name_stack.back().first.data();}
-  const char*  get_control_block_end_label()  const noexcept{return m_control_block_name_stack.back().second.data();}
+  void  leave_function();
+
+  const char*  get_control_block_base_name() const noexcept{return m_stack.back().m_base_name_stack.back().data();}
+  const char*  get_control_block_start_label() noexcept;
+  const char*  get_control_block_end_label()   noexcept;
 
   void  print() const noexcept;
 
