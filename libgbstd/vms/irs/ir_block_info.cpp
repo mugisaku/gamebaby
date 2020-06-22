@@ -8,6 +8,18 @@ namespace gbstd{
 
 
 
+ir_block_info&
+ir_block_info::
+operator++() noexcept
+{
+  ++m_number_of_operations;
+
+  return *this;
+}
+
+
+
+
 const ir_operation*
 ir_block_info::
 get_end() const noexcept
@@ -16,35 +28,16 @@ get_end() const noexcept
 }
 
 
-bool
-ir_block_info::
-test_label(std::string_view  label) const noexcept
-{
-    for(auto&  lb: m_label_list)
-    {
-        if(lb == label)
-        {
-          return true;
-        }
-    }
-
-
-  return false;
-}
-
-
 void
 ir_block_info::
 print() const noexcept
 {
-    for(auto&  lb: m_label_list)
-    {
-      printf("%s:\n",lb.data());
-    }
-
+  printf("%s:\n",m_label.data());
 
     for(int  i = 0;  i < m_number_of_operations;  ++i)
     {
+      printf("  ");
+
       m_entry[i].print();
 
       printf("\n");

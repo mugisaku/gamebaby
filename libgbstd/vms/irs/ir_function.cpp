@@ -8,17 +8,66 @@ namespace gbstd{
 
 
 
+void
+ir_function::
+read(token_iterator&  it)
+{
+    for(;;)
+    {
+        if(!it)
+        {
+          throw ir_error("function read error: close code not found");
+        }
+
+      else
+        if(it->is_operator_code("}"))
+        {
+          ++it;
+
+          break;
+        }
+
+      else
+        if(it->is_identifier())
+        {
+          auto&  s = it++->get_string();
+
+            if(it->is_operator_code(":"))
+            {
+              ++it;
+
+              add_label("%s",s.data());
+            }
+
+          else
+            {
+              add_operation().read(s,it);
+            }
+        }
+
+      else
+        {
+          throw ir_error("function read error: unkown element");
+        }
+    }
+}
+
+
+
+
 ir_operation&
 ir_function::
-create_operation(operator_code  opco) noexcept
+add_operation() noexcept
 {
-  char  buf[16];
+    if(m_block_info_list.empty())
+    {
+      m_block_info_list.emplace_back(m_first_label);
+    }
 
-  int  n = snprintf(buf,sizeof(buf),"%%%04d",m_number++);
 
   auto&  bi = m_block_info_list.back();
 
-  auto&  op = m_operation_list.emplace_back(bi,std::string_view(buf,n),opco);
+  auto&  op = m_operation_list.emplace_back(bi);
 
   ++bi;
 
@@ -76,16 +125,7 @@ add_label(const char*  fmt, ...) noexcept
 
   std::string_view  sv(buf,n);
 
-    if(m_block_info_list.back().get_number_of_operations())
-    {
-      m_block_info_list.emplace_back(sv);
-    }
-
-  else
-    {
-      m_block_info_list.back().add_label(sv);
-    }
-
+  m_block_info_list.emplace_back(sv);
 
   return *this;
 }

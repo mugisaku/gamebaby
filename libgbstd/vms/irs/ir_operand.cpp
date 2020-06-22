@@ -24,9 +24,9 @@ assign(const ir_operand&  rhs) noexcept
         }
 
       else
-        if(is_phi_element())
+        if(is_phi_element_list())
         {
-          m_data.phel = new ir_phi_element(*rhs.m_data.phel);
+          create_at(&m_data.phels,rhs.m_data.phels);
         }
 
       else
@@ -56,9 +56,9 @@ assign(ir_operand&&  rhs) noexcept
         }
 
       else
-        if(is_phi_element())
+        if(is_phi_element_list())
         {
-          m_data.phel = rhs.m_data.phel;
+          create_at(&m_data.phels,std::move(rhs.m_data.phels));
         }
 
       else
@@ -118,13 +118,13 @@ assign(std::string_view  sv) noexcept
 
 ir_operand&
 ir_operand::
-assign(ir_phi_element&&  phel) noexcept
+assign(std::vector<ir_phi_element>&&  phels) noexcept
 {
   clear();
 
-  m_data.phel = new ir_phi_element(std::move(phel));
+  create_at(&m_data.phels,std::move(phels));
 
-  m_kind = kinds::phi_element;
+  m_kind = kinds::phi_element_list;
 
   return *this;
 }
@@ -140,9 +140,9 @@ clear() noexcept
     }
 
   else
-    if(is_phi_element())
+    if(is_phi_element_list())
     {
-      delete m_data.phel;
+      std::destroy_at(&m_data.phels);
     }
 
 
@@ -159,9 +159,18 @@ print() const noexcept
   case(kinds::integer): printf("%" PRIi64,m_data.i);break;
   case(kinds::fpn    ): printf("%f",m_data.f);break;
   case(kinds::label  ): printf("%s",m_data.s.data());break;
-  case(kinds::phi_element):
-      printf("%s:",m_data.phel->get_label().data());
-      m_data.phel->get_operand().print();
+  case(kinds::phi_element_list):
+      printf("[");
+
+        for(auto&  phel: m_data.phels)
+        {
+          phel.print();
+
+          printf(", ");
+        }
+
+
+      printf("]");
       break;
     }
 }

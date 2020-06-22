@@ -35,28 +35,29 @@ operator_code
 {
   char  m_data[4];
 
-  static constexpr size_t  len(const char*  s) noexcept
+  static constexpr char  chr(std::string_view  sv, int  i) noexcept
   {
-    return !s[0]? 0
-          :!s[1]? 1
-          :!s[2]? 2
-          :       3;
-          
-  }
-
-  static constexpr char  chr(const char*  s, int  i) noexcept
-  {
-    return (i < len(s))? s[i]:0;
+    return (i < sv.size())? sv[i]:0;
   }
 
 public:
   constexpr operator_code() noexcept: m_data{0,0,0,0}{}
   constexpr operator_code(const char*  s) noexcept: m_data{chr(s,0),chr(s,1),chr(s,2),0}{}
+  constexpr operator_code(std::string_view  sv) noexcept: m_data{chr(sv,0),chr(sv,1),chr(sv,2),0}{}
+
+  operator_code&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+
+  operator_code&  assign(std::string_view  sv) noexcept{
+    m_data[0] = chr(sv,0);
+    m_data[1] = chr(sv,1);
+    m_data[2] = chr(sv,2);
+
+    return *this;
+  }
 
   constexpr  operator bool() const noexcept{return m_data[0];}
 
   constexpr const char*  get_string() const noexcept{return m_data;}
-  constexpr int  get_length() const noexcept{return len(m_data);}
 
   void  clear() noexcept{reinterpret_cast<int32_t&>(m_data[0]) = 0;}
 

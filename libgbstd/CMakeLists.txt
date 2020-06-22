@@ -85,10 +85,12 @@ set(SOURCES
   vms/expressions/operand.cpp
   vms/irs/ir_operand.cpp
   vms/irs/ir_operation.cpp
+  vms/irs/ir_operation__read.cpp
   vms/irs/ir_block_info.cpp
   vms/irs/ir_function.cpp
   vms/irs/ir_context.cpp
   vms/irs/ir_processor.cpp
+  vms/irs/ir_processor__operate.cpp
   vms/assemblies/asm_parameter.cpp
   vms/assemblies/asm_line.cpp
   vms/assemblies/asm_context.cpp

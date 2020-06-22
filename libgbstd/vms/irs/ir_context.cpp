@@ -8,6 +8,86 @@ namespace gbstd{
 
 
 
+void
+ir_context::
+read(token_iterator&  it)
+{
+    while(it)
+    {
+        if(it[0].is_keyword("function") &&
+           it[1].is_identifier()        &&
+           it[2].is_operator_code("("))
+        {
+          auto&  name = it[1].get_string();
+
+          it += 3;
+
+          std::vector<ir_parameter>  parals;
+
+            for(;;)
+            {
+                if(!it)
+                {
+                  throw ir_error("read error");
+                }
+
+              else
+                if(it->is_operator_code(")"))
+                {
+                  ++it;
+
+                  break;
+                }
+
+              else
+                if(it->is_identifier())
+                {
+                  parals.emplace_back(it->get_string());
+                }
+            }
+
+
+            if(it->is_operator_code("{"))
+            {
+              auto&  fn = create_function(name,std::move(parals));
+
+              fn.read(++it);
+            }
+/*
+             for(;;)
+             {
+               ir_type_info  ti;
+
+                 if(it->keyword("int"))
+                 {
+                 }
+
+               else
+                 if(it->keyword("float"))
+                 {
+                   ti = 
+                 }
+             }
+*/
+        }
+    }
+}
+
+
+void
+ir_context::
+read(std::string_view  sv)
+{
+  auto  toks = make_token_string(sv);
+
+  token_iterator  it(toks);
+
+  read(it);
+}
+
+
+
+
 ir_function&
 ir_context::
 create_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept
