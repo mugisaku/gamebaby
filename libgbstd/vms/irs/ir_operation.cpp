@@ -94,6 +94,8 @@ assign(ir_operation&&  rhs) noexcept
 
       std::swap(m_block_info,rhs.m_block_info);
 
+//printf("%p  %p\n",m_block_info,rhs.m_block_info);
+
       std::swap(m_label       ,rhs.m_label       );
       std::swap(m_label_length,rhs.m_label_length);
 
@@ -120,7 +122,7 @@ clear() noexcept
 
   m_label_length = 0;
 
-  m_block_info = nullptr;
+//  m_block_info = nullptr;
 
   m_operator_code.clear();
 

@@ -81,6 +81,11 @@ jump(std::string_view  label)
     {
       m_frame_stack.back().m_current = bi->get_entry();
     }
+
+  else
+    {
+      throw ir_error(form_string("jump error: %s block is missing",label.data()));
+    }
 }
 
 
@@ -183,6 +188,35 @@ run()
     {
       step();
     }
+}
+
+
+void
+ir_processor::
+print() const noexcept
+{
+  printf("call stack{\n");
+
+    for(auto&  frm: m_frame_stack)
+    {
+      printf("%s->\n",frm.m_function->get_name().data());
+    }
+
+
+  printf("}\n");
+
+
+  printf("register map{\n");
+
+    for(auto&  reg: m_frame_stack.back().m_register_map)
+    {
+      reg.print();
+
+      printf("\n");
+    }
+
+
+  printf("}\n");
 }
 
 

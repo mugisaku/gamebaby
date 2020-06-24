@@ -41,12 +41,22 @@ read(token_iterator&  it)
 
           else
             {
-              add_operation().read(s,it);
+                if(!find_operation(s))
+                {
+                  add_operation().read(s,it);
+                }
+
+              else
+                {
+                  throw ir_error(form_string("function read add_operation error: %s is redefined",s.data()));
+                }
             }
         }
 
       else
         {
+          it->print();
+
           throw ir_error("function read error: unkown element");
         }
     }
@@ -68,7 +78,15 @@ add_operation() noexcept
   auto&  bi = m_block_info_list.back();
 
   auto&  op = m_operation_list.emplace_back(bi);
-
+if(1)
+{
+printf("{\n");
+for(auto&  o: m_operation_list)
+{
+printf("%p\n",&o.get_block_info());
+}
+printf("}\n");
+}
   ++bi;
 
   return op;

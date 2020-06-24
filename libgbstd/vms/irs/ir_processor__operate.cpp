@@ -108,6 +108,8 @@ operate(const ir_operation&  op)
 
   else
     {
+      op.print();
+
       throw ir_error("operate error, unknown operator");
     }
 }
@@ -422,19 +424,14 @@ operate_br(const std::vector<ir_operand>&  opls)
   else
     if(n == 3)
     {
-      auto&  o = opls[0];
+      auto  cond = evaluate(opls[0]);
 
-        if(o.is_label())
+      auto&  dst = cond? opls[1]
+                  :      opls[2];
+
+        if(dst.is_label())
         {
-          auto  cond = evaluate(o);
-
-          auto&  dst = cond? opls[1]
-                      :      opls[2];
-
-            if(dst.is_label())
-            {
-              jump(dst.get_string());
-            }
+          jump(dst.get_string());
         }
     }
 
@@ -450,6 +447,12 @@ ir_processor::
 operate_phi(const std::vector<ir_phi_element>&  phels, ir_register&  reg)
 {
   auto  bi = m_frame_stack.back().m_previous_block_info;
+
+    if(!bi)
+    {
+      throw ir_error("operate_phi error: previous_block_info is missing");
+    }
+
 
     for(auto&  ph: phels)
     {

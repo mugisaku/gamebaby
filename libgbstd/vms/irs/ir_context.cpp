@@ -20,6 +20,12 @@ read(token_iterator&  it)
         {
           auto&  name = it[1].get_string();
 
+            if(find_function(name))
+            {
+              throw ir_error(form_string("read add_function error: %s",name.data()));
+            }
+
+
           it += 3;
 
           std::vector<ir_parameter>  parals;

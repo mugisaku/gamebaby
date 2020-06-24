@@ -142,17 +142,6 @@ read(std::string_view  sv, token_iterator&  it)
     }
 
   else
-    if(sv == std::string_view("phi"))
-    {
-      m_operator_code = operator_code(sv);
-
-        if(it->is_operator_code("["))
-        {
-          m_operand_list.emplace_back(read_phi_element_list(++it));
-        }
-    }
-
-  else
     if((sv == std::string_view("st8"))  ||
        (sv == std::string_view("st16")) ||
        (sv == std::string_view("st32")) ||
@@ -216,6 +205,22 @@ read(std::string_view  sv, token_iterator&  it)
           auto  o = read_operand(it);
 
           m_operand_list.emplace_back(std::move(o));
+        }
+
+      else
+        if(opco == std::string_view("phi"))
+        {
+          m_operator_code = operator_code(opco);
+
+            if(it->is_operator_code("["))
+            {
+              m_operand_list.emplace_back(read_phi_element_list(++it));
+            }
+
+          else
+            {
+              throw ir_error("ir_operand error: have no phi_element");
+            }
         }
     }
 

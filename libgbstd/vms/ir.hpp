@@ -24,7 +24,7 @@ ir_error
 public:
   std::string  m_comment;
 
-  ir_error(const char*  s) noexcept{m_comment = s;}
+  ir_error(std::string_view  sv) noexcept{m_comment = sv;}
 
 };
 
@@ -334,6 +334,8 @@ public:
   void     set_value(int64_t  v)       noexcept{m_value = v;}
   int64_t  get_value(          ) const noexcept{return m_value;}
 
+  void  print() const noexcept{printf("%s: %" PRIi64,m_label.data(),m_value);}
+
 };
 
 
@@ -398,6 +400,8 @@ public:
   void  step();
 
   void  run();
+
+  void  print() const noexcept;
 
 };
 
