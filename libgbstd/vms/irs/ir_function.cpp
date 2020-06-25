@@ -78,15 +78,7 @@ add_operation() noexcept
   auto&  bi = m_block_info_list.back();
 
   auto&  op = m_operation_list.emplace_back(bi);
-if(1)
-{
-printf("{\n");
-for(auto&  o: m_operation_list)
-{
-printf("%p\n",&o.get_block_info());
-}
-printf("}\n");
-}
+
   ++bi;
 
   return op;

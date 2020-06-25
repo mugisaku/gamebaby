@@ -9,13 +9,13 @@ namespace gbstd{
 
 
 ir_operation::
-ir_operation(const ir_block_info&  bi, std::string_view  lb, operator_code  op, std::vector<ir_operand>&&  opls) noexcept:
+ir_operation(const ir_block_info&  bi, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls) noexcept:
 m_block_info(&bi),
-m_operator_code(op),
+m_instruction(instr),
 m_operand_list(opls)
 {
   set_label(lb);
-  set_kind(op);
+  set_kind(instr);
 }
 
 
@@ -23,37 +23,37 @@ m_operand_list(opls)
 
 void
 ir_operation::
-set_kind(operator_code  opco) noexcept
+set_kind(std::string_view  instr) noexcept
 {
-  m_kind = ((opco == operator_code("add")) ||
-            (opco == operator_code("sub")) ||
-            (opco == operator_code("mul")) ||
-            (opco == operator_code("div")) ||
-            (opco == operator_code("rem")))? kinds::arithmetic
+  m_kind = ((instr == std::string_view("add")) ||
+            (instr == std::string_view("sub")) ||
+            (instr == std::string_view("mul")) ||
+            (instr == std::string_view("div")) ||
+            (instr == std::string_view("rem")))? kinds::arithmetic
 
-          :((opco == operator_code("shl"))     ||
-            (opco == operator_code("shr"))     ||
-            (opco == operator_code("bit_or"))  ||
-            (opco == operator_code("bit_and")) ||
-            (opco == operator_code("bit_xor")) ||
-            (opco == operator_code("bit_not")))? kinds::bitwise
+          :((instr == std::string_view("shl"))     ||
+            (instr == std::string_view("shr"))     ||
+            (instr == std::string_view("bit_or"))  ||
+            (instr == std::string_view("bit_and")) ||
+            (instr == std::string_view("bit_xor")) ||
+            (instr == std::string_view("bit_not")))? kinds::bitwise
 
-          :((opco == operator_code("eq"))   ||
-            (opco == operator_code("neq"))  ||
-            (opco == operator_code("lt"))   ||
-            (opco == operator_code("lteq")) ||
-            (opco == operator_code("gt"))   ||
-            (opco == operator_code("gteq")))? kinds::comparison
+          :((instr == std::string_view("eq"))   ||
+            (instr == std::string_view("neq"))  ||
+            (instr == std::string_view("lt"))   ||
+            (instr == std::string_view("lteq")) ||
+            (instr == std::string_view("gt"))   ||
+            (instr == std::string_view("gteq")))? kinds::comparison
 
-          :((opco == operator_code("ld8"))  ||
-            (opco == operator_code("ld16")) ||
-            (opco == operator_code("ld32")) ||
-            (opco == operator_code("ld64")))? kinds::load
+          :((instr == std::string_view("ld8"))  ||
+            (instr == std::string_view("ld16")) ||
+            (instr == std::string_view("ld32")) ||
+            (instr == std::string_view("ld64")))? kinds::load
 
-          :((opco == operator_code("st8"))  ||
-            (opco == operator_code("st16")) ||
-            (opco == operator_code("st32")) ||
-            (opco == operator_code("st64")))? kinds::store
+          :((instr == std::string_view("st8"))  ||
+            (instr == std::string_view("st16")) ||
+            (instr == std::string_view("st32")) ||
+            (instr == std::string_view("st64")))? kinds::store
 
           : kinds::others
           ;
@@ -72,7 +72,7 @@ assign(const ir_operation&  rhs) noexcept
 
       set_label(rhs.get_label());
 
-      m_operator_code = rhs.m_operator_code;
+      m_instruction = rhs.m_instruction;
 
       m_kind = rhs.m_kind;
 
@@ -92,18 +92,12 @@ assign(ir_operation&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_block_info,rhs.m_block_info);
-
-//printf("%p  %p\n",m_block_info,rhs.m_block_info);
-
-      std::swap(m_label       ,rhs.m_label       );
-      std::swap(m_label_length,rhs.m_label_length);
-
-      std::swap(m_operator_code,rhs.m_operator_code);
-
-      std::swap(m_kind,rhs.m_kind);
-
-      std::swap(m_operand_list,rhs.m_operand_list);
+      std::swap(m_block_info   ,rhs.m_block_info   );
+      std::swap(m_label        ,rhs.m_label        );
+      std::swap(m_label_length ,rhs.m_label_length );
+      std::swap(m_instruction  ,rhs.m_instruction  );
+      std::swap(m_kind         ,rhs.m_kind         );
+      std::swap(m_operand_list ,rhs.m_operand_list );
     }
 
 
@@ -122,9 +116,9 @@ clear() noexcept
 
   m_label_length = 0;
 
-//  m_block_info = nullptr;
+//  m_block_info = nullptr;//ブロック情報を消すと、なぜか意図に動作しない
 
-  m_operator_code.clear();
+  m_instruction.clear();
 
   m_operand_list.clear();
 }
@@ -179,7 +173,7 @@ print() const noexcept
     }
 
 
-  printf("%s",m_operator_code.get_string());
+  printf("%s",m_instruction.data());
 
     for(auto&  o: m_operand_list)
     {

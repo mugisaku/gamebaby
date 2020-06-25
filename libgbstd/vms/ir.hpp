@@ -187,7 +187,7 @@ ir_operation
 
   std::vector<ir_operand>  m_operand_list;
 
-  operator_code  m_operator_code;
+  std::string  m_instruction;
 
   enum class kinds{
     arithmetic,
@@ -200,11 +200,14 @@ ir_operation
   } m_kind;
 
 
-  void  set_kind(operator_code  opco) noexcept;
+  void  set_kind(std::string_view  sv) noexcept;
+
+  void  read_assign(std::string_view  sv, token_iterator&  it);
 
 public:
+  ir_operation() noexcept{}
   ir_operation(const ir_block_info&  bi) noexcept: m_block_info(&bi){}
-  ir_operation(const ir_block_info&  bi, std::string_view  lb, operator_code  op, std::vector<ir_operand>&&  opls={}) noexcept;
+  ir_operation(const ir_block_info&  bi, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls={}) noexcept;
 
   ir_operation(const ir_operation&   rhs) noexcept{assign(rhs);}
   ir_operation(      ir_operation&&  rhs) noexcept{assign(std::move(rhs));}
@@ -234,8 +237,8 @@ public:
 
   const std::vector<ir_operand>&  get_operand_list() const noexcept{return m_operand_list;}
 
-  void           set_operator_code(operator_code  opco) noexcept{  m_operator_code = opco;  set_kind(opco);}
-  operator_code  get_operator_code() const noexcept{return m_operator_code;}
+  void                set_instruction(std::string_view  sv) noexcept{  m_instruction = sv;  set_kind(sv);}
+  const std::string&  get_instruction(                    ) const noexcept{return m_instruction;}
 
   void  print() const noexcept;
 
@@ -365,11 +368,11 @@ ir_processor
 
   void  operate(const ir_operation&  op);
 
-  void  operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_st(operator_code  opco, const std::vector<ir_operand>&  opls);
+  void  operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_cmp(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls);
 
   void  operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg);
   void  operate_br( const std::vector<ir_operand>&  opls);

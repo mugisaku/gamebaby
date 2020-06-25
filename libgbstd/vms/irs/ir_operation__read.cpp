@@ -108,81 +108,40 @@ read_phi_element_list(token_iterator&  it)
 
 void
 ir_operation::
-read(std::string_view  sv, token_iterator&  it)
+read_assign(std::string_view  sv, token_iterator&  it)
 {
-  clear();
-
-    if(sv == std::string_view("nop"))
+    if(it->is_operator_code("="))
     {
-      m_operator_code = operator_code(sv);
+      ++it;
     }
 
-  else
-    if(sv == std::string_view("ret"))
-    {
-      m_operator_code = operator_code(sv);
 
-      auto  o = read_operand(it);
-
-      m_operand_list.emplace_back(std::move(o));
-    }
-
-  else
-    if(sv == std::string_view("br"))
-    {
-      m_operator_code = operator_code(sv);
-
-      auto   cond_o = read_operand(it);
-      auto   true_o = read_operand(it);
-      auto  false_o = read_operand(it);
-
-      m_operand_list.emplace_back(std::move( cond_o));
-      m_operand_list.emplace_back(std::move( true_o));
-      m_operand_list.emplace_back(std::move(false_o));
-    }
-
-  else
-    if((sv == std::string_view("st8"))  ||
-       (sv == std::string_view("st16")) ||
-       (sv == std::string_view("st32")) ||
-       (sv == std::string_view("st64")))
-    {
-      m_operator_code = operator_code(sv);
-
-      auto  addr_o = read_operand(it);
-      auto   val_o = read_operand(it);
-
-      m_operand_list.emplace_back(std::move(addr_o));
-      m_operand_list.emplace_back(std::move( val_o));
-    }
-
-  else
     if(it->is_identifier())
     {
       set_label(sv);
 
-      auto&  opco = it++->get_string();
+      auto&  instr = it++->get_string();
 
-        if((opco == std::string_view("add")) ||
-           (opco == std::string_view("sub")) ||
-           (opco == std::string_view("mul")) ||
-           (opco == std::string_view("div")) ||
-           (opco == std::string_view("rem")) ||
-           (opco == std::string_view("shl")) ||
-           (opco == std::string_view("shr")) ||
-           (opco == std::string_view("bit_or")) ||
-           (opco == std::string_view("bit_and")) ||
-           (opco == std::string_view("bit_xor")) ||
-           (opco == std::string_view("eq")) ||
-           (opco == std::string_view("neq")) ||
-           (opco == std::string_view("lt")) ||
-           (opco == std::string_view("lteq")) ||
-           (opco == std::string_view("gt")) ||
-           (opco == std::string_view("gteq")) ||
-           (opco == std::string_view("log_or")) ||
-           (opco == std::string_view("log_and")))
+        if((instr == std::string_view("add")) ||
+           (instr == std::string_view("sub")) ||
+           (instr == std::string_view("mul")) ||
+           (instr == std::string_view("div")) ||
+           (instr == std::string_view("rem")) ||
+           (instr == std::string_view("shl")) ||
+           (instr == std::string_view("shr")) ||
+           (instr == std::string_view("bit_or")) ||
+           (instr == std::string_view("bit_and")) ||
+           (instr == std::string_view("bit_xor")) ||
+           (instr == std::string_view("eq")) ||
+           (instr == std::string_view("neq")) ||
+           (instr == std::string_view("lt")) ||
+           (instr == std::string_view("lteq")) ||
+           (instr == std::string_view("gt")) ||
+           (instr == std::string_view("gteq")) ||
+           (instr == std::string_view("log_or")) ||
+           (instr == std::string_view("log_and")))
         {
-          m_operator_code = operator_code(opco);
+          m_instruction = instr;
 
           auto  lo = read_operand(it);
           auto  ro = read_operand(it);
@@ -192,15 +151,15 @@ read(std::string_view  sv, token_iterator&  it)
         }
 
       else
-        if((opco == std::string_view("ld8"))     ||
-           (opco == std::string_view("ld16"))    ||
-           (opco == std::string_view("ld32"))    ||
-           (opco == std::string_view("ld64"))    ||
-           (opco == std::string_view("log_not")) ||
-           (opco == std::string_view("neg"))     ||
-           (opco == std::string_view("bit_not")))
+        if((instr == std::string_view("ld8"))     ||
+           (instr == std::string_view("ld16"))    ||
+           (instr == std::string_view("ld32"))    ||
+           (instr == std::string_view("ld64"))    ||
+           (instr == std::string_view("log_not")) ||
+           (instr == std::string_view("neg"))     ||
+           (instr == std::string_view("bit_not")))
         {
-          m_operator_code = operator_code(opco);
+          m_instruction = instr;
 
           auto  o = read_operand(it);
 
@@ -208,9 +167,9 @@ read(std::string_view  sv, token_iterator&  it)
         }
 
       else
-        if(opco == std::string_view("phi"))
+        if(instr == std::string_view("phi"))
         {
-          m_operator_code = operator_code(opco);
+          m_instruction = instr;
 
             if(it->is_operator_code("["))
             {
@@ -228,9 +187,68 @@ read(std::string_view  sv, token_iterator&  it)
     {
       throw ir_error("ir_operand error");
     }
+}
 
 
-  set_kind(m_operator_code);
+void
+ir_operation::
+read(std::string_view  sv, token_iterator&  it)
+{
+  clear();
+
+    if((sv == std::string_view("retv")) ||
+       (sv == std::string_view("jmp")))
+    {
+      m_instruction = sv;
+
+      auto  o = read_operand(it);
+
+      m_operand_list.emplace_back(std::move(o));
+    }
+
+  else
+    if((sv == std::string_view("nop"))||
+       (sv == std::string_view("ret"))) 
+    {
+      m_instruction = sv;
+    }
+
+  else
+    if(sv == std::string_view("br"))
+    {
+      m_instruction = sv;
+
+      auto   cond_o = read_operand(it);
+      auto   true_o = read_operand(it);
+      auto  false_o = read_operand(it);
+
+      m_operand_list.emplace_back(std::move( cond_o));
+      m_operand_list.emplace_back(std::move( true_o));
+      m_operand_list.emplace_back(std::move(false_o));
+    }
+
+  else
+    if((sv == std::string_view("st8"))  ||
+       (sv == std::string_view("st16")) ||
+       (sv == std::string_view("st32")) ||
+       (sv == std::string_view("st64")))
+    {
+      m_instruction = sv;
+
+      auto  addr_o = read_operand(it);
+      auto   val_o = read_operand(it);
+
+      m_operand_list.emplace_back(std::move(addr_o));
+      m_operand_list.emplace_back(std::move( val_o));
+    }
+
+  else
+    {
+      read_assign(sv,it);
+    }
+
+
+  set_kind(m_instruction);
 }
 
 

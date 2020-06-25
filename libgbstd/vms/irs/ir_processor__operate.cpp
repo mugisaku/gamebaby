@@ -12,49 +12,49 @@ void
 ir_processor::
 operate(const ir_operation&  op)
 {
-  auto  opco = op.get_operator_code();
+  auto&  instr = op.get_instruction();
 
   auto     lb = op.get_label();
   auto&  opls = op.get_operand_list();
 
   auto  regptr = find(m_frame_stack.back().m_register_map,lb);
 
-    if(opco == operator_code("nop"))
+    if(instr == std::string_view("nop"))
     {
     }
 
   else
     if(op.is_arithmetic())
     {
-      operate_ari(opco,opls,*regptr);
+      operate_ari(instr,opls,*regptr);
     }
 
   else
     if(op.is_comparison())
     {
-      operate_cmp(opco,opls,*regptr);
+      operate_cmp(instr,opls,*regptr);
     }
 
   else
     if(op.is_bitwise())
     {
-      operate_biw(opco,opls,*regptr);
+      operate_biw(instr,opls,*regptr);
     }
 
   else
     if(op.is_load())
     {
-      operate_ld(opco,opls,*regptr);
+      operate_ld(instr,opls,*regptr);
     }
 
   else
     if(op.is_store())
     {
-      operate_st(opco,opls);
+      operate_st(instr,opls);
     }
 
   else
-    if(opco == operator_code("logi_or"))
+    if(instr == std::string_view("logi_or"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -63,7 +63,7 @@ operate(const ir_operation&  op)
     }
 
   else
-    if(opco == operator_code("logi_and"))
+    if(instr == std::string_view("logi_and"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -72,11 +72,21 @@ operate(const ir_operation&  op)
     }
 
   else
-    if(opco == operator_code("ret"))
+    if(instr == std::string_view("ret"))
     {
-      auto  v = opls.size()? evaluate(opls[0])
-               :0
-               ;
+      m_frame_stack.pop_back();
+    }
+
+  else
+    if(instr == std::string_view("retv"))
+    {
+        if(opls.empty())
+        {
+          throw ir_error("operate error, retv no operand");
+        }
+
+
+      auto  v = evaluate(opls[0]);
 
       m_frame_stack.back().m_return_register->set_value(v);
 
@@ -84,19 +94,25 @@ operate(const ir_operation&  op)
     }
 
   else
-    if(opco == operator_code("cal"))
+    if(instr == std::string_view("jmp"))
+    {
+      jump(opls[0].get_string());
+    }
+
+  else
+    if(instr == std::string_view("cal"))
     {
       operate_cal(opls,*regptr);
     }
 
   else
-    if(opco == operator_code("br"))
+    if(instr == std::string_view("br"))
     {
       operate_br(opls);
     }
 
   else
-    if(opco == operator_code("phi"))
+    if(instr == std::string_view("phi"))
     {
       auto&  o = opls[0];
 
@@ -119,9 +135,9 @@ operate(const ir_operation&  op)
 
 void
 ir_processor::
-operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg)
+operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-    if(opco == operator_code("add"))
+    if(instr == std::string_view("add"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -130,7 +146,7 @@ operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("sub"))
+    if(instr == std::string_view("sub"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -139,7 +155,7 @@ operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("mul"))
+    if(instr == std::string_view("mul"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -148,7 +164,7 @@ operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("div"))
+    if(instr == std::string_view("div"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -163,7 +179,7 @@ operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("rem"))
+    if(instr == std::string_view("rem"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -181,9 +197,9 @@ operate_ari(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
 
 void
 ir_processor::
-operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg)
+operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-    if(opco == operator_code("shl"))
+    if(instr == std::string_view("shl"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -192,7 +208,7 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("shr"))
+    if(instr == std::string_view("shr"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -201,7 +217,7 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("bit_or"))
+    if(instr == std::string_view("bit_or"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -210,7 +226,7 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("bit_and"))
+    if(instr == std::string_view("bit_and"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -219,7 +235,7 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("bit_xor"))
+    if(instr == std::string_view("bit_xor"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -228,7 +244,7 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("bit_not"))
+    if(instr == std::string_view("bit_not"))
     {
       auto  l = evaluate(opls[0]);
 
@@ -239,9 +255,9 @@ operate_biw(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
 
 void
 ir_processor::
-operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg)
+operate_cmp(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-    if(opco == operator_code("eq"))
+    if(instr == std::string_view("eq"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -250,7 +266,7 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("neq"))
+    if(instr == std::string_view("neq"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -259,7 +275,7 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("lt"))
+    if(instr == std::string_view("lt"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -268,7 +284,7 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("lteq"))
+    if(instr == std::string_view("lteq"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -277,7 +293,7 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("gt"))
+    if(instr == std::string_view("gt"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -286,7 +302,7 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
     }
 
   else
-    if(opco == operator_code("gteq"))
+    if(instr == std::string_view("gteq"))
     {
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
@@ -298,9 +314,9 @@ operate_cmp(operator_code  opco, const std::vector<ir_operand>&  opls, ir_regist
 
 void
 ir_processor::
-operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_register&  reg)
+operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-    if(opco == operator_code("ld8"))
+    if(instr == std::string_view("ld8"))
     {
       auto  addr = evaluate(opls[0]);
 
@@ -308,7 +324,7 @@ operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_registe
     }
 
   else
-    if(opco == operator_code("ld16"))
+    if(instr == std::string_view("ld16"))
     {
       auto  addr = evaluate(opls[0]);
 
@@ -316,7 +332,7 @@ operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_registe
     }
 
   else
-    if(opco == operator_code("ld32"))
+    if(instr == std::string_view("ld32"))
     {
       auto  addr = evaluate(opls[0]);
 
@@ -324,7 +340,7 @@ operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_registe
     }
 
   else
-    if(opco == operator_code("ld64"))
+    if(instr == std::string_view("ld64"))
     {
       auto  addr = evaluate(opls[0]);
 
@@ -335,9 +351,9 @@ operate_ld(operator_code  opco, const std::vector<ir_operand>&  opls, ir_registe
 
 void
 ir_processor::
-operate_st(operator_code  opco, const std::vector<ir_operand>&  opls)
+operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
 {
-    if(opco == operator_code("st8"))
+    if(instr == std::string_view("st8"))
     {
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
@@ -346,7 +362,7 @@ operate_st(operator_code  opco, const std::vector<ir_operand>&  opls)
     }
 
   else
-    if(opco == operator_code("st16"))
+    if(instr == std::string_view("st16"))
     {
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
@@ -355,7 +371,7 @@ operate_st(operator_code  opco, const std::vector<ir_operand>&  opls)
     }
 
   else
-    if(opco == operator_code("st32"))
+    if(instr == std::string_view("st32"))
     {
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
@@ -364,7 +380,7 @@ operate_st(operator_code  opco, const std::vector<ir_operand>&  opls)
     }
 
   else
-    if(opco == operator_code("st64"))
+    if(instr == std::string_view("st64"))
     {
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
