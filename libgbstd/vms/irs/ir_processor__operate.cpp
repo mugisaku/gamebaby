@@ -394,26 +394,29 @@ void
 ir_processor::
 operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
-  auto  it     = opls.begin();
-  auto  it_end = opls.end();
-
-    if((it != it_end) && it->is_label())
+    if((opls.size() == 2) &&
+       opls[0].is_label() &&
+       opls[1].is_operand_list())
     {
       std::vector<int64_t>  args;
 
-      auto  fn_name = it++->get_string();
+      auto  fn_name = opls[0].get_string();
 
-        while(it != it_end)
+        for(auto&  op: opls[1].get_operand_list())
         {
-          auto&  o = *it++;
-
-          args.emplace_back(evaluate(o));
+          args.emplace_back(evaluate(op));
         }
 
 
       call(&reg,fn_name,args);
 
       return;
+    }
+
+
+    for(auto&  o: opls)
+    {
+      o.print();
     }
 
 
@@ -483,7 +486,7 @@ operate_phi(const std::vector<ir_phi_element>&  phels, ir_register&  reg)
     }
 
 
-  throw ir_error("phi error");
+  throw ir_error("phi error: all blocks is not matched");
 }
 
 

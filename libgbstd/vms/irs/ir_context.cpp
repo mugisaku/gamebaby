@@ -48,7 +48,17 @@ read(token_iterator&  it)
               else
                 if(it->is_identifier())
                 {
-                  parals.emplace_back(it->get_string());
+                  parals.emplace_back(it++->get_string());
+
+                    if(it->is_operator_code(","))
+                    {
+                      ++it;
+                    }
+                }
+
+              else
+                {
+                  throw ir_error("ir_context::read error: unknown parameter element");
                 }
             }
 

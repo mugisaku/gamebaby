@@ -127,7 +127,7 @@ call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, const std:
       frm.m_end     = frm.m_current+fn->get_operation_list().size();
 
 
-      auto  biptr = &frm.m_current->get_block_info();
+      auto  biptr = frm.m_current->get_block_info();
 
       frm.m_previous_block_info = biptr;
       frm.m_current_block_info  = biptr;
@@ -160,12 +160,12 @@ step()
         {
           auto&  op = *frm.m_current++;
 
-          auto&  bi = op.get_block_info();
+          auto  bi = op.get_block_info();
 
-            if(frm.m_current_block_info != &bi)
+            if(frm.m_current_block_info != bi)
             {
-              frm.m_previous_block_info = frm.m_current_block_info      ;
-                                          frm.m_current_block_info = &bi;
+              frm.m_previous_block_info = frm.m_current_block_info     ;
+                                          frm.m_current_block_info = bi;
             }
 
 

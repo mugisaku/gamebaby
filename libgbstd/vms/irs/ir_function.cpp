@@ -57,7 +57,7 @@ read(token_iterator&  it)
         {
           it->print();
 
-          throw ir_error("function read error: unkown element");
+          throw ir_error("function read error: unknown element");
         }
     }
 }
@@ -75,13 +75,9 @@ add_operation() noexcept
     }
 
 
-  auto&  bi = m_block_info_list.back();
+  ++m_block_info_list.back();
 
-  auto&  op = m_operation_list.emplace_back(bi);
-
-  ++bi;
-
-  return op;
+  return m_operation_list.emplace_back();
 }
 
 
@@ -151,7 +147,13 @@ finalize() noexcept
     {
       bi.set_entry(p);
 
-      p += bi.get_number_of_operations();
+     
+      auto  n = bi.get_number_of_operations();
+
+        while(n--)
+        {
+          p++->set_block_info(&bi);
+        }
     }
 }
 

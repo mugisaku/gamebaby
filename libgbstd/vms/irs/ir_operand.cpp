@@ -30,6 +30,12 @@ assign(const ir_operand&  rhs) noexcept
         }
 
       else
+        if(is_operand_list())
+        {
+          create_at(&m_data.opls,rhs.m_data.opls);
+        }
+
+      else
         {
           m_data.i = rhs.m_data.i;
         }
@@ -59,6 +65,12 @@ assign(ir_operand&&  rhs) noexcept
         if(is_phi_element_list())
         {
           create_at(&m_data.phels,std::move(rhs.m_data.phels));
+        }
+
+      else
+        if(is_operand_list())
+        {
+          create_at(&m_data.opls,std::move(rhs.m_data.opls));
         }
 
       else
@@ -130,6 +142,20 @@ assign(std::vector<ir_phi_element>&&  phels) noexcept
 }
 
 
+ir_operand&
+ir_operand::
+assign(std::vector<ir_operand>&&  opls) noexcept
+{
+  clear();
+
+  create_at(&m_data.opls,std::move(opls));
+
+  m_kind = kinds::operand_list;
+
+  return *this;
+}
+
+
 void
 ir_operand::
 clear() noexcept
@@ -143,6 +169,12 @@ clear() noexcept
     if(is_phi_element_list())
     {
       std::destroy_at(&m_data.phels);
+    }
+
+  else
+    if(is_operand_list())
+    {
+      std::destroy_at(&m_data.opls);
     }
 
 
@@ -171,6 +203,19 @@ print() const noexcept
 
 
       printf("]");
+      break;
+  case(kinds::operand_list):
+      printf("(");
+
+        for(auto&  op: m_data.opls)
+        {
+          op.print();
+
+          printf(", ");
+        }
+
+
+      printf(")");
       break;
     }
 }

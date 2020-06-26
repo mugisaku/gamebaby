@@ -116,7 +116,7 @@ clear() noexcept
 
   m_label_length = 0;
 
-//  m_block_info = nullptr;//ブロック情報を消すと、なぜか意図に動作しない
+  m_block_info = nullptr;
 
   m_instruction.clear();
 

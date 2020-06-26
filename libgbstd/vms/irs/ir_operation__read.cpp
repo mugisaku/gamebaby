@@ -103,6 +103,42 @@ read_phi_element_list(token_iterator&  it)
 
   return std::move(ls);
 }
+
+
+std::vector<ir_operand>
+read_operand_list(token_iterator&  it)
+{
+  std::vector<ir_operand>  ls;
+
+    for(;;)
+    {
+        if(!it)
+        {
+          throw ir_error("ir_operation read error: invalid cal");
+        }
+
+      else
+        if(it->is_operator_code(")"))
+        {
+          ++it;
+
+          break;
+        }
+
+      else
+        {
+          ls.emplace_back(read_operand(it));
+
+            if(it->is_operator_code(","))
+            {
+              ++it;
+            }
+        }
+    }
+
+
+  return std::move(ls);
+}
 }
 
 
@@ -122,6 +158,23 @@ read_assign(std::string_view  sv, token_iterator&  it)
 
       auto&  instr = it++->get_string();
 
+        if(instr == std::string_view("cal"))
+        {
+          m_instruction = instr;
+
+            if(it->is_identifier())
+            {
+              m_operand_list.emplace_back(it++->get_string());
+            }
+
+
+            if(it->is_operator_code("("))
+            {
+              m_operand_list.emplace_back(read_operand_list(++it));
+            }
+        }
+
+      else
         if((instr == std::string_view("add")) ||
            (instr == std::string_view("sub")) ||
            (instr == std::string_view("mul")) ||

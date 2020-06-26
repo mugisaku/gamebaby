@@ -62,7 +62,7 @@ class
 ir_operand
 {
   enum class kinds{
-    null, integer, fpn, label, phi_element_list,
+    null, integer, fpn, label, phi_element_list, operand_list
   } m_kind=kinds::null;
 
   union data{
@@ -72,6 +72,7 @@ ir_operand
     std::string  s;
 
     std::vector<ir_phi_element>  phels;
+    std::vector<ir_operand>       opls;
 
     data() noexcept{}
    ~data(){}
@@ -99,6 +100,7 @@ public:
   ir_operand&  assign(double   f) noexcept;
   ir_operand&  assign(std::string_view  sv) noexcept;
   ir_operand&  assign(std::vector<ir_phi_element>&&  phels) noexcept;
+  ir_operand&  assign(std::vector<ir_operand>&&  opls) noexcept;
 
   void  clear() noexcept;
 
@@ -106,11 +108,13 @@ public:
   bool  is_fpn()              const noexcept{return m_kind == kinds::fpn;}
   bool  is_label()            const noexcept{return m_kind == kinds::label;}
   bool  is_phi_element_list() const noexcept{return m_kind == kinds::phi_element_list;}
+  bool  is_operand_list()     const noexcept{return m_kind == kinds::operand_list;}
 
   int64_t                             get_integer()          const noexcept{return m_data.i;}
   double                              get_fpn()              const noexcept{return m_data.f;}
   const std::string&                  get_string()           const noexcept{return m_data.s;}
   const std::vector<ir_phi_element>&  get_phi_element_list() const noexcept{return m_data.phels;}
+  const std::vector<ir_operand>&      get_operand_list()     const noexcept{return m_data.opls;}
 
   void  print() const noexcept;
 
@@ -206,7 +210,6 @@ ir_operation
 
 public:
   ir_operation() noexcept{}
-  ir_operation(const ir_block_info&  bi) noexcept: m_block_info(&bi){}
   ir_operation(const ir_block_info&  bi, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls={}) noexcept;
 
   ir_operation(const ir_operation&   rhs) noexcept{assign(rhs);}
@@ -233,7 +236,8 @@ public:
   ir_operation&     set_label(std::string_view  sv) noexcept;
   std::string_view  get_label() const noexcept{return std::string_view(m_label,m_label_length);}
 
-  const ir_block_info&  get_block_info() const noexcept{return *m_block_info;}
+  ir_operation&         set_block_info(const ir_block_info*  bi)       noexcept{  m_block_info = bi;  return *this;}
+  const ir_block_info*  get_block_info(                        ) const noexcept{return m_block_info;}
 
   const std::vector<ir_operand>&  get_operand_list() const noexcept{return m_operand_list;}
 
