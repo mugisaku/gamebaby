@@ -51,7 +51,7 @@ enter_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) n
 {
   auto&  st = m_stack.emplace_back();
 
-  st.m_ir_function = &m_ir_context.create_function(fn_name,std::move(parals));
+  st.m_ir_function = &m_ir_context.create_function(ir_type_info(),fn_name,std::move(parals));
 
   st.m_if_string_counter = 0;
   st.m_for_counter       = 0;

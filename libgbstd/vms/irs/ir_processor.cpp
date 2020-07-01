@@ -39,13 +39,13 @@ find(std::vector<ir_register>&  map, std::string_view  label) noexcept
 
 
 
-int64_t
+ir_value
 ir_processor::
 evaluate(const ir_operand&  o)
 {
     if(o.is_integer())
     {
-      return o.get_integer();
+      return ir_value(o.get_integer());
     }
 
   else
@@ -57,7 +57,7 @@ evaluate(const ir_operand&  o)
 
         if(regptr)
         {
-          return regptr->get_value();
+          return *regptr;
         }
 
 
@@ -91,7 +91,7 @@ jump(std::string_view  label)
 
 void
 ir_processor::
-call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, const std::vector<int64_t>&  args)
+call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vector<ir_value>&&  args)
 {
   auto  fn = m_context->find_function(fn_name);
 
@@ -113,7 +113,7 @@ call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, const std:
 
             for(auto&  v: args)
             {
-              regmap.emplace_back(it++->get_label(),v);
+              regmap.emplace_back(it++->get_label(),std::move(v));
             }
         }
 

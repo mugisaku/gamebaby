@@ -26,26 +26,32 @@ read_operand(token_iterator&  it)
         {
           return ir_operand(-static_cast<int64_t>(it++->get_integer()));
         }
-/*
 
       else
-        if(it->is_fpn())
+        if(it->is_floating_point_number())
         {
-          return ir_operand(-it++->get_fpn());
+          return ir_operand(-it++->get_floating_point_number());
         }
-*/
     }
-/*
+
   else
-    if(it->is_fpn())
+    if(it->is_floating_point_number())
     {
-      return ir_operand(it++->get_fpn());
+      return ir_operand(it++->get_floating_point_number());
     }
-*/
+
   else
     if(it->is_identifier())
     {
       return ir_operand(it++->get_string());
+    }
+
+  else
+    if(it->is_string())
+    {
+      auto&  s = it++->get_string();
+
+      return ir_operand(s.data(),s.size());
     }
 
 

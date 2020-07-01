@@ -89,6 +89,7 @@ set(SOURCES
   vms/irs/ir_block_info.cpp
   vms/irs/ir_function.cpp
   vms/irs/ir_context.cpp
+  vms/irs/ir_value.cpp
   vms/irs/ir_processor.cpp
   vms/irs/ir_processor__operate.cpp
   vms/assemblies/asm_parameter.cpp

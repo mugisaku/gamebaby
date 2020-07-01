@@ -18,7 +18,7 @@ assign(const ir_operand&  rhs) noexcept
 
       m_kind = rhs.m_kind;
 
-        if(is_label())
+        if(is_object() || is_label())
         {
           create_at(&m_data.s,rhs.m_data.s);
         }
@@ -56,7 +56,7 @@ assign(ir_operand&&  rhs) noexcept
 
       std::swap(m_kind,rhs.m_kind);
 
-        if(is_label())
+        if(is_object() || is_label())
         {
           create_at(&m_data.s,std::move(rhs.m_data.s));
         }
@@ -116,6 +116,20 @@ assign(double   f) noexcept
 
 ir_operand&
 ir_operand::
+assign(const void*  ptr, size_t  n) noexcept
+{
+  clear();
+
+  create_at(&m_data.s,std::string_view(reinterpret_cast<const char*>(ptr),n));
+
+  m_kind = kinds::object;
+
+  return *this;
+}
+
+
+ir_operand&
+ir_operand::
 assign(std::string_view  sv) noexcept
 {
   clear();
@@ -160,7 +174,7 @@ void
 ir_operand::
 clear() noexcept
 {
-    if(is_label())
+    if(is_object() || is_label())
     {
       std::destroy_at(&m_data.s);
     }
@@ -190,6 +204,7 @@ print() const noexcept
     {
   case(kinds::integer): printf("%" PRIi64,m_data.i);break;
   case(kinds::fpn    ): printf("%f",m_data.f);break;
+  case(kinds::object ): printf("{...}");break;
   case(kinds::label  ): printf("%s",m_data.s.data());break;
   case(kinds::phi_element_list):
       printf("[");

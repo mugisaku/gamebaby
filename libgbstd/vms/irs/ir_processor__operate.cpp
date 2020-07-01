@@ -19,6 +19,8 @@ operate(const ir_operation&  op)
 
   auto  regptr = find(m_frame_stack.back().m_register_map,lb);
 
+  auto&  reg = *regptr;
+
     if(instr == std::string_view("nop"))
     {
     }
@@ -59,7 +61,11 @@ operate(const ir_operation&  op)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      regptr->set_value(l || r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          *regptr = ir_value(l.get_integer() || r.get_integer());
+        }
     }
 
   else
@@ -68,7 +74,11 @@ operate(const ir_operation&  op)
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      regptr->set_value(l && r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer() && r.get_integer());
+        }
     }
 
   else
@@ -86,9 +96,7 @@ operate(const ir_operation&  op)
         }
 
 
-      auto  v = evaluate(opls[0]);
-
-      m_frame_stack.back().m_return_register->set_value(v);
+      *m_frame_stack.back().m_return_register = evaluate(opls[0]);
 
       m_frame_stack.pop_back();
     }
@@ -137,30 +145,36 @@ void
 ir_processor::
 operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
+  auto  l = evaluate(opls[0]);
+  auto  r = evaluate(opls[1]);
+
     if(instr == std::string_view("add"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-      
-      reg.set_value(l+r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()+r.get_integer());
+        }
     }
 
   else
     if(instr == std::string_view("sub"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l-r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()+r.get_integer());
+        }
     }
 
   else
     if(instr == std::string_view("mul"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l*r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()+r.get_integer());
+        }
     }
 
   else
@@ -169,13 +183,11 @@ operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-        if(!r)
+        if(l->is_integer() &&
+           r->is_integer())
         {
-          throw ir_error("div error");
+          reg = ir_value(l.get_integer()/r.get_integer());
         }
-
-
-      reg.set_value(l/r);
     }
 
   else
@@ -184,13 +196,11 @@ operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-        if(!r)
+        if(l->is_integer() &&
+           r->is_integer())
         {
-          throw ir_error("rem error");
+          reg = ir_value(l.get_integer()%r.get_integer());
         }
-
-
-      reg.set_value(l%r);
     }
 }
 
@@ -204,7 +214,11 @@ operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      reg.set_value(l<<r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()<<r.get_integer());
+        }
     }
 
   else
@@ -213,7 +227,11 @@ operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      reg.set_value(l>>r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()>>r.get_integer());
+        }
     }
 
   else
@@ -222,7 +240,11 @@ operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      reg.set_value(l|r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()|r.get_integer());
+        }
     }
 
   else
@@ -231,7 +253,11 @@ operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      reg.set_value(l&r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()&r.get_integer());
+        }
     }
 
   else
@@ -240,15 +266,22 @@ operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_re
       auto  l = evaluate(opls[0]);
       auto  r = evaluate(opls[1]);
 
-      reg.set_value(l^r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          reg = ir_value(l.get_integer()^r.get_integer());
+        }
     }
 
   else
     if(instr == std::string_view("bit_not"))
     {
-      auto  l = evaluate(opls[0]);
+      auto  v = evaluate(opls[0]);
 
-      reg.set_value(~l);
+        if(v->is_integer())
+        {
+          reg = ir_value(~v.get_integer());
+        }
     }
 }
 
@@ -257,58 +290,72 @@ void
 ir_processor::
 operate_cmp(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg)
 {
+  auto  l = evaluate(opls[0]);
+  auto  r = evaluate(opls[1]);
+
+  bool  b;
+
     if(instr == std::string_view("eq"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l == r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() == r.get_integer();
+        }
     }
 
   else
     if(instr == std::string_view("neq"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l != r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() != r.get_integer();
+        }
     }
 
   else
     if(instr == std::string_view("lt"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l < r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() < r.get_integer();
+        }
     }
 
   else
     if(instr == std::string_view("lteq"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l <= r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() <= r.get_integer();
+        }
     }
 
   else
     if(instr == std::string_view("gt"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l > r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() > r.get_integer();
+        }
     }
 
   else
     if(instr == std::string_view("gteq"))
     {
-      auto  l = evaluate(opls[0]);
-      auto  r = evaluate(opls[1]);
-
-      reg.set_value(l >= r);
+        if(l->is_integer() &&
+           r->is_integer())
+        {
+          b = l.get_integer() >= r.get_integer();
+        }
     }
+
+
+  reg = ir_value(b);
 }
 
 
@@ -320,7 +367,12 @@ operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_reg
     {
       auto  addr = evaluate(opls[0]);
 
-      reg.set_value(reinterpret_cast<int8_t&>(m_memory[addr]));
+        if(addr->is_integer())
+        {
+          auto  i = reinterpret_cast<int8_t&>(m_memory[addr.get_integer()]);
+
+          reg = ir_value(static_cast<int64_t>(i));
+        }
     }
 
   else
@@ -328,7 +380,12 @@ operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_reg
     {
       auto  addr = evaluate(opls[0]);
 
-      reg.set_value(reinterpret_cast<int16_t&>(m_memory[addr]));
+        if(addr->is_integer())
+        {
+          auto  i = reinterpret_cast<int16_t&>(m_memory[addr.get_integer()]);
+
+          reg = ir_value(static_cast<int64_t>(i));
+        }
     }
 
   else
@@ -336,7 +393,12 @@ operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_reg
     {
       auto  addr = evaluate(opls[0]);
 
-      reg.set_value(reinterpret_cast<int32_t&>(m_memory[addr]));
+        if(addr->is_integer())
+        {
+          auto  i = reinterpret_cast<int32_t&>(m_memory[addr.get_integer()]);
+
+          reg = ir_value(static_cast<int64_t>(i));
+        }
     }
 
   else
@@ -344,7 +406,12 @@ operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_reg
     {
       auto  addr = evaluate(opls[0]);
 
-      reg.set_value(reinterpret_cast<int64_t&>(m_memory[addr]));
+        if(addr->is_integer())
+        {
+          auto  i = reinterpret_cast<int64_t&>(m_memory[addr.get_integer()]);
+
+          reg = ir_value(static_cast<int64_t>(i));
+        }
     }
 }
 
@@ -358,7 +425,11 @@ operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
 
-      reinterpret_cast<int8_t&>(m_memory[addr]) = val;
+        if(addr->is_integer() &&
+            val->is_integer())
+        {
+          reinterpret_cast<int8_t&>(m_memory[addr.get_integer()]) = val.get_integer();
+        }
     }
 
   else
@@ -367,7 +438,11 @@ operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
 
-      reinterpret_cast<int16_t&>(m_memory[addr]) = val;
+        if(addr->is_integer() &&
+            val->is_integer())
+        {
+          reinterpret_cast<int16_t&>(m_memory[addr.get_integer()]) = val.get_integer();
+        }
     }
 
   else
@@ -376,7 +451,11 @@ operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
 
-      reinterpret_cast<int32_t&>(m_memory[addr]) = val;
+        if(addr->is_integer() &&
+            val->is_integer())
+        {
+          reinterpret_cast<int32_t&>(m_memory[addr.get_integer()]) = val.get_integer();
+        }
     }
 
   else
@@ -385,7 +464,11 @@ operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
       auto  addr = evaluate(opls[0]);
       auto   val = evaluate(opls[1]);
 
-      reinterpret_cast<int64_t&>(m_memory[addr]) = val;
+        if(addr->is_integer() &&
+            val->is_integer())
+        {
+          reinterpret_cast<int64_t&>(m_memory[addr.get_integer()]) = val.get_integer();
+        }
     }
 }
 
@@ -398,7 +481,7 @@ operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg)
        opls[0].is_label() &&
        opls[1].is_operand_list())
     {
-      std::vector<int64_t>  args;
+      std::vector<ir_value>  args;
 
       auto  fn_name = opls[0].get_string();
 
@@ -408,7 +491,7 @@ operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg)
         }
 
 
-      call(&reg,fn_name,args);
+      call(&reg,fn_name,std::move(args));
 
       return;
     }
@@ -445,8 +528,8 @@ operate_br(const std::vector<ir_operand>&  opls)
     {
       auto  cond = evaluate(opls[0]);
 
-      auto&  dst = cond? opls[1]
-                  :      opls[2];
+      auto&  dst = cond.get_integer()? opls[1]
+                  :                    opls[2];
 
         if(dst.is_label())
         {
@@ -477,9 +560,7 @@ operate_phi(const std::vector<ir_phi_element>&  phels, ir_register&  reg)
     {
         if(bi->test_label(ph.get_label()))
         {
-          auto  v = evaluate(ph.get_operand());
-
-          reg.set_value(v);
+          reg = evaluate(ph.get_operand());
 
           return;
         }
