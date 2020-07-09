@@ -29,61 +29,100 @@ public:
 };
 
 
+
+
+class
+ir_address
+{
+  uint32_t  m_index=0;
+  uint32_t  m_offset=0;
+
+public:
+  constexpr ir_address() noexcept{}
+  constexpr ir_address(uint32_t  i, uint32_t  off) noexcept: m_index(i), m_offset(off){}
+  constexpr ir_address(int64_t  i) noexcept: m_index(i>>32), m_offset(i&0xFFFFFFFF){}
+
+  constexpr operator bool() const noexcept{return m_index;}
+
+  constexpr uint32_t  get_index()  const noexcept{return m_index;}
+  constexpr uint32_t  get_offset() const noexcept{return m_offset;}
+
+  constexpr int64_t  get_word() const noexcept{return (static_cast<int64_t>(m_index)<<32)|m_offset;}
+
+};
+
+
+
+
+struct ir_undefined{};
+
+
 class
 ir_type_info
 {
   enum class kinds{
-    null, integer, fpn, object,
+    null, undefined, void_, integer, fpn, object,
   } m_kind=kinds::null;
 
   int  m_size=0;
 
-  constexpr ir_type_info(kinds  k) noexcept: m_kind(k){}
-
-  constexpr bool  is_obj(std::string_view  sv) noexcept{
+  static constexpr bool  is_obj(std::string_view  sv) noexcept{
     return((sv.size() > 3) &&
            (sv[0] == 'o')  &&
            (sv[1] == 'b')  &&
            (sv[2] == 'j'));
   }
 
-  constexpr int  to_i(char  c) noexcept{
+  static constexpr int  to_i(char  c) noexcept{
     return ((c >= '0') && (c <= '9'))? c-'0':0;
   }
 
-  constexpr int  get_i(const char*  s, int  i) noexcept{
+  static constexpr int  get_i(const char*  s, int  i) noexcept{
     return (s[0] == 0)? i: get_i(s+1,(i*10)+to_i(*s));
   }
 
-  constexpr kinds  get_kind(std::string_view  sv) noexcept{
-    return (sv == std::string_view("int"))?   kinds::integer
-          :(sv == std::string_view("float"))? kinds::fpn
-          :is_obj(sv)?                        kinds::object
+  static constexpr kinds  get_kind(std::string_view  sv) noexcept{
+    return (sv == std::string_view("void"))?      kinds::void_
+          :(sv == std::string_view("undefined"))? kinds::undefined
+          :(sv == std::string_view("int"))?       kinds::integer
+          :(sv == std::string_view("float"))?     kinds::fpn
+          :is_obj(sv)?                            kinds::object
           :kinds::null
+          ;
+  }
+
+  static constexpr int  get_size(std::string_view  sv) noexcept{
+    return (sv == std::string_view("void")     )? 0
+          :(sv == std::string_view("undefined"))? 0
+          :(sv == std::string_view("int")      )? sizeof(int64_t)
+          :(sv == std::string_view("float")    )? sizeof(int64_t)
+          :is_obj(sv)?                            get_i(sv.data()+3,0)
+          :0
           ;
   }
 
 public:
   constexpr ir_type_info() noexcept{}
   constexpr ir_type_info(int  sz) noexcept: m_kind(kinds::object), m_size(sz){}
-  constexpr ir_type_info(std::string_view  sv) noexcept: m_kind(get_kind(sv)), m_size(get_i(sv.data(),0)){}
+  constexpr ir_type_info(std::string_view  sv) noexcept: m_kind(get_kind(sv)), m_size(get_size(sv)){}
 
-  constexpr bool  is_integer() const noexcept{return m_kind == kinds::integer;}
-  constexpr bool  is_fpn()     const noexcept{return m_kind == kinds::fpn;}
-  constexpr bool  is_object()  const noexcept{return m_kind == kinds::object;}
+  constexpr bool  is_void()      const noexcept{return m_kind == kinds::void_;}
+  constexpr bool  is_undefined() const noexcept{return m_kind == kinds::undefined;}
+  constexpr bool  is_integer()   const noexcept{return m_kind == kinds::integer;}
+  constexpr bool  is_fpn()       const noexcept{return m_kind == kinds::fpn;}
+  constexpr bool  is_object()    const noexcept{return m_kind == kinds::object;}
 
   constexpr int  get_size()  const noexcept{return m_size;}
-
-  static constexpr ir_type_info  integer_type_info() noexcept{return ir_type_info(kinds::integer);}
-  static constexpr ir_type_info      fpn_type_info() noexcept{return ir_type_info(kinds::fpn);}
-  static constexpr ir_type_info  object_type_info(int  sz) noexcept{return ir_type_info(sz);}
 
   void  print() const noexcept{
       switch(m_kind)
       {
-    case(kinds::integer): printf("int");break;
-    case(kinds::fpn    ): printf("float");break;
-    case(kinds::object ): printf("obj%d",m_size);break;
+    case(kinds::null     ): printf("null");break;
+    case(kinds::void_    ): printf("void");break;
+    case(kinds::undefined): printf("undefined");break;
+    case(kinds::integer  ): printf("int");break;
+    case(kinds::fpn      ): printf("float");break;
+    case(kinds::object   ): printf("obj%d",m_size);break;
       }
   }
 
@@ -91,19 +130,66 @@ public:
 
 
 class
+ir_memory
+{
+  int64_t*  m_data=nullptr;
+
+  void  unrefer() noexcept;
+
+  static uint8_t  m_dummy;
+
+  uint8_t*  get_head_pointer() const noexcept;
+
+public:
+  ir_memory() noexcept{}
+  ir_memory(const ir_memory&   rhs) noexcept{assign(rhs);}
+  ir_memory(      ir_memory&&  rhs) noexcept{assign(std::move(rhs));}
+ ~ir_memory(){unrefer();}
+
+  template<class...  Args>
+  ir_memory(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  ir_memory&  operator=(const ir_memory&   rhs) noexcept{return assign(rhs);}
+  ir_memory&  operator=(      ir_memory&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  template<class...  Args>
+  ir_memory&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  uint8_t&  operator[](int  i) const noexcept{return get_head_pointer()[i];}
+
+  operator bool() const noexcept{return m_data;}
+
+  ir_memory&  assign(const ir_memory&   rhs) noexcept;
+  ir_memory&  assign(      ir_memory&&  rhs) noexcept;
+  ir_memory&  assign(ir_type_info  ti) noexcept;
+  ir_memory&  assign(int64_t  i) noexcept;
+  ir_memory&  assign(double  f) noexcept;
+  ir_memory&  assign(std::string_view  sv) noexcept;
+
+  template<class  T>
+  T&  get_content(int  offset=0) const noexcept{return reinterpret_cast<T&>(get_head_pointer()[offset]);}
+
+  std::string_view  get_string() const noexcept{return std::string_view(&get_content<char>(),get_size());}
+
+  int64_t  get_size() const noexcept{return m_data? m_data[1]:0;}
+
+  ir_memory  clone() const noexcept{return ir_memory(get_string());}
+
+};
+
+
+
+
+class
 ir_value
 {
+protected:
   ir_type_info  m_type_info;
 
-  union data{
-    int64_t   i;
-    double    f;
-    char*     o;
-  } m_data;
+  ir_memory  m_memory;
 
 public:
    ir_value() noexcept{}
-   ir_value(ir_type_info  ti) noexcept: m_type_info(ti){}
    ir_value(const ir_value&   rhs) noexcept{assign(rhs);}
    ir_value(      ir_value&&  rhs) noexcept{assign(std::move(rhs));}
 
@@ -118,6 +204,8 @@ public:
 
    ir_value&  assign(const ir_value&   rhs) noexcept;
    ir_value&  assign(      ir_value&&  rhs) noexcept;
+   ir_value&  assign(ir_type_info  ti) noexcept;
+   ir_value&  assign(ir_type_info  ti, ir_memory&&  mem) noexcept;
    ir_value&  assign(bool  b) noexcept{return assign(static_cast<int64_t>(b? 1:0));}
    ir_value&  assign(int64_t  i) noexcept;
    ir_value&  assign(double  f) noexcept;
@@ -128,11 +216,15 @@ public:
   const ir_type_info*  operator->() const noexcept{return &m_type_info;}
 
   const ir_type_info&  get_type_info() const noexcept{return m_type_info;}
+  const ir_memory&     get_memory()    const noexcept{return m_memory;}
 
-  int64_t  get_integer() const noexcept{return m_data.i;}
-  double       get_fpn() const noexcept{return m_data.f;}
+  ir_memory  release_memory() noexcept{  m_type_info = ir_type_info();  return std::move(m_memory);}
 
-  std::string_view  get_object() const noexcept{return std::string_view(m_data.o,m_type_info.get_size());}
+  int64_t           get_integer() const noexcept{return m_memory.get_content<int64_t>();}
+  double            get_fpn()     const noexcept{return m_memory.get_content<double>();}
+  std::string_view  get_string()  const noexcept{return m_memory.get_string();}
+
+  ir_value  clone() const noexcept;
 
   void  print() const noexcept;
 
@@ -268,6 +360,8 @@ ir_operation
 {
   const ir_block_info*  m_block_info=nullptr;
 
+  ir_type_info  m_type_info=ir_type_info("undefined");
+
   char*  m_label=nullptr;
 
   int  m_label_length=0;
@@ -289,11 +383,13 @@ ir_operation
 
   void  set_kind(std::string_view  sv) noexcept;
 
-  void  read_assign(std::string_view  sv, token_iterator&  it);
+  void  read_void(token_iterator&  it);
+  void  read_non_void(token_iterator&  it);
 
 public:
   ir_operation() noexcept{}
-  ir_operation(const ir_block_info&  bi, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls={}) noexcept;
+  ir_operation(ir_type_info  ti) noexcept: m_type_info(ti){}
+  ir_operation(const ir_block_info&  bi, ir_type_info  ti, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls={}) noexcept;
 
   ir_operation(const ir_operation&   rhs) noexcept{assign(rhs);}
   ir_operation(      ir_operation&&  rhs) noexcept{assign(std::move(rhs));}
@@ -314,13 +410,15 @@ public:
   bool  is_store()      const noexcept{return m_kind == kinds::store;}
   bool  is_others()     const noexcept{return m_kind == kinds::others;}
 
-  void  read(std::string_view  sv, token_iterator&  it);
+  void  read(ir_type_info  ti, token_iterator&  it);
 
   ir_operation&     set_label(std::string_view  sv) noexcept;
   std::string_view  get_label() const noexcept{return std::string_view(m_label,m_label_length);}
 
   ir_operation&         set_block_info(const ir_block_info*  bi)       noexcept{  m_block_info = bi;  return *this;}
   const ir_block_info*  get_block_info(                        ) const noexcept{return m_block_info;}
+
+  const ir_type_info&  get_type_info() const noexcept{return m_type_info;}
 
   const std::vector<ir_operand>&  get_operand_list() const noexcept{return m_operand_list;}
 
@@ -397,28 +495,63 @@ public:
 
 
 class
-ir_register: public ir_value
+ir_variable: public ir_value
 {
-  std::string  m_label;
 
 public:
-  ir_register(std::string_view  lb="no name") noexcept: m_label(lb){}
-  ir_register(std::string_view  lb, ir_value&&  v) noexcept: ir_value(std::move(v)), m_label(lb){}
+  ir_variable(ir_type_info  ti) noexcept: ir_value(ti){}
+  ir_variable(const ir_value&   v) noexcept: ir_value(v){}
+  ir_variable(      ir_value&&  v) noexcept: ir_value(std::move(v)){}
 
-  ir_register(const ir_value&   v) noexcept{assign(v);}
-  ir_register(      ir_value&&  v) noexcept{assign(std::move(v));}
+  template<class...  Args>
+  ir_variable(Args&&...  args){assign(std::forward<Args>(args)...);}
 
-  ir_register&  operator=(const ir_value&   v) noexcept{return assign(v);}
-  ir_register&  operator=(      ir_value&&  v) noexcept{return assign(std::move(v));}
+  template<class...  Args>
+  ir_variable&  operator=(Args&&...  args){return assign(std::forward<Args>(args)...);}
 
-  ir_register&  assign(const ir_value&   v) noexcept{  ir_value::assign(v);  return *this;}
-  ir_register&  assign(      ir_value&&  v) noexcept{  ir_value::assign(std::move(v));  return *this;}
+  ir_variable&  assign(const ir_value&  v);
+  ir_variable&  assign(bool  b){return assign(static_cast<int64_t>(b? 1:0));}
+  ir_variable&  assign(int64_t  i);
+  ir_variable&  assign(double  f);
+  ir_variable&  assign(std::string_view  sv);
 
-  bool  operator==(std::string_view  sv) const noexcept{return m_label == sv;}
+};
 
-  const std::string&  get_label() const noexcept{return m_label;}
 
-  void  print() const noexcept{  printf("%s: ",m_label.data());  ir_value::print();}
+class
+ir_variable_info
+{
+  ir_type_info  m_type_info;
+
+  std::string  m_name;
+
+  ir_memory  m_memory;
+
+public:
+  ir_variable_info(ir_type_info  ti, std::string_view  name                  ) noexcept: m_type_info(ti), m_name(name){}
+  ir_variable_info(ir_type_info  ti, std::string_view  name, ir_memory&&  mem) noexcept: m_type_info(ti), m_name(name), m_memory(std::move(mem)){}
+  ir_variable_info(ir_value&&  v, std::string_view  name) noexcept: m_type_info(v.get_type_info()), m_name(name){m_memory = v.release_memory();}
+
+  const ir_type_info&  get_type_info() const noexcept{return m_type_info;}
+  const std::string&   get_name()      const noexcept{return m_name;}
+  const ir_memory&     get_memory()    const noexcept{return m_memory;}
+
+  void  print() const noexcept{
+      if(m_memory)
+      {
+        ir_value  v(m_memory.get_string());
+
+        v.print();
+      }
+
+    else
+      {
+        m_type_info.print();
+      }
+
+
+    printf(" %s",m_name.data());
+  }
 
 };
 
@@ -426,7 +559,7 @@ public:
 class
 ir_context
 {
-  std::vector<ir_register>  m_register_list;
+  std::vector<ir_variable_info>  m_variable_info_list;
 
   std::vector<std::unique_ptr<ir_function>>  m_function_list;
 
@@ -439,10 +572,14 @@ public:
   void  read(token_iterator&  it);
   void  read(std::string_view  sv);
 
+  const std::vector<ir_variable_info>&  get_variable_info_list() const noexcept{return m_variable_info_list;}
+
+  const std::vector<std::unique_ptr<ir_function>>&  get_function_list() const noexcept{return m_function_list;}
+
   ir_function&  create_function(ir_type_info  ret_ti, std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept;
 
-  const ir_function*  find_function(std::string_view  label) const noexcept;
-  const ir_register*  find_register(std::string_view  label) const noexcept;
+  const ir_function*       find_function(std::string_view  label) const noexcept;
+  const ir_variable_info*  find_variable_info(std::string_view  name) const noexcept;
 
   void  finalize() noexcept;
 
@@ -452,18 +589,38 @@ public:
 
 
 class
+ir_link
+{
+  uint32_t  m_index=0;
+
+  std::string  m_name;
+
+public:
+  ir_link() noexcept{}
+  ir_link(uint32_t  i, std::string_view  name) noexcept: m_index(i), m_name(name){}
+
+  uint32_t  get_index() const noexcept{return m_index;}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+};
+
+
+class
 ir_processor
 {
-  uint8_t  m_memory[1024*1024];
+  std::vector<ir_variable>  m_variable_table;
+
+  std::vector<ir_link>  m_global_link_table;
 
   const ir_context*  m_context;
 
   struct frame{
-    pointer_wrapper<ir_register>  m_return_register;
+    pointer_wrapper<ir_variable>  m_return_variable;
 
     const ir_function*  m_function=nullptr;
 
-    std::vector<ir_register>  m_register_map;
+    std::vector<ir_link>  m_local_link_table;
 
     const ir_block_info*  m_previous_block_info=nullptr;
     const ir_block_info*  m_current_block_info=nullptr;
@@ -477,22 +634,30 @@ ir_processor
 
   void  operate(const ir_operation&  op);
 
-  void  operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_cmp(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
-  void  operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_ari(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_variable&  var);
+  void  operate_biw(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_variable&  var);
+  void  operate_cmp(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_variable&  var);
+  void  operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_variable&  var);
   void  operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls);
 
-  void  operate_cal(const std::vector<ir_operand>&  opls, ir_register&  reg);
+  void  operate_cal(const std::vector<ir_operand>&  opls, ir_variable&  var);
   void  operate_br( const std::vector<ir_operand>&  opls);
-  void  operate_phi(const std::vector<ir_phi_element>&  phels, ir_register&  reg);
+  void  operate_phi(const std::vector<ir_phi_element>&  phels, ir_variable&  var);
 
   ir_value  evaluate(const ir_operand&  o);
 
   void  jump(std::string_view  label);
   void  jump(const ir_operation&  op);
 
-  pointer_wrapper<ir_register>  find(std::vector<ir_register>&  map, std::string_view  label) noexcept;
+  ir_address  find_variable(std::string_view  label) noexcept;
+
+        ir_variable&  get_variable(ir_address  addr)       noexcept{return m_variable_table[addr.get_index()];}
+  const ir_variable&  get_variable(ir_address  addr) const noexcept{return m_variable_table[addr.get_index()];}
+
+        ir_variable&  get_variable(uint32_t  i)       noexcept{return m_variable_table[i];}
+  const ir_variable&  get_variable(uint32_t  i) const noexcept{return m_variable_table[i];}
+
+  void  pop_frame();
 
 public:
   ir_processor() noexcept{}
@@ -503,11 +668,11 @@ public:
   template<class...  Args>
   ir_processor&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  void  assign(const ir_context&  ctx) noexcept;
+  void  assign(const ir_context&  ctx);
 
-  void  reset() noexcept;
+  void  reset();
 
-  void  call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vector<ir_value>&&  args);
+  void  call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vector<ir_value>&&  args);
 
   void  step();
 

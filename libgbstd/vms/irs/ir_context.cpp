@@ -225,7 +225,7 @@ read_variable(token_iterator&  it)
 
       auto&  name = it[1].get_string();
 
-        if(find_register(name))
+        if(find_variable_info(name))
         {
           throw ir_error(form_string("read add_variable error: %s",name.data()));
         }
@@ -235,7 +235,7 @@ read_variable(token_iterator&  it)
 
       auto  v = read_value(ti,it);
 
-      m_register_list.emplace_back(std::string_view(name),std::move(v));
+      m_variable_info_list.emplace_back(std::move(v),std::string_view(name));
     }
 }
 
@@ -331,15 +331,15 @@ find_function(std::string_view  label) const noexcept
 }
 
 
-const ir_register*
+const ir_variable_info*
 ir_context::
-find_register(std::string_view  label) const noexcept
+find_variable_info(std::string_view  name) const noexcept
 {
-    for(auto&  reg: m_register_list)
+    for(auto&  vi: m_variable_info_list)
     {
-        if(reg == label)
+        if(vi.get_name() == name)
         {
-          return &reg;
+          return &vi;
         }
     }
 
@@ -363,11 +363,11 @@ void
 ir_context::
 print() const noexcept
 {
-    for(auto&  reg: m_register_list)
+    for(auto&  vi: m_variable_info_list)
     {
       printf("variable\n");
 
-      reg.print();
+      vi.print();
 
       printf("\n");
     }

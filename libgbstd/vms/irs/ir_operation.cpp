@@ -9,8 +9,9 @@ namespace gbstd{
 
 
 ir_operation::
-ir_operation(const ir_block_info&  bi, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls) noexcept:
+ir_operation(const ir_block_info&  bi, ir_type_info  ti, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls) noexcept:
 m_block_info(&bi),
+m_type_info(ti),
 m_instruction(instr),
 m_operand_list(opls)
 {
@@ -69,6 +70,7 @@ assign(const ir_operation&  rhs) noexcept
       clear();
 
       m_block_info = rhs.m_block_info;
+      m_type_info  = rhs.m_type_info ;
 
       set_label(rhs.get_label());
 
@@ -92,12 +94,13 @@ assign(ir_operation&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_block_info   ,rhs.m_block_info   );
-      std::swap(m_label        ,rhs.m_label        );
-      std::swap(m_label_length ,rhs.m_label_length );
-      std::swap(m_instruction  ,rhs.m_instruction  );
-      std::swap(m_kind         ,rhs.m_kind         );
-      std::swap(m_operand_list ,rhs.m_operand_list );
+      std::swap(m_block_info  ,rhs.m_block_info  );
+      std::swap(m_type_info   ,rhs.m_type_info   );
+      std::swap(m_label       ,rhs.m_label       );
+      std::swap(m_label_length,rhs.m_label_length);
+      std::swap(m_instruction ,rhs.m_instruction );
+      std::swap(m_kind        ,rhs.m_kind        );
+      std::swap(m_operand_list,rhs.m_operand_list);
     }
 
 
@@ -117,6 +120,8 @@ clear() noexcept
   m_label_length = 0;
 
   m_block_info = nullptr;
+
+  m_type_info = ir_type_info();
 
   m_instruction.clear();
 
@@ -167,6 +172,10 @@ void
 ir_operation::
 print() const noexcept
 {
+  m_type_info.print();
+
+  printf("  ");
+
     if(m_label_length)
     {
       printf("%s = ",m_label);

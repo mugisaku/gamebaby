@@ -17,23 +17,7 @@ assign(const ir_value&  rhs) noexcept
       clear();
 
       m_type_info = rhs.m_type_info;
-
-        if(m_type_info.is_object())
-        {
-          auto  sz = m_type_info.get_size();
-
-          m_data.o = (char*)malloc(sz);
-
-            if(m_data.o)
-            {
-              std::memcpy(m_data.o,rhs.m_data.o,sz);
-            }
-        }
-
-      else
-        {
-          m_data.i = rhs.m_data.i;
-        }
+      m_memory    = rhs.m_memory;
     }
 
 
@@ -50,18 +34,31 @@ assign(ir_value&&  rhs) noexcept
       clear();
 
       std::swap(m_type_info,rhs.m_type_info);
-
-        if(m_type_info.is_object())
-        {
-          std::swap(m_data.o,rhs.m_data.o);
-        }
-
-      else
-        {
-          m_data.i = rhs.m_data.i;
-        }
+      std::swap(m_memory   ,rhs.m_memory   );
     }
 
+
+  return *this;
+}
+
+
+ir_value&
+ir_value::
+assign(ir_type_info  ti) noexcept
+{
+  m_type_info = ti;
+  m_memory    = ti;
+
+  return *this;
+}
+
+
+ir_value&
+ir_value::
+assign(ir_type_info  ti, ir_memory&&  mem) noexcept
+{
+  m_type_info = ti;
+  m_memory    = std::move(mem);
 
   return *this;
 }
@@ -73,9 +70,9 @@ assign(int64_t  i) noexcept
 {
   clear();
 
-  m_type_info = ir_type_info::integer_type_info();
+  m_type_info = ir_type_info("int");
 
-  m_data.i = i;
+  m_memory = ir_memory(i);
 
   return *this;
 }
@@ -87,9 +84,9 @@ assign(double  f) noexcept
 {
   clear();
 
-  m_type_info = ir_type_info::fpn_type_info();
+  m_type_info = ir_type_info("float");
 
-  m_data.f = f;
+  m_memory = ir_memory(f);
 
   return *this;
 }
@@ -101,15 +98,9 @@ assign(std::string_view  sv) noexcept
 {
   clear();
 
-  m_type_info = ir_type_info::object_type_info(sv.size());
+  m_type_info = ir_type_info(sv.size());
 
-  m_data.o = (char*)malloc(sv.size());
-
-    if(m_data.o)
-    {
-      std::memcpy(m_data.o,sv.data(),sv.size());
-    }
-
+  m_memory = ir_memory(sv);
 
   return *this;
 }
@@ -121,15 +112,21 @@ void
 ir_value::
 clear() noexcept
 {
-    if(m_type_info.is_object())
-    {
-      free(m_data.o);
-    }
-
-
   m_type_info = ir_type_info();
+  m_memory    = ir_memory();
+}
 
-  m_data.o = nullptr;
+
+ir_value
+ir_value::
+clone() const noexcept
+{
+  ir_value  v;
+
+  v.m_type_info = m_type_info;
+  v.m_memory    = m_memory.clone();
+
+  return std::move(v);
 }
 
 
@@ -137,15 +134,19 @@ void
 ir_value::
 print() const noexcept
 {
+  m_type_info.print();
+
+  printf(", ");
+
     if(m_type_info.is_integer())
     {
-      printf("%" PRIi64,m_data.i);
+      printf("%" PRIi64,m_memory.get_content<int64_t>());
     }
 
   else
     if(m_type_info.is_fpn())
     {
-      printf("%f",m_data.f);
+      printf("%f",m_memory.get_content<double>());
     }
 
   else
@@ -157,9 +158,11 @@ print() const noexcept
 
         if(sz < 48)
         {
+          auto  p = &m_memory.get_content<uint8_t>();
+
             for(int  i = 0;  i < sz;  ++i)
             {
-              printf("%i,",m_data.o[i]);
+              printf("%i,",p[i]);
             }
         }
 

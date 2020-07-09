@@ -10,7 +10,7 @@ namespace gbstd{
 
 void
 ir_processor::
-assign(const ir_context&  ctx) noexcept
+assign(const ir_context&  ctx)
 {
   m_context = &ctx;
 
@@ -20,20 +20,32 @@ assign(const ir_context&  ctx) noexcept
 
 
 
-pointer_wrapper<ir_register>
+ir_address
 ir_processor::
-find(std::vector<ir_register>&  map, std::string_view  label) noexcept
+find_variable(std::string_view  label) noexcept
 {
-    for(auto&  reg: map)
+    if(m_frame_stack.size())
     {
-        if(reg == label)
+        for(auto&  ln: m_frame_stack.back().m_local_link_table)
         {
-          return &reg;
+            if(ln.get_name() == label)
+            {
+              return ir_address(ln.get_index(),0);
+            }
         }
     }
 
 
-  return &map.emplace_back(label);
+    for(auto&  ln: m_global_link_table)
+    {
+        if(ln.get_name() == label)
+        {
+          return ir_address(ln.get_index(),0);
+        }
+    }
+
+
+  return ir_address();
 }
 
 
@@ -53,11 +65,11 @@ evaluate(const ir_operand&  o)
     {
       auto&  lb = o.get_string();
 
-      auto  regptr = find(m_frame_stack.back().m_register_map,lb);
+      auto  addr = find_variable(lb);
 
-        if(regptr)
+        if(addr)
         {
-          return *regptr;
+          return get_variable(addr);
         }
 
 
@@ -91,7 +103,7 @@ jump(std::string_view  label)
 
 void
 ir_processor::
-call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vector<ir_value>&&  args)
+call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vector<ir_value>&&  args)
 {
   auto  fn = m_context->find_function(fn_name);
 
@@ -99,9 +111,11 @@ call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vecto
     {
       auto&  frm = m_frame_stack.emplace_back();
 
-      frm.m_return_register = retreg;
+      frm.m_return_variable = retvar;
 
       frm.m_function = fn;
+
+      auto  index = m_variable_table.size();
 
       auto&  paras = fn->get_parameter_list();
 
@@ -109,11 +123,13 @@ call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vecto
         {
           auto  it = paras.begin();
 
-          auto&  regmap = frm.m_register_map;
+          auto&  lntbl = frm.m_local_link_table;
 
             for(auto&  v: args)
             {
-              regmap.emplace_back(it++->get_label(),std::move(v));
+              m_variable_table.emplace_back(it->get_type_info()).assign(v);
+
+              lntbl.emplace_back(index++,it++->get_label());
             }
         }
 
@@ -142,9 +158,54 @@ call(pointer_wrapper<ir_register>  retreg, std::string_view  fn_name, std::vecto
 
 void
 ir_processor::
-reset() noexcept
+pop_frame()
+{
+  auto  n = m_frame_stack.back().m_local_link_table.size();
+
+    while(n--)
+    {
+      m_variable_table.pop_back();
+    }
+
+
+  m_frame_stack.pop_back();
+}
+
+
+void
+ir_processor::
+reset()
 {
   m_frame_stack.clear();
+  m_variable_table.clear();
+  m_global_link_table.clear();
+
+  m_variable_table.emplace_back(ir_type_info());
+
+  auto  index = 1;
+
+    for(auto&  vi: m_context->get_variable_info_list())
+    {
+      auto&  ti = vi.get_type_info();
+
+      auto&  mem = vi.get_memory();
+
+        if(mem)
+        {
+          m_variable_table.emplace_back(ir_value(ti,mem.clone()));
+        } 
+
+      else
+        {
+          m_variable_table.emplace_back(ti);
+        }
+
+
+      m_global_link_table.emplace_back(index++,vi.get_name());
+    }
+
+
+  print();
 }
 
 
@@ -168,13 +229,14 @@ step()
                                           frm.m_current_block_info = bi;
             }
 
-
+op.print();
+printf("\n");
           operate(op);
         }
 
       else
         {
-          m_frame_stack.pop_back();
+          pop_frame();
         }
     }
 }
@@ -195,6 +257,18 @@ void
 ir_processor::
 print() const noexcept
 {
+  printf("global link table{\n");
+
+    for(auto&  ln: m_global_link_table)
+    {
+      auto&  var = get_variable(ln.get_index());
+
+      var.print();
+
+      printf("\n");
+    }
+
+
   printf("call stack{\n");
 
     for(auto&  frm: m_frame_stack)
@@ -205,18 +279,22 @@ print() const noexcept
 
   printf("}\n");
 
-
-  printf("register map{\n");
-
-    for(auto&  reg: m_frame_stack.back().m_register_map)
+    if(m_frame_stack.size())
     {
-      reg.print();
+      printf("local link table{\n");
 
-      printf("\n");
+        for(auto&  ln: m_frame_stack.back().m_local_link_table)
+        {
+          auto&  var = get_variable(ln.get_index());
+
+          var.print();
+
+          printf("\n");
+        }
+
+
+      printf("}\n");
     }
-
-
-  printf("}\n");
 }
 
 

@@ -41,15 +41,7 @@ read(token_iterator&  it)
 
           else
             {
-                if(!find_operation(s))
-                {
-                  add_operation().read(s,it);
-                }
-
-              else
-                {
-                  throw ir_error(form_string("function read add_operation error: %s is redefined",s.data()));
-                }
+              add_operation().read(ir_type_info(s),it);
             }
         }
 
