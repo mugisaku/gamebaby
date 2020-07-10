@@ -26,7 +26,7 @@ assign(int64_t  i)
 {
        if(m_type_info.is_integer()){m_memory.get_content<int64_t>() = i;}
   else if(m_type_info.is_fpn())    {m_memory.get_content<double>()  = i;}
-  else {throw ir_error("ir_variable assign error: integer");}
+  else {print();throw ir_error("ir_variable assign error: integer");}
 
   return *this;
 }

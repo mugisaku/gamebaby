@@ -514,6 +514,7 @@ public:
   ir_variable&  assign(int64_t  i);
   ir_variable&  assign(double  f);
   ir_variable&  assign(std::string_view  sv);
+  ir_variable&  assign(ir_address  addr){return assign(addr.get_word());}
 
 };
 
@@ -603,6 +604,8 @@ public:
 
   const std::string&  get_name() const noexcept{return m_name;}
 
+  void  print() const noexcept{printf("0x%08X %s",m_index,m_name.data());}
+
 };
 
 
@@ -615,8 +618,14 @@ ir_processor
 
   const ir_context*  m_context;
 
+  struct flags{
+    static constexpr int  log = 1;
+  };
+
+  status_value<int>  m_status;
+
   struct frame{
-    pointer_wrapper<ir_variable>  m_return_variable;
+    ir_address  m_return_value_address;
 
     const ir_function*  m_function=nullptr;
 
@@ -640,7 +649,7 @@ ir_processor
   void  operate_ld(std::string_view  instr, const std::vector<ir_operand>&  opls, ir_variable&  var);
   void  operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls);
 
-  void  operate_cal(const std::vector<ir_operand>&  opls, ir_variable&  var);
+  void  operate_cal(ir_address  retv_addr, const std::vector<ir_operand>&  opls);
   void  operate_br( const std::vector<ir_operand>&  opls);
   void  operate_phi(const std::vector<ir_phi_element>&  phels, ir_variable&  var);
 
@@ -672,12 +681,15 @@ public:
 
   void  reset();
 
-  void  call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vector<ir_value>&&  args);
+  void  call(ir_address  retv_addr, std::string_view  fn_name, std::vector<ir_value>&&  args);
 
   void  step();
+  void   run();
 
-  void  run();
+  void   enable_log() noexcept{m_status.set(  flags::log);}
+  void  disable_log() noexcept{m_status.unset(flags::log);}
 
+  void  print_global_variables() const noexcept;
   void  print() const noexcept;
 
 };

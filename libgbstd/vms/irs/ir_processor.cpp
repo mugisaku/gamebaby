@@ -103,7 +103,7 @@ jump(std::string_view  label)
 
 void
 ir_processor::
-call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vector<ir_value>&&  args)
+call(ir_address  retv_addr, std::string_view  fn_name, std::vector<ir_value>&&  args)
 {
   auto  fn = m_context->find_function(fn_name);
 
@@ -111,7 +111,7 @@ call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vecto
     {
       auto&  frm = m_frame_stack.emplace_back();
 
-      frm.m_return_variable = retvar;
+      frm.m_return_value_address = retv_addr;
 
       frm.m_function = fn;
 
@@ -119,11 +119,11 @@ call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vecto
 
       auto&  paras = fn->get_parameter_list();
 
+      auto&  lntbl = frm.m_local_link_table;
+
         if(paras.size() == args.size())
         {
           auto  it = paras.begin();
-
-          auto&  lntbl = frm.m_local_link_table;
 
             for(auto&  v: args)
             {
@@ -136,6 +136,19 @@ call(pointer_wrapper<ir_variable>  retvar, std::string_view  fn_name, std::vecto
       else
         {
           throw ir_error("call error");
+        }
+
+
+        for(auto&  op: fn->get_operation_list())
+        {
+          auto&  ti = op.get_type_info();
+
+            if(ti.is_integer())
+            {
+              m_variable_table.emplace_back(ti);
+
+              lntbl.emplace_back(index++,op.get_label());
+            }
         }
 
 
@@ -176,6 +189,7 @@ void
 ir_processor::
 reset()
 {
+  m_status.clear();
   m_frame_stack.clear();
   m_variable_table.clear();
   m_global_link_table.clear();
@@ -229,8 +243,14 @@ step()
                                           frm.m_current_block_info = bi;
             }
 
-op.print();
-printf("\n");
+
+            if(m_status.test(flags::log))
+            {
+              op.print();
+              printf("\n");
+            }
+
+
           operate(op);
         }
 
@@ -253,9 +273,11 @@ run()
 }
 
 
+
+
 void
 ir_processor::
-print() const noexcept
+print_global_variables() const noexcept
 {
   printf("global link table{\n");
 
@@ -263,11 +285,22 @@ print() const noexcept
     {
       auto&  var = get_variable(ln.get_index());
 
+      ln.print();
+
+      printf(": ");
+
       var.print();
 
       printf("\n");
     }
+}
 
+
+void
+ir_processor::
+print() const noexcept
+{
+  print_global_variables();
 
   printf("call stack{\n");
 
@@ -286,6 +319,10 @@ print() const noexcept
         for(auto&  ln: m_frame_stack.back().m_local_link_table)
         {
           auto&  var = get_variable(ln.get_index());
+
+          ln.print();
+
+          printf(": ");
 
           var.print();
 

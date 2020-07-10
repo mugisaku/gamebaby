@@ -90,19 +90,15 @@ operate(const ir_operation&  op)
   else
     if(instr == std::string_view("retv"))
     {
-        if(opls.empty())
+      auto  addr = m_frame_stack.back().m_return_value_address;
+
+        if(addr)
         {
-          throw ir_error("operate error, retv no operand");
-        }
-
-
-      auto  retvar = m_frame_stack.back().m_return_variable;
-
-        if(retvar)
-        {
-          *retvar = evaluate(opls[0]);
+          get_variable(addr) = evaluate(opls[0]);
 
           pop_frame();
+
+          return;
         }
 
 
@@ -124,14 +120,14 @@ operate(const ir_operation&  op)
 
             if(addr)
             {
-              var = get_variable(addr);
+              var = addr;
 
               return;
             }
         }
 
 
-      throw ir_error("operate adr error");
+      throw ir_error(form_string("operate adr error: %s is not found",opls[0].get_string().data()));
     }
 
   else
@@ -143,7 +139,7 @@ operate(const ir_operation&  op)
   else
     if(instr == std::string_view("cal"))
     {
-      operate_cal(opls,var);
+      operate_cal(addr,opls);
     }
 
   else
@@ -490,7 +486,7 @@ operate_st(std::string_view  instr, const std::vector<ir_operand>&  opls)
 
 void
 ir_processor::
-operate_cal(const std::vector<ir_operand>&  opls, ir_variable&  var)
+operate_cal(ir_address  retv_addr, const std::vector<ir_operand>&  opls)
 {
     if((opls.size() == 2) &&
        opls[0].is_label() &&
@@ -506,7 +502,7 @@ operate_cal(const std::vector<ir_operand>&  opls, ir_variable&  var)
         }
 
 
-      call(&var,fn_name,std::move(args));
+      call(retv_addr,fn_name,std::move(args));
 
       return;
     }
