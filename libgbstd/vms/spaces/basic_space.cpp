@@ -21,37 +21,20 @@ clear() noexcept
 
 
 
-const type_info*
+type_info
 basic_space::
-find_type_info_by_name(std::string_view  name) const noexcept
+find_type_info(std::string_view  name) const noexcept
 {
     for(auto&  ti: m_type_info_table)
     {
         if(ti.get_name() == name)
         {
-          return &ti;
+          return ti;
         }
     }
 
 
-  return nullptr;
-}
-
-
-const type_info*
-basic_space::
-find_type_info_by_id(std::string_view  id) const noexcept
-{
-    for(auto&  ti: m_type_info_table)
-    {
-        if(ti.get_id() == id)
-        {
-          return &ti;
-        }
-    }
-
-
-  return nullptr;
+  return type_info();
 }
 
 

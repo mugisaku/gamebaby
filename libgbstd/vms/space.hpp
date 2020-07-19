@@ -8,12 +8,13 @@
 namespace gbstd{
 
 
-constexpr int  g_enum_size = 4;
-constexpr int  g_pointer_size = 4;
-constexpr int  g_boolean_size = 1;
+constexpr int  g_word_size = 8;
 
 
 using typesystem::type_info;
+using typesystem::enum_type_def;
+using typesystem::struct_type_def;
+using typesystem::union_type_def;
 using typesystem::parameter_list;
 using typesystem::function_signature;
 
@@ -116,15 +117,15 @@ protected:
 
   parameter_list  read_parameter_list(token_iterator&  it) noexcept;
 
-  type_info   read_struct_type_info(token_iterator&  it) noexcept;
-  type_info    read_union_type_info(token_iterator&  it) noexcept;
-  type_info     read_enum_type_info(token_iterator&  it) noexcept;
+  struct_type_def   read_struct_type_def(token_iterator&  it) noexcept;
+  union_type_def     read_union_type_def(token_iterator&  it) noexcept;
+  enum_type_def       read_enum_type_def(token_iterator&  it) noexcept;
   type_info  read_derived_type_info(token_iterator&  it);
 
-  type_info                    read_alias(token_iterator&  it) noexcept;
-  type_info   read_named_struct_type_info(token_iterator&  it) noexcept;
-  type_info    read_named_union_type_info(token_iterator&  it) noexcept;
-  type_info     read_named_enum_type_info(token_iterator&  it) noexcept;
+  type_info              read_alias(token_iterator&  it) noexcept;
+  type_info   read_struct_type_decl(token_iterator&  it) noexcept;
+  type_info    read_union_type_decl(token_iterator&  it) noexcept;
+  type_info     read_enum_type_decl(token_iterator&  it) noexcept;
 
   const function*  read_function(token_iterator&  it);
 
@@ -162,11 +163,12 @@ public:
   template<class...  Args>
   void  push_statement(Args&&...  args) noexcept{m_statement_list.emplace_back(std::forward<Args>(args)...);}
 
-  void  push_type_info(type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
+  void  push_type_info(const type_info&   ti) noexcept{m_type_info_table.emplace_back(ti);}
+  void  push_type_info(      type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
+
   void  push_variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept{m_variable_info_table.emplace_back(std::make_unique<variable_info>(scp,ti,name));}
 
-  const type_info*  find_type_info_by_name(std::string_view  name) const noexcept;
-  const type_info*  find_type_info_by_id(  std::string_view    id) const noexcept;
+  type_info  find_type_info(std::string_view  name) const noexcept;
 
   const variable_info*  find_variable_info(std::string_view  name) const noexcept;
 
@@ -305,8 +307,7 @@ public:
 
   const function*  find_function(std::string_view  name) const noexcept;
 
-  const type_info*  find_type_info_by_name(std::string_view  name) const noexcept;
-  const type_info*  find_type_info_by_id(  std::string_view    id) const noexcept;
+  type_info  find_type_info(std::string_view  name) const noexcept;
 
   const variable_info*  find_variable_info(std::string_view  name) const noexcept;
 
@@ -343,48 +344,45 @@ compile_context
 
   space_node  m_root_node;
 
-  ir_context  m_ir_context;
+  std::string  m_ir_text;
 
-  struct state{
-    pointer_wrapper<ir_function>  m_ir_function;
+  struct task{
+    std::string  m_ir_text;
 
+    const function*  m_function;
+
+    int  m_variable_counter=0;
+    int  m_entry_counter=0;
     int  m_if_string_counter=0;
     int  m_for_counter=0;
     int  m_while_counter=0;
     int  m_switch_counter=0;
 
-    std::vector<std::string>  m_base_name_stack;
+    std::vector<std::string>  m_block_name_stack;
 
   };
 
-  char  m_buffer[1024];
+  std::list<task>  m_stack;
 
-  std::vector<state>  m_stack;
+  char  m_buffer[1024];
 
 public:
   compile_context() noexcept{}
 
-  ir_function&                   operator*() const noexcept{return *m_stack.back().m_ir_function;}
-  pointer_wrapper<ir_function>  operator->() const noexcept{return  m_stack.back().m_ir_function;}
-
   compile_context&  assign(std::string_view  src_code);
 
-  const char*  add_begin_label(std::string_view  base_sv) noexcept;
+  std::string  create_variable_name() noexcept;
 
-  void  enter_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept;
+  void  write_global(const char*  fmt, ...) noexcept;
+  void  write_local(const char*  fmt, ...) noexcept;
 
-  const char*  enter_while_block() noexcept;
-  const char*  enter_for_block() noexcept;
-  const char*  enter_switch_block() noexcept;
-  const char*  enter_if_string_block() noexcept;
+  void  start_function_block(const function&  fn);
+  void  start_if_string_block();
+  void  start_for_block();
+  void  start_while_block();
+  void  start_switch_block();
 
-  void  leave_control_block();
-
-  void  leave_function();
-
-  const char*  get_control_block_base_name() const noexcept{return m_stack.back().m_base_name_stack.back().data();}
-  const char*  get_control_block_start_label() noexcept;
-  const char*  get_control_block_end_label()   noexcept;
+  void  finish_block() noexcept;
 
   void  print() const noexcept;
 

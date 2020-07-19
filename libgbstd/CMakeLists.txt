@@ -71,7 +71,6 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
-  typesystems/array_type_info.cpp
   typesystems/struct_type_info.cpp
   typesystems/union_type_info.cpp
   typesystems/enum_type_info.cpp
@@ -106,7 +105,9 @@ set(SOURCES
   vms/spaces/block_space.cpp
   vms/spaces/space_node.cpp
   vms/statements/statement.cpp
-  vms/statements/statement__compile.cpp
+  vms/statements/compile_expression.cpp
+  vms/statements/compile_primary_expression.cpp
+  vms/statements/compile_unary_expression.cpp
   vms/statements/expression_statement.cpp
   vms/statements/block_statement.cpp
   vms/statements/return_statement.cpp

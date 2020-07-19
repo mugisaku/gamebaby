@@ -12,37 +12,58 @@ using namespace typesystem;
 namespace{
 
 
-type_info
+compile_result
 compile_operand(const operand&  o, const space_node&  nd, compile_context&  ctx)
 {
+  auto  name = ctx.create_variable_name();
+
     if(o.is_null_pointer())
     {
-      return type_info(null_pointer_type_info());
+      auto  ti = nd.find_type_info("nullptr");
+
+      ctx.write_local("  int  %s = add 0 0",name.data());
+
+      return compile_result(*ti,std::move(name));
     }
 
   else
     if(o.is_boolean())
     {
-      return type_info(boolean_type_info(g_boolean_size));
+      auto  ti = nd.find_type_info("bool");
+
+      ctx.write_local("  int  %s = add 0 %d",name.data(),o.get_boolean()? 1:0);
+
+      return compile_result(*ti,std::move(name));
     }
 
   else
     if(o.is_integer())
     {
-      return type_info(integer_type_info(sizeof(int64_t)));
+      auto  ti = nd.find_type_info("int");
+
+      ctx.write_local("  int  %s = add 0 %d",name.data(),o.get_integer());
+
+      return compile_result(*ti,std::move(name));
     }
 
   else
     if(o.is_fpn())
     {
+      auto  ti = nd.find_type_info("float");
+
+      ctx.write_local("  float  %s = add 0 %f",name.data(),o.get_fpn());
+
+      return compile_result(*ti,std::move(name));
     }
 
   else
     if(o.is_string())
     {
-      type_info  base(integer_type_info(sizeof(int8_t)));
+      auto  ti = nd.find_type_info("int8");
 
-      return base.form_pointer_type(g_pointer_size);
+//      ctx.write_local("  int  %s = add 0 %d",name.data(),o.get_integer());
+
+      return compile_result(*ti,std::move(name));
     }
 
   else
@@ -72,14 +93,16 @@ compile_operand(const operand&  o, const space_node&  nd, compile_context&  ctx)
     }
 
 
-  return type_info();
+  throw compile_error(0,"");
 }
 
 
-type_info
-compile_selector_in_struct(const struct_type_info&  sti, std::string_view  id, compile_context&  ctx)
+compile_result
+compile_selector_in_struct(const struct_type_def&  def, std::string_view  id, compile_context&  ctx)
 {
-  auto  m = sti.find(id);
+  auto  name = ctx.create_variable_name();
+
+  auto  m = def.find(id);
 
     if(!m)
     {
@@ -88,14 +111,16 @@ compile_selector_in_struct(const struct_type_info&  sti, std::string_view  id, c
 
 
 
-  return m->get_type_info().form_reference_type(g_pointer_size);
+  return compile_result(m->get_type_info().form_reference_type(g_pointer_size),std::move(name));
 }
 
 
-type_info
-compile_selector_in_union(const union_type_info&  uti, std::string_view  id, compile_context&  ctx)
+compile_result
+compile_selector_in_union(const union_type_def&  def, std::string_view  id, compile_context&  ctx)
 {
-  auto  m = uti.find(id);
+  auto  name = ctx.create_variable_name();
+
+  auto  m = def.find(id);
 
     if(!m)
     {
@@ -103,12 +128,12 @@ compile_selector_in_union(const union_type_info&  uti, std::string_view  id, com
     }
 
 
-  return m.form_reference_type(g_pointer_size);
+  return compile_result(m.form_reference_type(g_pointer_size),std::move(name));
 }
 
 
 void
-compile_assignment(const assignment&  ass, type_info  lti, compile_context&  ctx)
+compile_assignment(const assignment&  ass, type_info&&  lti, compile_context&  ctx)
 {
   auto  op = ass.get_operator_code();
 
@@ -123,11 +148,12 @@ compile_assignment(const assignment&  ass, type_info  lti, compile_context&  ctx
 }
 
 
-type_info
+compile_result
 compile_expression(const primary_expression&  e, const space_node&  nd, compile_context&  ctx)
 {
-  auto  ti = compile_operand(e.get_operand(),nd,ctx);
+  auto  res = compile_operand(e.get_operand(),nd,ctx);
 
+/*
     for(auto&  e: e.get_elements())
     {
         if(e.is_selector())
@@ -138,13 +164,13 @@ compile_expression(const primary_expression&  e, const space_node&  nd, compile_
 
                 if(ti.is_struct())
                 {
-                  ti = compile_selector_in_struct(ti.get_struct_type_info(),e.get_string(),ctx);
+                  res = compile_selector_in_struct(ti.get_struct_type_info(),e.get_string(),ctx);
                 }
 
               else
                 if(ti.is_union())
                 {
-                  ti = compile_selector_in_union(ti.get_union_type_info(),e.get_string(),ctx);
+                  res = compile_selector_in_union(ti.get_union_type_info(),e.get_string(),ctx);
                 }
             }
         }
@@ -170,38 +196,163 @@ compile_expression(const primary_expression&  e, const space_node&  nd, compile_
             }
         }
     }
+*/
 
 
-  return std::move(ti);
+  return std::move(res);
 }
 
 
-type_info
+compile_result
+neg(std::string&&  name, const compile_result&  res, const space_node&  nd, compile_context&  ctx)
+{
+  const char*  tis;
+
+  auto&  ti = res.get_type_info();
+
+    if(ti.is_pointer())
+    {
+      tis = "int";
+    }
+
+  else
+    if(ti.is_fpn())
+    {
+      tis = "float";
+    }
+
+  else
+    {
+      throw compile_error(0,"type is mismatched");
+    }
+
+
+  ctx.write_local(" %s   %s = add %s",tis,name.data(),res.get_ir_variable_name().data());
+
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+
+
+compile_result
+log_not(std::string&&  name, const compile_result&  res, const space_node&  nd, compile_context&  ctx)
+{
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+
+
+compile_result
+bit_not(std::string&&  name, const compile_result&  res, const space_node&  nd, compile_context&  ctx)
+{
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+
+
+compile_result
+deref(std::string&&  name, const compile_result&  res, const space_node&  nd, compile_context&  ctx)
+{
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+
+
+compile_result
+adr(std::string&&  name, const compile_result&  res, const space_node&  nd, compile_context&  ctx)
+{
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+
+
+compile_result
 compile_expression(const unary_expression&  e, const space_node&  nd, compile_context&  ctx)
 {
   auto  it     = e.get_operator_code_list().rbegin();
   auto  it_end = e.get_operator_code_list().rend();
 
-  auto  ti = compile_expression(e.get_primary_expression(),nd,ctx);
+  auto  res = compile_expression(e.get_primary_expression(),nd,ctx);
 
     while(it != it_end)
     {
       auto&  op = *it++;
 
-           if(op == operator_code("-")){;}
-      else if(op == operator_code("!")){;}
-      else if(op == operator_code("~")){;}
-      else if(op == operator_code("*")){;}
-      else if(op == operator_code("&")){;}
+      auto  name = ctx.create_variable_name();
+
+           if(op == operator_code("-")){res =     neg(std::move(name),res,nd,ctx);}
+      else if(op == operator_code("!")){res = log_not(std::move(name),res,nd,ctx);}
+      else if(op == operator_code("~")){res = bit_not(std::move(name),res,nd,ctx);}
+      else if(op == operator_code("*")){res =   deref(std::move(name),res,nd,ctx);}
+      else if(op == operator_code("&")){res =     adr(std::move(name),res,nd,ctx);}
     }
 
 
-  return std::move(ti);
+  return std::move(res);
+}
+compile_result
+add(std::string&&  name, const compile_result&  l, const compile_result&  r, const space_node&  nd, compile_context&  ctx)
+{
+  const char*  tis;
+
+  auto&  lti = l.get_type_info();
+  auto&  rti = r.get_type_info();
+
+    if((lti.is_pointer() && rti.is_integer()) ||
+       (lti.is_integer() && rti.is_integer()))
+    {
+      tis = "int";
+    }
+
+  else
+    if((lti.is_fpn()     && rti.is_integer()) ||
+       (lti.is_integer() && rti.is_fpn()    ) ||
+       (lti.is_fpn()     && rti.is_fpn()    ))
+    {
+      tis = "float";
+    }
+
+  else
+    {
+      throw compile_error(0,"type is mismatched");
+    }
+
+
+  ctx.write_local(" %s   %s = add %s  %s",tis,name.data(),l.get_ir_variable_name().data(),r.get_ir_variable_name().data());
+
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
+}
+compile_result
+cmp(std::string&&  name, const compile_result&  l, const compile_result&  r, const space_node&  nd, compile_context&  ctx)
+{
+  const char*  tis;
+
+  auto&  lti = l.get_type_info();
+  auto&  rti = r.get_type_info();
+
+    if((lti.is_pointer() && rti.is_integer()) ||
+       (lti.is_integer() && rti.is_integer()))
+    {
+      tis = "int";
+    }
+
+  else
+    if((lti.is_fpn()     && rti.is_integer()) ||
+       (lti.is_integer() && rti.is_fpn()    ) ||
+       (lti.is_fpn()     && rti.is_fpn()    ))
+    {
+      tis = "float";
+    }
+
+  else
+    {
+      throw compile_error(0,"type is mismatched");
+    }
+
+
+  ctx.write_local(" %s   %s = add %s  %s",tis,name.data(),l.get_ir_variable_name().data(),r.get_ir_variable_name().data());
+
+  return compile_result(*nd.find_type_info_by_name("int"),std::move(name));
 }
 }
 
 
-type_info
+compile_result
 compile_expression(const expression&  e, const space_node&  nd, compile_context&  ctx)
 {
   auto&  ls = e.get_elements();
@@ -209,19 +360,19 @@ compile_expression(const expression&  e, const space_node&  nd, compile_context&
   auto    p = ls.data();
   auto  end = ls.data()+ls.size();
 
-  type_info  lti;
-
     if(p != end)
     {
-      lti = compile_expression(p++->get_expression(),nd,ctx);
+      auto  l = compile_expression(p++->get_expression(),nd,ctx);
 
         while(p != end)
         {
           auto  op = p->get_operator_code();
 
-          auto  rti = compile_expression(p++->get_expression(),nd,ctx);
+          auto  r = compile_expression(p++->get_expression(),nd,ctx);
 
-               if(op == operator_code("+")  ){;}
+          auto  name = ctx.create_variable_name();
+
+               if(op == operator_code("+")  ){l = add(std::move(name),l,r,nd,ctx);}
           else if(op == operator_code("-")  ){;}
           else if(op == operator_code("*")  ){;}
           else if(op == operator_code("/")  ){;}
@@ -252,10 +403,13 @@ compile_expression(const expression&  e, const space_node&  nd, compile_context&
           else if(op == operator_code(">>=")){;}
           else if(op == operator_code(",")  ){;}
         }
+
+
+      return std::move(l);
     }
 
 
-  return std::move(lti);
+  return compile_result();
 }
 
 

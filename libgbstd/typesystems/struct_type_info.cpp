@@ -9,9 +9,43 @@ namespace typesystem{
 
 
 
-uint32_t
-struct_type_info::
-m_id_source;
+int
+struct_type_decl::
+get_size() const noexcept
+{
+  return m_def? m_def->get_size():0;
+}
+
+
+int
+struct_type_decl::
+get_align() const noexcept
+{
+  return m_def? m_def->get_align():0;
+}
+
+
+struct_type_def&
+struct_type_decl::
+set_def(struct_type_def&&  def) noexcept
+{
+  m_def = std::make_unique<struct_type_def>(std::move(def));
+
+  return *m_def;
+}
+
+
+void
+struct_type_decl::
+print() const noexcept
+{
+    if(m_def)
+    {
+      m_def->print();
+    }
+}
+
+
 
 
 constexpr
@@ -29,8 +63,8 @@ get_aligned_offset(int  offset, int  align) noexcept
 
 
 void
-struct_type_info::
-push(const type_info&  ti, std::string_view  name) noexcept
+struct_type_def::
+push(type_info&&  ti, std::string_view  name) noexcept
 {
   int  offset = m_size;
 
@@ -39,15 +73,15 @@ push(const type_info&  ti, std::string_view  name) noexcept
 
   offset = get_aligned_offset(offset,align);
 
-  m_member_list.emplace_back(ti,name,offset);
-
   m_size  = offset+sz;
   m_align = std::max(m_align,align);
+
+  m_member_list.emplace_back(std::move(ti),name,offset);
 }
 
 
 const struct_member*
-struct_type_info::
+struct_type_def::
 find(std::string_view  name) const noexcept
 {
     for(auto&  m: m_member_list)
@@ -64,10 +98,10 @@ find(std::string_view  name) const noexcept
 
 
 void
-struct_type_info::
+struct_type_def::
 print() const noexcept
 {
-  printf("struct{\n");
+  printf("{\n");
 
     for(auto&  m: m_member_list)
     {

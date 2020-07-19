@@ -9,21 +9,47 @@ namespace typesystem{
 
 
 
-uint32_t
-enum_type_info::
-m_id_source;
-
-
-void
-enum_type_info::
-push(std::string_view  name, int  value) noexcept
+int
+enum_type_decl::
+get_size() const noexcept
 {
-  m_enumerator_list.emplace_back(name,value);
+  return m_def? m_def->get_size():0;
 }
 
 
-const int*
-enum_type_info::
+enum_type_def&
+enum_type_decl::
+set_def(enum_type_def&&  def) noexcept
+{
+  m_def = std::make_unique<enum_type_def>(std::move(def));
+
+  return *m_def;
+}
+
+
+void
+enum_type_decl::
+print() const noexcept
+{
+    if(m_def)
+    {
+      m_def->print();
+    }
+}
+
+
+
+
+enumerator&
+enum_type_def::
+push(std::string_view  name, int  value) noexcept
+{
+  return m_enumerator_list.emplace_back(name,value);
+}
+
+
+const int64_t*
+enum_type_def::
 find(std::string_view  name) const noexcept
 {
     for(auto&  en: m_enumerator_list)
@@ -40,10 +66,10 @@ find(std::string_view  name) const noexcept
 
 
 void
-enum_type_info::
+enum_type_def::
 print() const noexcept
 {
-  printf("enum{\n");
+  printf("{\n");
 
     for(auto&  en: m_enumerator_list)
     {

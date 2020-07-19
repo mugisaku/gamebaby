@@ -12,9 +12,6 @@ void
 jump_statement::
 compile(compile_context&  ctx) const
 {
-  char  buf[64];
-
-  snprintf(buf,sizeof(buf),"LABEL__%s",m_string.data());
 }
 
 

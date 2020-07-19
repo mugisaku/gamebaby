@@ -121,16 +121,46 @@ find_function(std::string_view  name) const noexcept
 }
 
 
-const type_info*
+type_info
 space_node::
-find_type_info_by_name(std::string_view  name) const noexcept
+find_type_info(std::string_view  name) const noexcept
 {
+    if(name == std::string_view("int"))
+    {
+      return g_int_ti;
+    }
+
+  else
+    if(name == std::string_view("float"))
+    {
+      return g_float_ti;
+    }
+
+  else
+    if(name == std::string_view("bool"))
+    {
+      return g_bool_ti;
+    }
+
+  else
+    if(name == std::string_view("intptr"))
+    {
+      return g_intptr_ti;
+    }
+
+
+  type_info  ti(name);
+
+    if(ti)
+    {
+      return std::move(ti);
+    }
+  
+
   auto  nd = this;
 
     while(nd)
     {
-      const type_info*  ti = nullptr;
-
         if(nd->is_function())
         {
           nd = nd->m_root;
@@ -140,13 +170,13 @@ find_type_info_by_name(std::string_view  name) const noexcept
         {
             if(nd->is_block_space())
             {
-              ti = nd->m_data.bsp.find_type_info_by_name(name);
+              ti = nd->m_data.bsp.find_type_info(name);
             }
 
           else
             if(nd->is_global_space())
             {
-              ti = nd->m_data.gsp.find_type_info_by_name(name);
+              ti = nd->m_data.gsp.find_type_info(name);
             }
 
 
@@ -161,51 +191,7 @@ find_type_info_by_name(std::string_view  name) const noexcept
     }
 
 
-  return nullptr;
-}
-
-
-const type_info*
-space_node::
-find_type_info_by_id(std::string_view  id) const noexcept
-{
-  auto  nd = this;
-
-    while(nd)
-    {
-      const type_info*  ti = nullptr;
-
-        if(nd->is_function())
-        {
-          nd = nd->m_root;
-        }
-
-      else
-        {
-            if(nd->is_block_space())
-            {
-              ti = nd->m_data.bsp.find_type_info_by_id(id);
-            }
-
-          else
-            if(nd->is_global_space())
-            {
-              ti = nd->m_data.gsp.find_type_info_by_id(id);
-            }
-
-
-            if(ti)
-            {
-              return ti;
-            }
-
-
-          nd = nd->m_parent;
-        }
-    }
-
-
-  return nullptr;
+  return type_info();
 }
 
 
@@ -265,11 +251,11 @@ found_info
 space_node::
 find_all(std::string_view  name) const noexcept
 {
-  auto  ti = find_type_info_by_name(name);
+  auto  ti = find_type_info(name);
 
     if(ti)
     {
-      return {*ti};
+      return {ti};
     }
 
 

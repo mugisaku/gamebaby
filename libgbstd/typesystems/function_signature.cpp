@@ -10,15 +10,15 @@ namespace typesystem{
 
 std::string
 function_signature::
-make_id() const noexcept
+make_name() const noexcept
 {
-  std::string  s(m_return_type_info.get_id());
+  std::string  s(m_return_type_info.get_name());
 
   s += "(";
 
     for(auto&  p: m_parameter_list)
     {
-      s += p.get_type_info().get_id();
+      s += p.get_type_info().get_name();
 
       s += ",";
     }

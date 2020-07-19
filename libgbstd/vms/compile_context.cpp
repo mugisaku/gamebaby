@@ -18,9 +18,10 @@ assign(std::string_view  src_code)
 
   gsp.assign(src_code);
 
-  m_ir_context.clear();
+  m_ir_text.clear();
 
-  enter_function("GLOBAL",{});
+  m_stack.clear();
+  m_stack.emplace_back();
 
   gsp.compile(*this);
 
@@ -30,107 +31,198 @@ assign(std::string_view  src_code)
 
 
 
-const char*
-compile_context::
-add_begin_label(std::string_view  base_sv) noexcept
+namespace{
+std::string_view
+to_ir_type_info_string(const type_info&  ti) noexcept
 {
-  m_stack.back().m_base_name_stack.emplace_back(base_sv);
+    if(ti.is_boolean() ||
+       ti.is_enum()    ||
+       ti.is_integer() ||
+       ti.is_pointer() ||
+       ti.is_reference())
+    {
+      return "int";
+    }
+
+  else
+    if(ti.is_fpn())
+    {
+      return "float";
+    }
+
+  else
+    {
+    }
 
 
-  auto  s = get_control_block_start_label();
-
-  (**this).add_label("%s",s);
-
-  return s;
+  return "";
+}
 }
 
 
-void
+std::string
 compile_context::
-enter_function(std::string_view  fn_name, std::vector<ir_parameter>&&  parals) noexcept
+create_variable_name() noexcept
 {
-  auto&  st = m_stack.emplace_back();
-
-  st.m_ir_function = &m_ir_context.create_function(ir_type_info(),fn_name,std::move(parals));
-
-  st.m_if_string_counter = 0;
-  st.m_for_counter       = 0;
-  st.m_while_counter     = 0;
-  st.m_switch_counter    = 0;
-}
-
-
-const char*
-compile_context::
-enter_while_block() noexcept
-{
-  int  n = snprintf(m_buffer,sizeof(m_buffer),"WHILE%04d",m_stack.back().m_while_counter++);
-
-  return add_begin_label(std::string_view(m_buffer,n));
-}
-
-
-const char*
-compile_context::
-enter_for_block() noexcept
-{
-  int  n = snprintf(m_buffer,sizeof(m_buffer),"FOR%04d",m_stack.back().m_for_counter++);
-
-  return add_begin_label(std::string_view(m_buffer,n));
-}
-
-
-const char*
-compile_context::
-enter_switch_block() noexcept
-{
-  int  n = snprintf(m_buffer,sizeof(m_buffer),"SWITCH%04d",m_stack.back().m_switch_counter++);
-
-  return add_begin_label(std::string_view(m_buffer,n));
-}
-
-
-const char*
-compile_context::
-enter_if_string_block() noexcept
-{
-  int  n = snprintf(m_buffer,sizeof(m_buffer),"IFS%04d",m_stack.back().m_if_string_counter++);
-
-  return add_begin_label(std::string_view(m_buffer,n));
-}
-
-
-void
-compile_context::
-leave_control_block()
-{
-  (**this).add_label("%s",get_control_block_end_label());
-
-  m_stack.back().m_base_name_stack.pop_back();
-}
-
-
-const char*
-compile_context::
-get_control_block_start_label() noexcept
-{
-  auto  s = get_control_block_base_name();
-
-  snprintf(m_buffer,sizeof(m_buffer),"%s__start",s);
+  snprintf(m_buffer,sizeof(m_buffer),"var%04d",m_stack.back().m_variable_counter++);
 
   return m_buffer;
 }
 
 
-const char*
+void
 compile_context::
-get_control_block_end_label() noexcept
+write_global(const char*  fmt, ...) noexcept
 {
-  auto  s = get_control_block_base_name();
+  va_list  ap;
 
-  snprintf(m_buffer,sizeof(m_buffer),"%s__end",s);
+  va_start(ap,fmt);
 
-  return m_buffer;
+  vsnprintf(m_buffer,sizeof(m_buffer),fmt,ap);
+
+  va_end(ap);
+
+  m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+write_local(const char*  fmt, ...) noexcept
+{
+  va_list  ap;
+
+  va_start(ap,fmt);
+
+  vsnprintf(m_buffer,sizeof(m_buffer),fmt,ap);
+
+  va_end(ap);
+
+  m_stack.back().m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+start_function_block(const function&  fn)
+{
+  auto&  t = m_stack.emplace_back();
+
+  t.m_ir_text += "function\n";
+
+  auto&  sig = fn.get_signature();
+
+  t.m_ir_text += to_ir_type_info_string(sig.get_return_type_info());
+  t.m_ir_text += "\n";
+
+  t.m_ir_text += fn.get_name();
+  t.m_ir_text += "(";
+
+    for(auto&  para: sig.get_parameter_list())
+    {
+      t.m_ir_text += to_ir_type_info_string(para.get_type_info());
+
+      t.m_ir_text += "  ";
+
+      t.m_ir_text += para.get_name();
+
+      t.m_ir_text += ", ";
+    }
+
+
+  t.m_ir_text += ")\n{\n";
+}
+
+
+void
+compile_context::
+start_if_string_block()
+{
+  auto&  t = m_stack.back();
+
+  snprintf(m_buffer,sizeof(m_buffer),"IF_STRING_BLOCK%04d",t.m_if_string_counter++);
+
+  auto&  s = t.m_block_name_stack.emplace_back(m_buffer);
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s:\n",s.data());
+
+  t.m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+start_for_block()
+{
+  auto&  t = m_stack.back();
+
+  snprintf(m_buffer,sizeof(m_buffer),"FOR_BLOCK%04d",t.m_for_counter++);
+
+  auto&  s = t.m_block_name_stack.emplace_back(m_buffer);
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s:\n",s.data());
+
+  t.m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+start_while_block()
+{
+  auto&  t = m_stack.back();
+
+  snprintf(m_buffer,sizeof(m_buffer),"WHILE_BLOCK%04d",t.m_while_counter++);
+
+  auto&  s = t.m_block_name_stack.emplace_back(m_buffer);
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s:\n",s.data());
+
+  t.m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+start_switch_block()
+{
+  auto&  t = m_stack.back();
+
+  snprintf(m_buffer,sizeof(m_buffer),"SWITCH_BLOCK%04d",t.m_switch_counter++);
+
+  auto&  s = t.m_block_name_stack.emplace_back(m_buffer);
+
+  snprintf(m_buffer,sizeof(m_buffer),"%s:\n",s.data());
+
+  t.m_ir_text += m_buffer;
+}
+
+
+void
+compile_context::
+finish_block() noexcept
+{
+  auto&  t = m_stack.back();
+
+    if(t.m_block_name_stack.size())
+    {
+      auto&  s = t.m_block_name_stack.back();
+
+      snprintf(m_buffer,sizeof(m_buffer),"%s__end:\n",s.data());
+
+      t.m_ir_text += m_buffer;
+
+      t.m_block_name_stack.pop_back();
+    }
+
+  else
+    {
+      m_ir_text += t.m_ir_text;
+
+      m_ir_text += "}\n\n\n";
+
+      m_stack.pop_back();
+    }
 }
 
 
@@ -144,7 +236,7 @@ print() const noexcept
 
   printf("\n----\n");
 
-  m_ir_context.print();
+  printf("%s\n",m_ir_text.data());
 }
 
 

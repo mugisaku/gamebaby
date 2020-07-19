@@ -25,6 +25,8 @@ namespace gbstd{
 
 
 
+using typesystem::type_info;
+
 class context;
 class function;
 class block_space;
@@ -365,7 +367,40 @@ public:
 };
 
 
-typesystem::type_info  compile_expression(const expression&  e, const space_node&  nd, compile_context&  ctx);
+extern const type_info      g_int_ti;
+extern const type_info    g_float_ti;
+extern const type_info     g_bool_ti;
+extern const type_info   g_intptr_ti;
+extern const type_info  g_nullptr_ti;
+extern const type_info     g_void_ti;
+extern const type_info     g_null_ti;
+
+
+class
+compile_result
+{
+  typesystem::type_info  m_type_info;
+
+  std::string  m_ir_variable_name;
+
+public:
+  compile_result() noexcept{}
+  compile_result(typesystem::type_info&&  ti, std::string&&  ir_varname) noexcept:
+  m_type_info(std::move(ti)), m_ir_variable_name(std::move(ir_varname)){}
+
+  compile_result(const typesystem::type_info&  ti, std::string&&  ir_varname) noexcept:
+  m_type_info(ti), m_ir_variable_name(std::move(ir_varname)){}
+
+  const typesystem::type_info&  get_type_info() const noexcept{return m_type_info;}
+
+  const std::string&  get_ir_variable_name() const noexcept{return m_ir_variable_name;}
+
+};
+
+
+compile_result  compile_expression(const   unary_expression&  e, const space_node&  nd, compile_context&  ctx);
+compile_result  compile_expression(const primary_expression&  e, const space_node&  nd, compile_context&  ctx);
+compile_result  compile_expression(const         expression&  e, const space_node&  nd, compile_context&  ctx);
 
 
 }

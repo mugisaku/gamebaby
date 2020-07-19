@@ -12,11 +12,9 @@ void
 switch_statement::
 compile(const space_node&  nd, compile_context&  ctx) const
 {
-  ctx.enter_switch_block();
+  ctx.start_switch_block();
 
-  auto  ti = compile_expression(get_expression(),nd,ctx);
-
-  ctx.leave_control_block();
+  ctx.finish_block();
 }
 
 

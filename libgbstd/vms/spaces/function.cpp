@@ -47,13 +47,11 @@ void
 function::
 compile(compile_context&  ctx) const
 {
-  auto  s = m_name.data();
-
-  ctx.enter_function(m_name,{});
+  ctx.start_function_block(*this);
 
   m_main_block->compile(ctx);
 
-  ctx.leave_function();
+  ctx.finish_block();
 }
 
 

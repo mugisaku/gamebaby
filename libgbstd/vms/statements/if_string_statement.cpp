@@ -12,13 +12,13 @@ void
 if_string_statement::
 compile(const space_node&  nd, compile_context&  ctx) const
 {
-  auto  s = ctx.enter_if_string_block();
-
   int  n = 0;
+
+  ctx.start_if_string_block();
 
     for(auto&  ifst: m_if_list)
     {
-      ifst.compile(nd,ctx,s,n++);
+      ifst.compile(nd,ctx,"",n++);
     }
 
 
@@ -28,7 +28,7 @@ compile(const space_node&  nd, compile_context&  ctx) const
     }
 
 
-  ctx.leave_control_block();
+  ctx.finish_block();
 }
 
 

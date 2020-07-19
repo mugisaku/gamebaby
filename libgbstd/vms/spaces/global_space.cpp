@@ -13,17 +13,6 @@ void
 global_space::
 initialize() noexcept
 {
-  m_type_info_table.emplace_back(integer_type_info(4),"int");
-
-  m_type_info_table.emplace_back(integer_type_info(1),"int8_t");
-  m_type_info_table.emplace_back(integer_type_info(2),"int16_t");
-  m_type_info_table.emplace_back(integer_type_info(4),"int32_t");
-  m_type_info_table.emplace_back(integer_type_info(8),"int64_t");
-  m_type_info_table.emplace_back(fpn_type_info(4),"f32_t");
-  m_type_info_table.emplace_back(fpn_type_info(8),"f64_t");
-  m_type_info_table.emplace_back(null_pointer_type_info(),"nullptr_t");
-  m_type_info_table.emplace_back(boolean_type_info(1),"bool");
-  m_type_info_table.emplace_back(void_type_info(),"void");
 }
 
 
@@ -70,7 +59,7 @@ compile(compile_context&  ctx) const
 
     for(auto&  fnref: fn_list)
     {
-      fnref.get().compile(ctx);
+//      fnref.get().compile(ctx);
     }
 }
 

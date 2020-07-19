@@ -57,11 +57,11 @@ read_parameter_list(token_iterator&  it) noexcept
 }
 
 
-type_info
+struct_type_def
 basic_space::
-read_struct_type_info(token_iterator&  it) noexcept
+read_struct_type_def(token_iterator&  it) noexcept
 {
-  struct_type_info  sti;
+  struct_type_def  def;
 
     while(it)
     {
@@ -79,7 +79,7 @@ read_struct_type_info(token_iterator&  it) noexcept
         {
             if(it->is_identifier())
             {
-              sti.push(ti,it++->get_string());
+              def.push(ti,it++->get_string());
 
                 if(it->is_operator_code(";"))
                 {
@@ -100,15 +100,15 @@ read_struct_type_info(token_iterator&  it) noexcept
     }
 
 
-  return type_info(std::move(sti));
+  return std::move(def);
 }
 
 
-type_info
+union_type_def
 basic_space::
-read_union_type_info(token_iterator&  it) noexcept
+read_union_type_def(token_iterator&  it) noexcept
 {
-  union_type_info  uti;
+  union_type_def  def;
 
     while(it)
     {
@@ -126,7 +126,7 @@ read_union_type_info(token_iterator&  it) noexcept
         {
             if(it->is_identifier())
             {
-              uti.push(ti,it++->get_string());
+              def.push(ti,it++->get_string());
 
                 if(it->is_operator_code(";"))
                 {
@@ -147,15 +147,15 @@ read_union_type_info(token_iterator&  it) noexcept
     }
 
 
-  return type_info(std::move(uti));
+  return std::move(def);
 }
 
 
-type_info
+enum_type_def
 basic_space::
-read_enum_type_info(token_iterator&  it) noexcept
+read_enum_type_def(token_iterator&  it) noexcept
 {
-  enum_type_info  eti(g_enum_size);
+  enum_type_def  def(g_word_size);
 
   int  next = 0;
 
@@ -181,13 +181,13 @@ read_enum_type_info(token_iterator&  it) noexcept
                 {
                   next = it++->get_integer();
 
-                  eti.push(id,next++);
+                  def.push(id,next++);
                 }
             }
 
           else
             {
-              eti.push(id,next++);
+              def.push(id,next++);
             }
 
             
@@ -204,7 +204,7 @@ read_enum_type_info(token_iterator&  it) noexcept
     }
 
 
-  return type_info(std::move(eti));
+  return std::move(def);
 }
 
 
@@ -222,9 +222,7 @@ read_alias(token_iterator&  it) noexcept
 
         if(ti)
         {
-          ti.set_name(name);
-
-          push_type_info(std::move(ti));
+          push_type_info(alias_type_def(ti,name));
 
           return std::move(ti);
         }
@@ -237,7 +235,7 @@ read_alias(token_iterator&  it) noexcept
 
 type_info
 basic_space::
-read_named_struct_type_info(token_iterator&  it) noexcept
+read_struct_type_decl(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
   auto&  it1 = it[1];
@@ -248,16 +246,15 @@ read_named_struct_type_info(token_iterator&  it) noexcept
 
       it += 2;
 
-      auto  ti = read_struct_type_info(it);
+      struct_type_decl  decl(name);
 
-        if(ti)
-        {
-          ti.set_name(name);
+      decl.set_def(read_struct_type_def(it));
 
-          push_type_info(std::move(ti));
+      type_info  ti(std::move(decl));
 
-          return std::move(ti);
-        }
+      push_type_info(ti);
+
+      return std::move(ti);
     }
 
 
@@ -267,7 +264,7 @@ read_named_struct_type_info(token_iterator&  it) noexcept
 
 type_info
 basic_space::
-read_named_union_type_info(token_iterator&  it) noexcept
+read_union_type_decl(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
   auto&  it1 = it[1];
@@ -278,16 +275,15 @@ read_named_union_type_info(token_iterator&  it) noexcept
 
       it += 2;
 
-      auto  ti = read_union_type_info(it);
+      union_type_decl  decl(name);
 
-        if(ti)
-        {
-          ti.set_name(name);
+      decl.set_def(read_union_type_def(it));
 
-          push_type_info(std::move(ti));
+      type_info  ti(std::move(decl));
 
-          return std::move(ti);
-        }
+      push_type_info(ti);
+
+      return std::move(ti);
     }
 
 
@@ -297,7 +293,7 @@ read_named_union_type_info(token_iterator&  it) noexcept
 
 type_info
 basic_space::
-read_named_enum_type_info(token_iterator&  it) noexcept
+read_enum_type_decl(token_iterator&  it) noexcept
 {
   auto&  it0 = it[0];
   auto&  it1 = it[1];
@@ -308,16 +304,15 @@ read_named_enum_type_info(token_iterator&  it) noexcept
 
       it += 2;
 
-      auto  ti = read_enum_type_info(it);
+      enum_type_decl  decl(name);
 
-        if(ti)
-        {
-          ti.set_name(name);
+      decl.set_def(read_enum_type_def(it));
 
-          push_type_info(std::move(ti));
+      type_info  ti(std::move(decl));
 
-          return std::move(ti);
-        }
+      push_type_info(ti);
+
+      return std::move(ti);
     }
 
 
@@ -376,17 +371,15 @@ read_derived_type_info(token_iterator&  it)
     }
 
 
-  auto  ti_ptr = m_node.find_type_info_by_name(it->get_string());
+  auto  ti = m_node.find_type_info(it->get_string());
 
-    if(!ti_ptr)
+    if(!ti)
     {
       throw compile_error(it->get_line_number(),form_string("\"%s\" as typename is not found.\n",it->get_string().data()));
     }
 
 
   ++it;
-
-  auto  ti = *ti_ptr;
 
     while(it)
     {
@@ -410,7 +403,7 @@ read_derived_type_info(token_iterator&  it)
       else
         if(it->is_operator_code("*"))
         {
-          ti = ti.form_pointer_type(g_pointer_size);
+          ti = ti.form_typed_pointer(g_word_size);
 
           ++it;
         }
@@ -418,7 +411,7 @@ read_derived_type_info(token_iterator&  it)
       else
         if(it->is_operator_code("&"))
         {
-          ti = ti.form_reference_type(g_pointer_size);
+          ti = ti.form_reference(g_word_size);
 
           ++it;
         }
@@ -462,19 +455,19 @@ read_element_that_begins_with_identifier(token_iterator&  it)
   else
     if(first == std::string_view("struct"))
     {
-      read_named_struct_type_info(++it);
+      read_struct_type_decl(++it);
     }
 
   else
     if(first == std::string_view("union"))
     {
-      read_named_union_type_info(++it);
+      read_union_type_decl(++it);
     }
 
   else
     if(first == std::string_view("enum"))
     {
-      read_named_enum_type_info(++it);
+      read_enum_type_decl(++it);
     }
 
   else

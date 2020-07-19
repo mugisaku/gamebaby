@@ -14,14 +14,6 @@ using typesystem::type_info;
 using typesystem::parameter;
 using typesystem::parameter_list;
 using typesystem::function_signature;
-using typesystem::function_pointer_type_info;
-using typesystem::pointer_type_info;
-using typesystem::array_type_info;
-using typesystem::struct_type_info;
-using typesystem::union_type_info;
-
-
-using boolean_t =  int8_t;
 
 
 class
