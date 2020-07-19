@@ -71,9 +71,9 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
-  typesystems/struct_type_info.cpp
-  typesystems/union_type_info.cpp
-  typesystems/enum_type_info.cpp
+  typesystems/struct.cpp
+  typesystems/union.cpp
+  typesystems/enum.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
   vms/expressions/expression.cpp
