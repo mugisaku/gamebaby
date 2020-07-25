@@ -238,7 +238,7 @@ void
 token::
 print(int  indent) const noexcept
 {
-  printf("%4d: ",m_line_number);
+  printf("%4d: ",1+m_line_number);
 
     for(int  n = 0;  n < indent;  ++n)
     {
@@ -248,7 +248,7 @@ print(int  indent) const noexcept
 
     switch(m_kind)
     {
-  case(kind::null): printf("NULL");break;
+  case(kind::null): printf("**NULL**");break;
   case(kind::integer): printf("%" PRIu64,m_data.n);break;
   case(kind::identifier): printf("%s ",m_data.s.data());break;
   case(kind::single_quoted): print_string(m_data.s,'\'');break;

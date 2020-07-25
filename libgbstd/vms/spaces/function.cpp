@@ -9,8 +9,7 @@ namespace gbstd{
 
 
 function::
-function(space_node&  nd, std::string_view  name, function_signature&&  sig) noexcept:
-m_node(nd),
+function(token_iterator&  it, std::string_view  name, function_signature&&  sig): ast_node(it,"function")
 m_name(name),
 m_signature(std::move(sig)),
 m_main_block(&nd.create_block_space())
@@ -21,9 +20,20 @@ m_main_block(&nd.create_block_space())
 
       m_parameter_variable_info_table.emplace_back(std::move(vi));
     }
+
+
+  read(it);
 }
 
 
+
+
+void
+function::
+read(token_iterator&  it)
+{
+  
+}
 
 
 const variable_info*

@@ -95,7 +95,7 @@ print() const noexcept
 
   printf("function table{\n");
 
-    for(auto&  child: m_node.get_children())
+    for(auto&  child: *this)
     {
         if(child->is_function())
         {

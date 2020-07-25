@@ -9,28 +9,14 @@ namespace gbstd{
 using namespace typesystem;
 
 
-void
 global_space::
-initialize() noexcept
+global_space(std::string_view  sv): m_basic_space("global space")
 {
-}
-
-
-global_space&
-global_space::
-assign(std::string_view  sv)
-{
-  clear();
-
-  initialize();
-
   auto  toks = make_token_string(sv);
 
   token_iterator  it(toks);
 
   read(it,"");
-
-  return *this;
 }
 
 
@@ -59,7 +45,7 @@ compile(compile_context&  ctx) const
 
     for(auto&  fnref: fn_list)
     {
-//      fnref.get().compile(ctx);
+      fnref.get().compile(ctx);
     }
 }
 

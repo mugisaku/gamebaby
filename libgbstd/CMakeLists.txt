@@ -76,6 +76,11 @@ set(SOURCES
   typesystems/enum.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
+  vms/ast_node.cpp
+  vms/ast_node__read_function.cpp
+  vms/ast_node__read_expression.cpp
+  vms/ast_node__read_type.cpp
+  vms/ast_node__read_statement.cpp
   vms/expressions/expression.cpp
   vms/expressions/expression_element.cpp
   vms/expressions/primary_expression.cpp
@@ -97,31 +102,31 @@ set(SOURCES
   vms/assemblies/asm_line.cpp
   vms/assemblies/asm_context.cpp
   vms/assemblies/asm_processor.cpp
-  vms/spaces/function.cpp
-  vms/spaces/basic_space.cpp
-  vms/spaces/basic_space__read_type.cpp
-  vms/spaces/basic_space__read_statement.cpp
-  vms/spaces/global_space.cpp
-  vms/spaces/block_space.cpp
-  vms/spaces/space_node.cpp
-  vms/statements/statement.cpp
-  vms/statements/compile_expression.cpp
-  vms/statements/compile_primary_expression.cpp
-  vms/statements/compile_unary_expression.cpp
-  vms/statements/expression_statement.cpp
-  vms/statements/block_statement.cpp
-  vms/statements/return_statement.cpp
-  vms/statements/let_statement.cpp
-  vms/statements/label_statement.cpp
-  vms/statements/jump_statement.cpp
-  vms/statements/control_statement.cpp
-  vms/statements/if_statement.cpp
-  vms/statements/if_string_statement.cpp
-  vms/statements/for_statement.cpp
-  vms/statements/while_statement.cpp
-  vms/statements/switch_statement.cpp
-  vms/statements/case_statement.cpp
-  vms/compile_context.cpp
+#  vms/spaces/function.cpp
+#  vms/spaces/basic_space.cpp
+#  vms/spaces/basic_space__read_type.cpp
+#  vms/spaces/basic_space__read_statement.cpp
+#  vms/spaces/global_space.cpp
+#  vms/spaces/block_space.cpp
+#  vms/spaces/space_node.cpp
+#  vms/statements/statement.cpp
+#  vms/statements/compile_expression.cpp
+#  vms/statements/compile_primary_expression.cpp
+#  vms/statements/compile_unary_expression.cpp
+#  vms/statements/expression_statement.cpp
+#  vms/statements/block_statement.cpp
+#  vms/statements/return_statement.cpp
+#  vms/statements/let_statement.cpp
+#  vms/statements/label_statement.cpp
+#  vms/statements/jump_statement.cpp
+#  vms/statements/control_statement.cpp
+#  vms/statements/if_statement.cpp
+#  vms/statements/if_string_statement.cpp
+#  vms/statements/for_statement.cpp
+#  vms/statements/while_statement.cpp
+#  vms/statements/switch_statement.cpp
+#  vms/statements/case_statement.cpp
+#  vms/compile_context.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

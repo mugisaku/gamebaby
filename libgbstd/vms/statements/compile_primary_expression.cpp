@@ -83,7 +83,7 @@ compile_operand(const operand&  o, const space_node&  nd, compile_context&  ctx)
     }
 
 
-  throw compile_error(0,"");
+  throw compile_error(0,"compile_operand error");
 }
 
 

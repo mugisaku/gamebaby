@@ -25,47 +25,145 @@ class space_node;
 
 
 
-enum class
-variable_scopes
+class
+ast_node
 {
-  global,
-  local,
-  parameter,
+  pointer_wrapper<ast_node>  m_parent;
+
+  std::vector<std::unique_ptr<ast_node>>  m_children;
+
+  const token*  m_token=nullptr;
+
+  std::string_view  m_kind_id;
+
+  void  read_function(token_iterator&  it);
+  void  read_variable(token_iterator&  it);
+  void  read_struct(token_iterator&  it);
+  void  read_union(token_iterator&  it);
+  void  read_enum(token_iterator&  it);
+  void  read_alias(token_iterator&  it);
+  void  read_global_space(token_iterator&  it);
+
+public:
+  ast_node(                   std::string_view  kid):                m_kind_id(kid){}
+  ast_node(const token&  tok, std::string_view  kid): m_token(&tok), m_kind_id(kid){}
+  ast_node(const ast_node& ) noexcept=delete;
+  ast_node(      ast_node&&) noexcept=delete;
+ virtual ~ast_node(){}
+
+  ast_node&  operator=(const ast_node& ) noexcept=delete;
+  ast_node&  operator=(      ast_node&&) noexcept=delete;
+
+  const token&  operator*()  const noexcept{return *m_token;}
+  const token*  operator->() const noexcept{return  m_token;}
+
+  bool  operator==(std::string_view  kid) const noexcept{return m_kind_id == kid;}
+
+  std::string_view  get_kind_id() const noexcept{return m_kind_id;}
+
+  void          set_token(const token*  tok)       noexcept{       m_token = tok;}
+  const token*  get_token(                 ) const noexcept{return m_token;}
+
+  pointer_wrapper<ast_node>  get_parent() const noexcept{return m_parent;}
+
+  void  append_child(ast_node&  nd) noexcept;
+
+  const std::unique_ptr<ast_node>*  begin() const noexcept{return m_children.data();}
+  const std::unique_ptr<ast_node>*    end() const noexcept{return m_children.data()+m_children.size();}
+
+  template<class  T>      T&  cast()       noexcept{return *static_cast<      T*>(this);}
+  template<class  T>const T&  cast() const noexcept{return *static_cast<const T*>(this);}
+
+  virtual void  print() const noexcept{}
 
 };
+
+
 
 
 class
-variable_info
+ast_space: public ast_node
 {
-  type_info  m_type_info;
-
-  std::string  m_name;
-
-  std::vector<uint8_t>  m_content;
-
-  variable_scopes  m_scope;
+protected:
+  std::vector<type_info>          m_type_info_table;
+  std::vector<variable_info>  m_variable_info_table;
 
 public:
-  variable_info() noexcept{}
-  variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept:
-  m_scope(scp), m_type_info(ti), m_name(name){}
+  using ast_node::ast_node;
 
-  const type_info&  get_type_info() const noexcept{return m_type_info;}
+  const std::vector<type_info>&          get_type_info_table()         const noexcept{return m_type_info_table;}
+  const std::vector<variable_info>&  get_variable_info_table() const noexcept{return m_variable_info_table;}
 
-  const std::string&  get_name() const noexcept{return m_name;}
+  void  push_type_info(const type_info&   ti) noexcept{m_type_info_table.emplace_back(ti);}
+  void  push_type_info(      type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
 
-  void                         set_content(std::vector<uint8_t>&&  c)       noexcept{       m_content = std::move(c);}
-  const std::vector<uint8_t>&  get_content(                         ) const noexcept{return m_content;}
+  void  push_variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept{m_variable_info_table.emplace_back(std::make_unique<variable_info>(scp,ti,name));}
 
-  bool  is_global_scope()    const noexcept{return m_scope == variable_scopes::global;}
-  bool  is_local_scope()     const noexcept{return m_scope == variable_scopes::local;}
-  bool  is_parameter_scope() const noexcept{return m_scope == variable_scopes::parameter;}
+  type_info  find_type_info(std::string_view  name) const noexcept;
 
-  void  print() const noexcept{  m_type_info.print();  printf("  %s",m_name.data());}
+  const variable_info*  find_variable_info(std::string_view  name) const noexcept;
+
+  void  print() const noexcept override;
 
 };
 
+
+
+
+class
+global_space: public ast_space
+{
+
+public:
+  global_space(std::string_view  sv) noexcept;
+
+  void  compile(compile_context&  ctx) const;
+
+  void  print() const noexcept override;
+
+};
+
+
+
+
+class
+ast_function: public ast_node
+{
+  std::vector<variable_info>  m_parameter_variable_info_table;
+
+  std::string  m_name;
+
+  function_signature  m_signature;
+
+  pointer_wrapper<block_space>  m_main_block;
+
+  void  read(token_iterator&  it);
+
+public:
+  ast_function(token_iterator&  it, std::string_view  name, function_signature&&  sig);
+
+  block_space&  get_main_block() const noexcept{return *m_main_block;}
+
+  const std::vector<variable_info>&  get_parameter_variable_info_table() const noexcept {return m_parameter_variable_info_table;}
+
+  const std::string&  get_name() const noexcept{return m_name;}
+
+  const function_signature&  get_signature() const noexcept{return m_signature;}
+
+  void  push_variable_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_variable_info_table.emplace_back(std::make_unique<variable_info>(variable_scopes::parameter,ti,name));}
+
+  const variable_info*  find_parameter_variable_info(std::string_view  name) const noexcept;
+
+  void  compile(compile_context&  ctx) const;
+
+  void  print() const noexcept override;
+
+};
+
+
+
+
+/*
 
 class
 found_info
@@ -104,139 +202,12 @@ public:
 };
 
 
-class
-basic_space
-{
-protected:
-  space_node&  m_node;
-
-  std::vector<type_info>                       m_type_info_table;
-  std::vector<std::unique_ptr<variable_info>>  m_variable_info_table;
-
-  std::vector<statement>  m_statement_list;
-
-  parameter_list  read_parameter_list(token_iterator&  it) noexcept;
-
-  struct_type_def   read_struct_type_def(token_iterator&  it) noexcept;
-  union_type_def     read_union_type_def(token_iterator&  it) noexcept;
-  enum_type_def       read_enum_type_def(token_iterator&  it) noexcept;
-  type_info  read_derived_type_info(token_iterator&  it);
-
-  type_info              read_alias(token_iterator&  it) noexcept;
-  type_info   read_struct_type_decl(token_iterator&  it) noexcept;
-  type_info    read_union_type_decl(token_iterator&  it) noexcept;
-  type_info     read_enum_type_decl(token_iterator&  it) noexcept;
-
-  const function*  read_function(token_iterator&  it);
-
-  statement  read_return(token_iterator&  it);
-  statement  read_jump(token_iterator&  it);
-  statement  read_label(token_iterator&  it);
-  statement  read_if_string(token_iterator&  it);
-  if_statement  read_if(token_iterator&  it);
-  statement  read_for(token_iterator&  it);
-  statement  read_while(token_iterator&  it);
-  statement  read_switch(token_iterator&  it);
-  statement  read_case(token_iterator&  it);
-  statement  read_let(token_iterator&  it);
-
-  void  read_statement(std::string_view  keyword, token_iterator&  it);
-
-  void  read_element_that_begins_with_identifier(token_iterator&  it);
-
-public:
-  basic_space(space_node&  nd) noexcept: m_node(nd){}
-  basic_space(const space_node& ) noexcept=delete;
-  basic_space(      space_node&&) noexcept=delete;
-
-  void  clear() noexcept;
-
-  space_node&  get_node() const noexcept{return m_node;}
-
-  basic_space&  read(token_iterator&  it, operator_code  close_code);
-  basic_space&  read(std::string_view  sv);
-
-  const std::vector<type_info>&                   get_type_info_table()         const noexcept{return m_type_info_table;}
-  const std::vector<std::unique_ptr<variable_info>>&  get_variable_info_table() const noexcept{return m_variable_info_table;}
-  const std::vector<statement>&                    get_statement_list()         const noexcept{return m_statement_list;}
-
-  template<class...  Args>
-  void  push_statement(Args&&...  args) noexcept{m_statement_list.emplace_back(std::forward<Args>(args)...);}
-
-  void  push_type_info(const type_info&   ti) noexcept{m_type_info_table.emplace_back(ti);}
-  void  push_type_info(      type_info&&  ti) noexcept{m_type_info_table.emplace_back(std::move(ti));}
-
-  void  push_variable_info(variable_scopes  scp, const type_info&  ti, std::string_view  name) noexcept{m_variable_info_table.emplace_back(std::make_unique<variable_info>(scp,ti,name));}
-
-  type_info  find_type_info(std::string_view  name) const noexcept;
-
-  const variable_info*  find_variable_info(std::string_view  name) const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
 class global_space;
 class     function;
 class  block_space;
 class   space_node;
 
 
-
-
-class
-function
-{
-  space_node&  m_node;
-
-  std::vector<std::unique_ptr<variable_info>>  m_parameter_variable_info_table;
-
-  std::string  m_name;
-
-  function_signature  m_signature;
-
-  pointer_wrapper<block_space>  m_main_block;
-
-public:
-  function(space_node&  nd, std::string_view  name, function_signature&&  sig) noexcept;
-
-  space_node&  get_node() const noexcept{return m_node;}
-
-  block_space&  get_main_block() const noexcept{return *m_main_block;}
-
-  const std::vector<std::unique_ptr<variable_info>>&  get_parameter_variable_info_table() const noexcept {return m_parameter_variable_info_table;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-  const function_signature&  get_signature() const noexcept{return m_signature;}
-
-  void  push_variable_info(const type_info&  ti, std::string_view  name) noexcept{m_parameter_variable_info_table.emplace_back(std::make_unique<variable_info>(variable_scopes::parameter,ti,name));}
-
-  const variable_info*  find_parameter_variable_info(std::string_view  name) const noexcept;
-
-  void  compile(compile_context&  ctx) const;
-
-  void  print() const noexcept;
-
-};
-
-
-class
-global_space: public basic_space
-{
-  void  initialize() noexcept;
-
-public:
-  global_space(space_node&  nd) noexcept: basic_space(nd){}
-
-  global_space&  assign(std::string_view  sv);
-
-  void  compile(compile_context&  ctx) const;
-
-  void  print() const noexcept;
-
-};
 
 
 class
@@ -387,6 +358,7 @@ public:
   void  print() const noexcept;
 
 };
+*/
 
 
 
