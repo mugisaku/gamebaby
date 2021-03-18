@@ -9,40 +9,44 @@ namespace gbstd{
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_let(token_iterator&  it)
+ast_builder::
+read_let()
 {
-  auto  nd = std::make_unique<ast_node>("let");
+  auto  nd = make_ast_node("let");
 
-  auto  name_nd = read_name(++it);
+  advance();
+
+  auto  name_nd = read_name();
 
     if(!name_nd)
     {
-      throw ast_error("name for let statement is missing",*it);
+      throw ast_error("name for let statement is missing",*m_iterator);
     }
 
 
   nd->append_child(std::move(name_nd));
 
-    if(it->is_operator_code("="))
+    if(m_iterator->is_operator_code("="))
     {
-      ++it;
+      advance();
     }
 
 
-  auto  type_nd = read_type(it);
+  auto  type_nd = read_type();
 
     if(!type_nd)
     {
-      throw ast_error("type for let statement is missing",*it);
+      throw ast_error("type for let statement is missing",*m_iterator);
     }
 
 
   nd->append_child(std::move(type_nd));
 
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto  expr_nd = read_expression(++it);
+      advance();
+
+      auto  expr_nd = read_expression();
 
         if(expr_nd)
         {
@@ -50,13 +54,13 @@ read_let(token_iterator&  it)
         }
 
 
-        if(!it->is_operator_code(")"))
+        if(!m_iterator->is_operator_code(")"))
         {
-          throw ast_error("close operator is missing",*it);
+          throw ast_error("close operator is missing",*m_iterator);
         }
 
 
-      ++it;
+      advance();
     }
 
 
@@ -65,12 +69,14 @@ read_let(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_return(token_iterator&  it)
+ast_builder::
+read_return()
 {
-  auto  nd = std::make_unique<ast_node>("return");
+  auto  nd = make_ast_node("return");
 
-  auto  expr_nd = read_expression(++it);
+  advance();
+
+  auto  expr_nd = read_expression();
 
     if(expr_nd)
     {
@@ -83,12 +89,14 @@ read_return(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_goto(token_iterator&  it)
+ast_builder::
+read_goto()
 {
-  auto  nd = std::make_unique<ast_node>("goto");
+  auto  nd = make_ast_node("goto");
 
-  auto  lb_nd = read_name(++it);
+  advance();
+
+  auto  lb_nd = read_name();
 
     if(lb_nd)
     {
@@ -98,21 +106,23 @@ read_goto(token_iterator&  it)
     }
 
 
-  throw ast_error("label for goto is missing",*it);
+  throw ast_error("label for goto is missing",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_case(token_iterator&  it)
+ast_builder::
+read_case()
 {
-  auto  nd = std::make_unique<ast_node>("case");
+  auto  nd = make_ast_node("case");
 
-  auto  expr_nd = read_expression(++it);
+  advance();
 
-    if(expr_nd && it->is_operator_code(":"))
+  auto  expr_nd = read_expression();
+
+    if(expr_nd && m_iterator->is_operator_code(":"))
     {
-      ++it;
+      advance();
 
       nd->append_child(std::move(expr_nd));
 
@@ -120,29 +130,31 @@ read_case(token_iterator&  it)
     }
 
 
-  throw ast_error("expression for case is missing",*it);
+  throw ast_error("expression for case is missing",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_switch(token_iterator&  it)
+ast_builder::
+read_switch()
 {
-  auto  nd = std::make_unique<ast_node>("switch");
+  auto  nd = make_ast_node("switch");
 
-  ++it;
+  advance();
 
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto  expr_nd = read_expression(++it);
+      advance();
 
-        if(expr_nd && it->is_operator_code(")"))
+      auto  expr_nd = read_expression();
+
+        if(expr_nd && m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
-            if(it->is_operator_code("{"))
+            if(m_iterator->is_operator_code("{"))
             {
-              auto  sp_nd = read_local_space(it);
+              auto  sp_nd = read_local_space();
 
                 if(sp_nd)
                 {
@@ -155,53 +167,55 @@ read_switch(token_iterator&  it)
         }
 
 
-      throw ast_error("switch body is missing",*it);
+      throw ast_error("switch body is missing",*m_iterator);
     }
 
 
-  throw ast_error("expression for switch is missing",*it);
+  throw ast_error("expression for switch is missing",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_for_instruction(token_iterator&  it)
+ast_builder::
+read_for_instruction()
 {
-  auto  nd = std::make_unique<ast_node>("for instruction");
+  auto  nd = make_ast_node("for instruction");
 
-  auto  init_nd = read_let(++it);
+  advance();
+
+  auto  init_nd = read_let();
 
     if(init_nd)
     {
-      nd->append_child(std::move(init_nd),"init");
+      nd->append_child(rename(std::move(init_nd),"init"));
     }
 
 
-    if(it->is_operator_code(";"))
+    if(m_iterator->is_operator_code(";"))
     {
-      ++it;
+      advance();
     }
 
 
-  auto  cond_nd = read_expression(it);
+  auto  cond_nd = read_expression();
 
     if(cond_nd)
     {
-      nd->append_child(std::move(cond_nd),"cond");
+      nd->append_child(rename(std::move(cond_nd),"cond"));
     }
 
 
-    if(it->is_operator_code(";"))
+    if(m_iterator->is_operator_code(";"))
     {
-      ++it;
+      advance();
     }
 
 
-  auto  loop_nd = read_expression(it);
+  auto  loop_nd = read_expression();
 
     if(loop_nd)
     {
-      nd->append_child(std::move(loop_nd),"loop");
+      nd->append_child(rename(std::move(loop_nd),"loop"));
     }
 
 
@@ -210,34 +224,36 @@ read_for_instruction(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_for(token_iterator&  it)
+ast_builder::
+read_for()
 {
-  auto  nd = std::make_unique<ast_node>("for");
+  auto  nd = make_ast_node("for");
 
-  ++it;
+  advance();
 
-    if(!it->is_operator_code("("))
+    if(!m_iterator->is_operator_code("("))
     {
-      throw ast_error("for instruction is missing",*it);
+      throw ast_error("for instruction is missing",*m_iterator);
     }
 
 
-  auto  instr_nd = read_for_instruction(it);
+  auto  instr_nd = read_for_instruction();
 
-    if(it->is_operator_code(")"))
+    if(m_iterator->is_operator_code(")"))
     {
-      ++it;
+      advance();
     }
 
 
-    if(!it->is_operator_code("{"))
+    if(!m_iterator->is_operator_code("{"))
     {
-      throw ast_error("for body is missing",*it);
+      throw ast_error("for body is missing",*m_iterator);
     }
 
 
-  auto  sp_nd = read_local_space(++it);
+  advance();
+
+  auto  sp_nd = read_local_space();
 
   nd->append_child(std::move(instr_nd));
   nd->append_child(std::move(   sp_nd));
@@ -247,24 +263,26 @@ read_for(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_while(token_iterator&  it)
+ast_builder::
+read_while()
 {
-  auto  nd = std::make_unique<ast_node>("while");
+  auto  nd = make_ast_node("while");
 
-  ++it;
+  advance();
 
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto  expr_nd = read_expression(++it);
+      advance();
 
-        if(expr_nd && it->is_operator_code(")"))
+      auto  expr_nd = read_expression();
+
+        if(expr_nd && m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
-            if(it->is_operator_code("{"))
+            if(m_iterator->is_operator_code("{"))
             {
-              auto  sp_nd = read_local_space(it);
+              auto  sp_nd = read_local_space();
 
                 if(sp_nd)
                 {
@@ -278,29 +296,31 @@ read_while(token_iterator&  it)
     }
 
 
-  throw ast_error("expression for while is missing",*it);
+  throw ast_error("expression for while is missing",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_if(token_iterator&  it)
+ast_builder::
+read_if()
 {
-  auto  nd = std::make_unique<ast_node>("if");
+  auto  nd = make_ast_node("if");
 
-  ++it;
+  advance();
 
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto  expr_nd = read_expression(++it);
+      advance();
 
-        if(expr_nd && it->is_operator_code(")"))
+      auto  expr_nd = read_expression();
+
+        if(expr_nd && m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
-            if(it->is_operator_code("{"))
+            if(m_iterator->is_operator_code("{"))
             {
-              auto  sp_nd = read_local_space(it);
+              auto  sp_nd = read_local_space();
 
                 if(sp_nd)
                 {
@@ -312,34 +332,34 @@ read_if(token_iterator&  it)
             }
 
 
-          throw ast_error("if body is missing",*it);
+          throw ast_error("if body is missing",*m_iterator);
         }
     }
 
 
-  throw ast_error("expression for if is missing",*it);
+  throw ast_error("expression for if is missing",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_if_string(token_iterator&  it)
+ast_builder::
+read_if_string()
 {
-  auto  nd = std::make_unique<ast_node>("if string");
+  auto  nd = make_ast_node("if string");
 
-  auto  if_nd = read_if(it);
+  auto  if_nd = read_if();
 
     if(if_nd)
     {
       nd->append_child(std::move(if_nd));
 
-        while(it->is_keyword("else"))
+        while(m_iterator->is_keyword("else"))
         {
-          ++it;
+          advance();
 
-            if(it->is_keyword("if"))
+            if(m_iterator->is_keyword("if"))
             {
-              if_nd = read_if(it);
+              if_nd = read_if();
 
                 if(if_nd)
                 {
@@ -348,9 +368,9 @@ read_if_string(token_iterator&  it)
             }
 
           else
-            if(it->is_operator_code("{"))
+            if(m_iterator->is_operator_code("{"))
             {
-              auto  sp_nd = read_local_space(it);
+              auto  sp_nd = read_local_space();
 
                 if(sp_nd)
                 {
@@ -362,7 +382,7 @@ read_if_string(token_iterator&  it)
 
           else
             {
-              throw ast_error("else body is missing",*it);
+              throw ast_error("else body is missing",*m_iterator);
             }
         }
     }
@@ -373,85 +393,52 @@ read_if_string(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_statement(token_iterator&  it)
+ast_builder::
+read_statement()
 {
-    if(it->is_identifier())
+    while(m_iterator->is_operator_code(";"))
     {
-      auto&  s = it->get_string();
+      advance();
+    }
 
-        if(s == std::string_view("return"))
-        {
-          return read_return(it);
-        }
 
-      else
-        if(s == std::string_view("if"))
-        {
-          return read_if_string(it);
-        }
+    if(m_iterator->is_identifier())
+    {
+      auto&  s = m_iterator->get_string();
 
-      else
-        if(s == std::string_view("for"))
-        {
-          return read_for(it);
-        }
-
-      else
-        if(s == std::string_view("while"))
-        {
-          return read_while(it);
-        }
-
-      else
-        if(s == std::string_view("switch"))
-        {
-          return read_switch(it);
-        }
-
-      else
-        if(s == std::string_view("case"))
-        {
-          return read_case(it);
-        }
-
+           if(s == std::string_view("return")){return read_return();}
+      else if(s == std::string_view("if"    )){return read_if_string();}
+      else if(s == std::string_view("for"   )){return read_for();}
+      else if(s == std::string_view("while" )){return read_while();}
+      else if(s == std::string_view("switch")){return read_switch();}
+      else if(s == std::string_view("case"  )){return read_case();}
+      else if(s == std::string_view("goto"  )){return read_goto();}
+      else if(s == std::string_view("let"   )){return read_let();}
       else
         if(s == std::string_view("break"))
         {
-          return std::make_unique<ast_node>(*it++,"break");
+          return make_ast_node(*m_iterator++,"break");
         }
 
       else
         if(s == std::string_view("continue"))
         {
-          return std::make_unique<ast_node>(*it++,"continue");
+          return make_ast_node(*m_iterator++,"continue");
         }
 
       else
-        if(s == std::string_view("goto"))
+        if(m_iterator[1].is_operator_code(":"))
         {
-          return read_goto(it);
-        }
+          auto  lb_nd = make_ast_node(*m_iterator,"label");
 
-      else
-        if(s == std::string_view("let"))
-        {
-          return read_let(it);
-        }
-
-      else
-        if(it[1].is_operator_code(":"))
-        {
-          auto  lb_nd = std::make_unique<ast_node>(*it,"label");
-
-          it += 2;
+          advance(2);
 
           return std::move(lb_nd);
         }
     }
 
 
-  return read_expression(it);
+  return read_expression();
 }
 
 

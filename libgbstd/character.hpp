@@ -77,6 +77,7 @@ public:
 };
 
 
+size_t  u8clen(unsigned char  c) noexcept;
 size_t  u8slen(const char*  s) noexcept;
 
 
@@ -195,6 +196,81 @@ public:
   void  print() const noexcept;
 
 };
+
+
+
+
+class
+text_iterator
+{
+public:
+  struct line{
+    const char*  m_begin;
+
+    int  m_number_of_bytes=0;
+    int  m_number_of_characters=0;
+
+    line(const char*  p) noexcept: m_begin(p){}
+
+  };
+
+private:
+  std::vector<line>  m_lines;
+
+  size_t  m_length=0;
+
+  const char*  m_current=nullptr;
+  const char*  m_end=nullptr;
+
+public:
+  text_iterator(std::string_view  sv) noexcept{assign(sv);}
+
+  text_iterator&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+
+  text_iterator&  assign(std::string_view  sv) noexcept;
+
+  operator bool() const noexcept{return m_current < m_end;}
+
+  std::string_view  operator*() const noexcept{return get();}
+
+  std::string_view  get() const noexcept{return {m_current,m_length};}
+
+  text_iterator&  operator++() noexcept{return advance();}
+
+  text_iterator&  advance() noexcept;
+
+  void  skip_spaces() noexcept;
+
+  const std::vector<line>&  get_lines() const noexcept{return m_lines;}
+
+  int  get_number_of_bytes()      const noexcept;
+  int  get_number_of_characters() const noexcept;
+
+};
+
+
+constexpr bool
+is_alphabet(char  c) noexcept
+{
+  return(((c >= 'a') && (c <= 'z')) ||
+         ((c >= 'A') && (c <= 'Z')));
+}
+
+
+constexpr bool
+is_number(char  c) noexcept
+{
+  return((c >= '0') && (c <= '9'));
+}
+
+
+constexpr bool
+is_alphabet_or_number(char  c) noexcept
+{
+  return(is_alphabet(c) || is_number(c));
+}
+
+
 
 
 }

@@ -9,62 +9,50 @@ namespace gbstd{
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_local_space(token_iterator&  it)
+ast_builder::
+read_local_space()
 {
-  auto  nd = std::make_unique<ast_node>("local space");
+  auto  root_nd = make_ast_node("local space");
 
-  ++it;
+  push(root_nd);
 
-    while(it)
+  advance();
+
+    while(m_iterator)
     {
-      ast_loopguard  lg("read_local_space",it);
+      ast_loopguard  lg("read_local_space",m_iterator);
 
-        if(it->is_operator_code("}"))
+        if(m_iterator->is_operator_code("}"))
         {
-          ++it;
+          advance();
 
-          return std::move(nd);
-        }
+          pop();
 
-      else
-        if(it->is_operator_code(";"))
-        {
-          ++it;
+          return std::move(root_nd);
         }
 
       else
         {
-          auto  stmt_nd = read_statement(it);
-
-            if(stmt_nd)
-            {
-              nd->append_child(std::move(stmt_nd));
-            }
-
-          else
-            {
-              throw ast_error("statement read error",*it);
-            }
+          root_nd->append_child(read_statement());
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
-  throw ast_error("local space read error",*it);
+  throw ast_error("local space read error",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_parameter(token_iterator&  it)
+ast_builder::
+read_parameter()
 {
-  auto  nd = std::make_unique<ast_node>("parameter");
+  auto  nd = make_ast_node("parameter");
 
-  auto  type_nd = read_type(it);
-  auto  name_nd = read_name(it);
+  auto  type_nd = read_type();
+  auto  name_nd = read_name();
 
     if(type_nd)
     {
@@ -80,90 +68,96 @@ read_parameter(token_iterator&  it)
     }
 
 
-  throw ast_error("parameter read error",*it);
+  throw ast_error("parameter read error",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_parameter_list(token_iterator&  it)
+ast_builder::
+read_parameter_list()
 {
-  auto  nd = std::make_unique<ast_node>("parameter list");
+  auto  nd = make_ast_node("parameter list");
 
-  ++it;
+  advance();
 
     for(;;)
     {
-      ast_loopguard  lg("read_parameter_list",it);
+      ast_loopguard  lg("read_parameter_list",m_iterator);
 
-        if(it->is_operator_code(")"))
+        if(m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
           return std::move(nd);
         }
 
 
-      auto  para_nd = read_parameter(it);
+      auto  para_nd = read_parameter();
 
         if(para_nd)
         {
           nd->append_child(std::move(para_nd));
 
-            if(it->is_operator_code(","))
+            if(m_iterator->is_operator_code(","))
             {
-              ++it;
+              advance();
             }
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
-  throw ast_error("parameter list read error",*it);
+  throw ast_error("parameter list read error",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_function(token_iterator&  it)
+ast_builder::
+read_function()
 {
-  auto  nd = std::make_unique<ast_node>("function");
+  auto  root_nd = make_ast_node("function");
 
-  auto   fn_name_nd = read_name(++it);
-  auto  ret_type_nd = read_type(  it);
+  push(root_nd);
 
-    if(fn_name_nd && ret_type_nd && it->is_operator_code("("))
+  advance();
+
+  auto   fn_name_nd = read_name();
+  auto  ret_type_nd = read_type();
+
+    if(fn_name_nd && ret_type_nd && m_iterator->is_operator_code("("))
     {
-      auto  paras_nd = read_parameter_list(it);
+      auto  paras_nd = read_parameter_list();
 
         if(paras_nd)
         {
-          nd->append_child(std::move( fn_name_nd));
-          nd->append_child(std::move(ret_type_nd));
-          nd->append_child(std::move(   paras_nd));
+          root_nd->append_child(std::move( fn_name_nd));
+          root_nd->append_child(std::move(ret_type_nd));
+          root_nd->append_child(std::move(   paras_nd));
 
-            if(it->is_operator_code("{"))
+            if(m_iterator->is_operator_code("{"))
             {
-              auto  sp_nd = read_local_space(it);
+              auto  sp_nd = read_local_space();
 
                 if(!sp_nd)
                 {
-                  throw ast_error("read error at function body",*it);
+                  throw ast_error("read error at function body",*m_iterator);
                 }
 
 
-              nd->append_child(std::move(sp_nd));
+              root_nd->append_child(std::move(sp_nd));
             }
 
 
-          return std::move(nd);
+          pop();
+
+          return std::move(root_nd);
         }
     }
     
 
-  throw ast_error("read error at function head",*it);
+  throw ast_error("read error at function head",*m_iterator);
 }
 
 

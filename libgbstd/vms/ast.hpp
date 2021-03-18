@@ -1,8 +1,9 @@
-#ifndef gbstd_vm_space_HPP
-#define gbstd_vm_space_HPP
+#ifndef gbstd_vm_ast_HPP
+#define gbstd_vm_ast_HPP
 
 
 #include"libgbstd/typesystem.hpp"
+#include"libgbstd/misc.hpp"
 #include"libgbstd/vms/expression.hpp"
 
 
@@ -51,97 +52,212 @@ public:
 
 
 class
-ast_node
+ast_constant
 {
-  pointer_wrapper<ast_node>  m_parent;
+  typesystem::type_info  m_type_info;
 
-  const token*  m_token=nullptr;
-
-  std::string_view  m_kind_id;
-
-  std::vector<std::unique_ptr<ast_node>>  m_children;
-
-  static std::unique_ptr<ast_node>  read_argument_list(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_index(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_operand(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_primary_expression_element(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_primary_expression(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_unary_operator(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_unary_expression(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_binary_operator(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_expression_element(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_expression(token_iterator&  it);
-
-  static std::unique_ptr<ast_node>  read_let(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_return(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_goto(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_case(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_switch(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_for_instruction(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_for(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_while(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_if(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_if_string(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_statement(token_iterator&  it);
-
-  static std::unique_ptr<ast_node>  read_parameter(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_parameter_list(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_local_space(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_function(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_struct_def(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_struct(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_union_def(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_union(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_enumerator(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_enum_def(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_enum(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_alias(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_type(token_iterator&  it);
-  static std::unique_ptr<ast_node>  read_name(token_iterator&  it);
-
-  void  print_internal(std::vector<std::string>&  route) const noexcept;
+  std::vector<uint8_t>  m_memory;
 
 public:
-  static std::unique_ptr<ast_node>  read_global_space(token_iterator&  it);
+  ast_constant() noexcept{}
+  ast_constant(bool  b) noexcept: m_type_info("bool8"), m_memory(1){get_i8() = b? 1:0;}
+  ast_constant(int      i) noexcept: m_type_info("int64"), m_memory(8){get_i64() = i;}
+  ast_constant(int64_t  i) noexcept: m_type_info("int64"), m_memory(8){get_i64() = i;}
+  ast_constant(double  f) noexcept: m_type_info("float64"), m_memory(8){get_f64() = f;}
+  ast_constant(std::string_view  sv) noexcept: m_type_info(typesystem::type_info("char8").form_array(sv.size())), m_memory(sv.size())
+  {std::memcpy(m_memory.data(),sv.data(),sv.size());}
 
-  ast_node(                   std::string_view  kid):                m_kind_id(kid){}
-  ast_node(const token&  tok, std::string_view  kid): m_token(&tok), m_kind_id(kid){}
-  ast_node(std::unique_ptr<ast_node>&&  nd, std::string_view  kid): m_kind_id(kid){m_children.emplace_back(std::move(nd));}
+  operator bool() const noexcept{return m_type_info;}
 
-  ast_node(const ast_node& ) noexcept=delete;
-  ast_node(      ast_node&&) noexcept=delete;
+  const typesystem::type_info*  operator->() const noexcept{return &m_type_info;}
 
-  ast_node&  operator=(const ast_node& ) noexcept=delete;
-  ast_node&  operator=(      ast_node&&) noexcept=delete;
+  const typesystem::type_info&  get_type_info() const noexcept{return m_type_info;}
 
-  const token&  operator*()  const noexcept{return *m_token;}
-  const token*  operator->() const noexcept{return  m_token;}
+  int8_t&   get_i8(int  i=0)  noexcept{return reinterpret_cast< int8_t*>(m_memory.data())[i];}
+  int16_t&  get_i16(int  i=0) noexcept{return reinterpret_cast<int16_t*>(m_memory.data())[i];}
+  int32_t&  get_i32(int  i=0) noexcept{return reinterpret_cast<int32_t*>(m_memory.data())[i];}
+  int64_t&  get_i64(int  i=0) noexcept{return reinterpret_cast<int64_t*>(m_memory.data())[i];}
 
-  bool  operator==(std::string_view  kid) const noexcept{return m_kind_id == kid;}
+  const int8_t&   get_i8(int  i=0)  const noexcept{return reinterpret_cast<const  int8_t*>(m_memory.data())[i];}
+  const int16_t&  get_i16(int  i=0) const noexcept{return reinterpret_cast<const int16_t*>(m_memory.data())[i];}
+  const int32_t&  get_i32(int  i=0) const noexcept{return reinterpret_cast<const int32_t*>(m_memory.data())[i];}
+  const int64_t&  get_i64(int  i=0) const noexcept{return reinterpret_cast<const int64_t*>(m_memory.data())[i];}
 
-  std::string_view  get_kind_id() const noexcept{return m_kind_id;}
+  float&   get_f32(int  i=0) noexcept{return reinterpret_cast<float* >(m_memory.data())[i];}
+  double&  get_f64(int  i=0) noexcept{return reinterpret_cast<double*>(m_memory.data())[i];}
 
-  void          set_token(const token*  tok)       noexcept{       m_token = tok;}
-  const token*  get_token(                 ) const noexcept{return m_token;}
-
-  std::vector<const ast_node*>  find() const noexcept;
-
-  pointer_wrapper<ast_node>  get_parent() const noexcept{return m_parent;}
-
-  void  append_child(std::unique_ptr<ast_node>&&  e) noexcept;
-  void  append_child(std::unique_ptr<ast_node>&&  nd, std::string_view  kid) noexcept
-  {append_child(std::make_unique<ast_node>(std::move(nd),kid));}
-
-  int  get_number_of_children() const noexcept{return m_children.size();}
-
-  const std::unique_ptr<ast_node>*  begin() const noexcept{return m_children.data();}
-  const std::unique_ptr<ast_node>*    end() const noexcept{return m_children.data()+m_children.size();}
-
-  void  print() const noexcept;
+  const float&   get_f32(int  i=0) const noexcept{return reinterpret_cast<const float* >(m_memory.data())[i];}
+  const double&  get_f64(int  i=0) const noexcept{return reinterpret_cast<const double*>(m_memory.data())[i];}
 
 };
 
 
+
+namespace binary_operations{
+ast_constant  add(const ast_constant&  l, const ast_constant&  r) noexcept;
+ast_constant  sub(const ast_constant&  l, const ast_constant&  r) noexcept;
+ast_constant  mul(const ast_constant&  l, const ast_constant&  r) noexcept;
+ast_constant  div(const ast_constant&  l, const ast_constant&  r) noexcept;
+}
+
+
+class
+ast_content
+{
+  template<class  T>
+  struct default_deleter{
+    using fnptr_t = void(*)(void*);
+
+    static void  process(T*  ptr) noexcept{delete ptr;}
+    static fnptr_t  get() noexcept{return reinterpret_cast<fnptr_t>(&process);}
+  };
+
+  const token*  m_token=nullptr;
+
+  void*  m_data=nullptr;
+
+  void  (*m_deleter)(void*)=nullptr;
+
+public:
+  ast_content() noexcept{}
+  ast_content(const token&  tok) noexcept: m_token(&tok){}
+ ~ast_content(){if(m_deleter){m_deleter(m_data);}}
+
+  ast_content(const ast_content& ) noexcept=delete;
+  ast_content(      ast_content&&  rhs) noexcept{assign(std::move(rhs));}
+
+  ast_content&  operator=(const ast_content& ) noexcept=delete;
+  ast_content&  operator=(      ast_content&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  const token&  operator*()  const noexcept{return *m_token;}
+  const token*  operator->() const noexcept{return  m_token;}
+
+  ast_content&  assign(ast_content&&  rhs) noexcept;
+
+  void          set_token(const token*  tok)       noexcept{       m_token = tok;}
+  const token*  get_token(                 ) const noexcept{return m_token;}
+
+  template<class  T, class  DELETER=default_deleter<T>>
+  void  set_data(T*  ptr) noexcept{
+      if(m_deleter)
+      {
+        m_deleter(m_data);
+      }
+
+
+    m_data    =            ptr;
+    m_deleter = DELETER::get();
+  }
+
+  template<class  T>
+  pointer_wrapper<T>  get_data() const noexcept{return static_cast<T*>(m_data);}
+
+};
+
+
+using ast_node = basic_node<ast_content>;
+
+inline ast_node::child_type
+make_ast_node(std::string_view  name) noexcept
+{
+  return std::make_unique<ast_node>(name);
+}
+
+inline ast_node::child_type
+make_ast_node(const token&  tok, std::string_view  name) noexcept
+{
+  auto  nd = std::make_unique<ast_node>(name);
+
+  nd->content().set_token(&tok);
+
+  return std::move(nd);
+}
+
+inline ast_node::child_type
+rename(ast_node::child_type&&  child, std::string_view  name) noexcept
+{
+  child->set_name(name);
+
+  return std::move(child);
+}
+
+
+void  print(const ast_node&  nd) noexcept;
+
+
+
+
+std::unique_ptr<ast_node>  read_global_space_element(token_iterator&  it, const ast_node&  base_nd);
+
+
+class
+ast_builder
+{
+  std::vector<const ast_node*>  m_routes;
+
+  token_iterator  m_iterator;
+
+  std::unique_ptr<ast_node>  read_argument_list();
+  std::unique_ptr<ast_node>  read_index();
+  std::unique_ptr<ast_node>  read_operand();
+  std::unique_ptr<ast_node>  read_primary_expression_element();
+  std::unique_ptr<ast_node>  read_primary_expression();
+  std::unique_ptr<ast_node>  read_unary_operator();
+  std::unique_ptr<ast_node>  read_unary_expression();
+  std::unique_ptr<ast_node>  read_binary_operator();
+  std::unique_ptr<ast_node>  read_expression_element();
+  std::unique_ptr<ast_node>  read_expression();
+
+  std::unique_ptr<ast_node>  read_let( );
+  std::unique_ptr<ast_node>  read_return();
+  std::unique_ptr<ast_node>  read_goto();
+  std::unique_ptr<ast_node>  read_case();
+  std::unique_ptr<ast_node>  read_switch();
+  std::unique_ptr<ast_node>  read_for_instruction();
+  std::unique_ptr<ast_node>  read_for();
+  std::unique_ptr<ast_node>  read_while();
+  std::unique_ptr<ast_node>  read_if();
+  std::unique_ptr<ast_node>  read_if_string();
+  std::unique_ptr<ast_node>  read_statement();
+
+  std::unique_ptr<ast_node>  read_parameter();
+  std::unique_ptr<ast_node>  read_parameter_list();
+  std::unique_ptr<ast_node>  read_local_space();
+  std::unique_ptr<ast_node>  read_function();
+  std::unique_ptr<ast_node>  read_struct_def();
+  std::unique_ptr<ast_node>  read_struct();
+  std::unique_ptr<ast_node>  read_union_def();
+  std::unique_ptr<ast_node>  read_union();
+  std::unique_ptr<ast_node>  read_enumerator();
+  std::unique_ptr<ast_node>  read_enum_def();
+  std::unique_ptr<ast_node>  read_enum();
+  std::unique_ptr<ast_node>  read_alias();
+  std::unique_ptr<ast_node>  read_type();
+  std::unique_ptr<ast_node>  read_name();
+
+  std::unique_ptr<ast_node>  read_global_space_element();
+
+  void  advance(int  n=1) noexcept{m_iterator += n;}
+
+public:
+  ast_builder(token_iterator  it) noexcept: m_iterator(it){}
+
+  void  push(const std::unique_ptr<ast_node>&  nd) noexcept{m_routes.emplace_back(nd.get());}
+  void   pop() noexcept{m_routes.pop_back();}
+
+  const ast_node*  get_base() const noexcept{return m_routes.empty()? nullptr:m_routes.front();}
+
+  const ast_node*  find_node(std::string_view  name) const noexcept;
+
+  typesystem::type_info  find_type_info(std::string_view  name) const noexcept;
+
+  const ast_constant*  find_constant(std::string_view  name) const noexcept;
+
+  std::unique_ptr<ast_node>  read_global_space();
+
+  void  print() const noexcept;
+
+};
 
 
 }

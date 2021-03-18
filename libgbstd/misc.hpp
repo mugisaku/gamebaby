@@ -324,6 +324,180 @@ list_node_header
 
 
 
+template<typename  T>
+class
+basic_node
+{
+public:
+  using content_type = T;
+  using child_type = std::unique_ptr<basic_node>;
+  using collection = std::vector<std::reference_wrapper<basic_node>>;
+
+private:
+  pointer_wrapper<basic_node>  m_parent;
+
+  std::string  m_name;
+
+  content_type  m_content;
+
+  std::vector<child_type>  m_children;
+
+  void  collect_internal(std::string_view  name, collection&  col) const noexcept
+  {
+      if(is(name))
+      {
+        col += std::ref(*this);
+      }
+
+
+      for(auto&  child: m_children)
+      {
+        child->collect_internal(name,col);
+      }
+  }
+
+public:
+  basic_node() noexcept{}
+  basic_node(std::string_view  sv) noexcept: m_name(sv){}
+  basic_node(const content_type&   c) noexcept{assign(c);}
+  basic_node(      content_type&&  c) noexcept{assign(std::move(c));}
+  basic_node(const basic_node& ) noexcept=delete;
+  basic_node(      basic_node&&) noexcept=delete;
+ ~basic_node(){}
+
+  basic_node&  operator=(const basic_node& ) noexcept=delete;
+  basic_node&  operator=(      basic_node&&) noexcept=delete;
+
+  basic_node&  operator=(const content_type&   c) noexcept{return assign(c);}
+  basic_node&  operator=(      content_type&&  c) noexcept{return assign(std::move(c));}
+
+  basic_node&  operator+=(child_type&&  child) noexcept{return append_child(std::move(child));}
+
+  bool  operator==(std::string_view  sv) const noexcept{return m_name == sv;}
+  bool  operator!=(std::string_view  sv) const noexcept{return m_name != sv;}
+
+  basic_node&  assign(const content_type&   c) noexcept{  m_content =            c;  return *this;}
+  basic_node&  assign(      content_type&&  c) noexcept{  m_content = std::move(c);  return *this;}
+
+  bool  is(std::string_view  sv) const noexcept{return m_name == sv;}
+
+  const std::string&  name() const noexcept{return m_name;}
+
+  void  set_name(std::string_view  sv) noexcept{m_name = sv;}
+
+  pointer_wrapper<basic_node>  parent() const noexcept{return m_parent;}
+
+  const std::vector<child_type>&  children() const noexcept{return m_children;}
+
+        content_type&  content()       noexcept{return m_content;}
+  const content_type&  content() const noexcept{return m_content;}
+
+  const child_type*  begin() const noexcept{return m_children.data();}
+  const child_type*    end() const noexcept{return m_children.data()+m_children.size();}
+
+  pointer_wrapper<basic_node>  find_child(std::string_view  name) const noexcept
+  {
+      for(auto&  child: m_children)
+      {
+          if(child->is(name))
+          {
+            return child.get();
+          }
+      }
+
+
+    return nullptr;
+  }
+
+  pointer_wrapper<basic_node>  find(std::string_view  name) const noexcept
+  {
+    auto  p = find_child(name);
+
+      if(p)
+      {
+        return p;
+      }
+
+
+      for(auto&  child: m_children)
+      {
+        auto  p = child->find(name);
+
+          if(p)
+          {
+            return p;
+          }
+      }
+
+
+    return nullptr;
+  }
+
+  collection  collect(std::string_view  name) const noexcept
+  {
+    collection  col;
+
+    collect_internal(name,col);
+
+    return std::move(col);
+  }
+
+  pointer_wrapper<basic_node>  create_child() noexcept
+  {
+    auto  p = child_type();
+
+    p->m_parent = this;
+
+    m_children.append(std::move(p));
+
+    return p.get();
+  }
+
+  pointer_wrapper<basic_node>  create_child(const content_type&  c) noexcept
+  {
+    auto  p = child_type();
+
+    p->m_parent = this;
+
+    p->m_content = c;
+
+    m_children.append(std::move(p));
+
+    return p.get();
+  }
+
+  pointer_wrapper<basic_node>  create_child(content_type&&  c) noexcept
+  {
+    auto  p = child_type();
+
+    p->m_parent = this;
+
+    p->m_content = std::move(c);
+
+    m_children.append(std::move(p));
+
+    return p.get();
+  }
+
+  const child_type&  append_child(child_type&&  child) noexcept
+  {
+      if(child)
+      {
+        child->m_parent = this;
+
+        return m_children.emplace_back(std::move(child));
+      }
+
+
+    return child;
+  }
+
+};
+
+
+
+
+
 }
 
 

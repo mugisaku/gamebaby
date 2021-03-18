@@ -8,161 +8,171 @@ namespace gbstd{
 
 
 
+ast_content&
+ast_content::
+assign(ast_content&&  rhs) noexcept
+{
+    if(this != &rhs)
+    {
+      std::swap(m_deleter,rhs.m_deleter);
+      std::swap(m_data   ,rhs.m_data);
+      std::swap(m_token  ,rhs.m_token);
+    }
+
+
+  return *this;
+}
+
+
+namespace{
+class
+node_iterator
+{
+  const ast_node::child_type*  m_begin;
+  const ast_node::child_type*  m_current;
+  const ast_node::child_type*  m_end;
+
+  static const ast_node  m_null;
+
+public:
+  node_iterator(const ast_node&  nd) noexcept:
+  m_begin(nd.begin()), m_current(nd.begin()), m_end(nd.end()){}
+
+  operator bool() const noexcept{return m_current < m_end;}
+
+  const ast_node*  operator->() const noexcept{return (*this)? m_current->get():&m_null;}
+  const ast_node&  operator*() const noexcept{return (*this)? **m_current:m_null;}
+
+  node_iterator&  operator++() noexcept{  ++m_current;  return *this;}
+
+  node_iterator  operator++(int) noexcept{
+    auto  tmp = *this;
+
+    ++m_current;
+
+    return tmp;
+  }
+
+  const ast_node&  operator[](int  i) const noexcept
+  {
+    return (m_current+i) < m_end? *m_current[i]:m_null;
+  }
+
+  const ast_node&  operator[](std::string_view  name) const noexcept
+  {
+      for(auto  it = m_current;  it < m_end;  ++it)
+      {
+        auto&  child = *it++;
+
+          if(child->is(name))
+          {
+            return *child;
+          }
+      }
+
+
+    return m_null;
+  }
+
+};
+
+
+const ast_node
+node_iterator::
+m_null;
+
+
 void
-ast_node::
-append_child(std::unique_ptr<ast_node>&&  e) noexcept
+print_variable_declaration(node_iterator  it) noexcept
 {
-    if(!e)
-    {
-      printf("%s< null node is not be child\n",m_kind_id.data());
-
-      return;
-    }
-
-
-    if(e->get_parent())
-    {
-      printf("%s< %s has parent\n",e->get_kind_id().data(),m_kind_id.data());
-
-      return;
-    }
-
-
-  e->m_parent = this;
-
-  m_children.emplace_back(std::move(e));
 }
-
-
-
-
-std::unique_ptr<ast_node>
-ast_node::
-read_name(token_iterator&  it)
+void
+print_type_declaration(node_iterator  it) noexcept
 {
-    if(it->is_identifier())
+  auto&  child = *it;
+
+    if(child.is("enum declaration"))
     {
-      return std::make_unique<ast_node>(*it++,"name");
     }
 
-
-  return nullptr;
-}
-
-
-std::unique_ptr<ast_node>
-ast_node::
-read_global_space(token_iterator&  it)
-{
-  auto  nd = std::make_unique<ast_node>("");
-
-    while(it)
+  else
+    if(child.is("struct declaration"))
     {
-      ast_loopguard  lg("read_global_space",it);
+    }
 
-        if(it->is_operator_code(";"))
+  else
+    if(child.is("union declaration"))
+    {
+    }
+
+  else
+    if(child.is("alias declaration"))
+    {
+    }
+}
+void
+print_function_declaration(node_iterator  it) noexcept
+{
+    for(auto&  child: it->children())
+    {
+
+    }
+}
+void
+print_declaration(node_iterator  it) noexcept
+{
+    for(auto&  child: it->children())
+    {
+      auto&  name = child->name();
+
+        if(name == "variable declaration")
         {
-          ++it;
+          print_variable_declaration(*child);
         }
 
       else
-        if(it->is_identifier())
+        if(name == "type declaration")
         {
-          auto&  s = it->get_string();
-
-            if(s == std::string_view("function"))
-            {
-              nd->append_child(read_function(it));
-            }
-
-          else
-            if(s == std::string_view("struct"))
-            {
-              nd->append_child(read_struct(it));
-            }
-
-          else
-            if(s == std::string_view("enum"))
-            {
-              nd->append_child(read_enum(it));
-            }
-
-          else
-            if(s == std::string_view("union"))
-            {
-              nd->append_child(read_union(it));
-            }
-
-          else
-            if(s == std::string_view("alias"))
-            {
-              nd->append_child(read_alias(it));
-            }
-
-          else
-            if(s == std::string_view("let"))
-            {
-              nd->append_child(read_let(it));
-            }
+          print_type_declaration(*child);
         }
 
       else
+        if(name == "function declaration")
         {
-          throw ast_error("read_global_space error",*it);
+          print_function_declaration(*child);
         }
-
-
-      lg(it);
     }
+}
+void
+print_global_space(node_iterator  it) noexcept
+{
+    for(auto&  child: it->children())
+    {
+      auto&  name = child->name();
 
-
-  return std::move(nd);
+        if(name == "declaration")
+        {
+          print_declaration(*child);
+        }
+    }
+}
 }
 
 
 void
-ast_node::
-print_internal(std::vector<std::string>&  route) const noexcept
+print(const ast_node&  nd) noexcept
 {
-    if(m_token)
+    for(auto&  child: nd)
     {
-      m_token->print();
-
-      printf(":");
-    }
-
-
-  route.emplace_back(m_kind_id);
-
-    if(m_token || m_children.empty())
-    {
-        for(auto&  s: route)
+        if(child->name() == "global space")
         {
-          printf("/%s",s.data());
+          printf("//global space\n");
+
+          print_global_space(*child);
+
+          printf("\n\n");
         }
-
-
-      printf("\n");
     }
-
-
-    for(auto&  child: m_children)
-    {
-      child->print_internal(route);
-    }
-
-
-  route.pop_back();
-}
-
-
-void
-ast_node::
-print() const noexcept
-{
-  std::vector<std::string>  route;
-
-  print_internal(route);
 }
 
 

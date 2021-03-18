@@ -1,4 +1,5 @@
 #include"libgbstd/vms/ast.hpp"
+#include"libgbstd/typesystem.hpp"
 
 
 
@@ -6,37 +7,38 @@
 namespace gbstd{
 
 
+using namespace typesystem;
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_struct_def(token_iterator&  it)
+ast_builder::
+read_struct_def()
 {
-  auto  nd = std::make_unique<ast_node>("struct definition");
+  auto  nd = make_ast_node("struct definition");
 
-  ++it;
+  advance();
 
     for(;;)
     {
-      ast_loopguard  lg("read_struct_def",it);
+      ast_loopguard  lg("read_struct_def",m_iterator);
 
-        if(it->is_operator_code("}"))
+        if(m_iterator->is_operator_code("}"))
         {
-          ++it;
+          advance();
 
           return std::move(nd);
         }
 
 
-      auto  para_nd = read_parameter(it);
+      auto  para_nd = read_parameter();
 
         if(para_nd)
         {
           nd->append_child(std::move(para_nd));
 
-            if(it->is_operator_code(";"))
+            if(m_iterator->is_operator_code(";"))
             {
-              ++it;
+              advance();
             }
         }
 
@@ -46,7 +48,7 @@ read_struct_def(token_iterator&  it)
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
@@ -55,20 +57,24 @@ read_struct_def(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_struct(token_iterator&  it)
+ast_builder::
+read_struct()
 {
-  auto  nd = std::make_unique<ast_node>("struct");
+  auto  nd = make_ast_node("struct");
 
-  auto  name_nd = read_name(++it);
+  advance();
+
+  auto  name_nd = read_name();
 
     if(name_nd)
     {
       nd->append_child(std::move(name_nd));
 
-        if(it->is_operator_code("{"))
+      nd->content().set_data(new typesystem::type_info());
+
+        if(m_iterator->is_operator_code("{"))
         {
-          nd->append_child(read_struct_def(it));
+          nd->append_child(read_struct_def());
         }
 
 
@@ -76,39 +82,39 @@ read_struct(token_iterator&  it)
     }
 
 
-  throw ast_error("struct is declared without name\n",*it);
+  throw ast_error("struct is declared without name\n",*m_iterator);
 }
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_union_def(token_iterator&  it)
+ast_builder::
+read_union_def()
 {
-  auto  nd = std::make_unique<ast_node>("union definition");
+  auto  nd = make_ast_node("union definition");
 
-  ++it;
+  advance();
 
     for(;;)
     {
-      ast_loopguard  lg("read_union_def",it);
+      ast_loopguard  lg("read_union_def",m_iterator);
 
-        if(it->is_operator_code("}"))
+        if(m_iterator->is_operator_code("}"))
         {
-          ++it;
+          advance();
 
           return std::move(nd);
         }
 
 
-      auto  para_nd = read_parameter(it);
+      auto  para_nd = read_parameter();
 
         if(para_nd)
         {
           nd->append_child(std::move(para_nd));
 
-            if(it->is_operator_code(";"))
+            if(m_iterator->is_operator_code(";"))
             {
-              ++it;
+              advance();
             }
         }
 
@@ -118,7 +124,7 @@ read_union_def(token_iterator&  it)
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
@@ -127,20 +133,24 @@ read_union_def(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_union(token_iterator&  it)
+ast_builder::
+read_union()
 {
-  auto  nd = std::make_unique<ast_node>("union");
+  auto  nd = make_ast_node("union");
 
-  auto  name_nd = read_name(++it);
+  advance();
+
+  auto  name_nd = read_name();
 
     if(name_nd)
     {
       nd->append_child(std::move(name_nd));
 
-        if(it->is_operator_code("{"))
+      nd->content().set_data(new typesystem::type_info());
+
+        if(m_iterator->is_operator_code("{"))
         {
-          nd->append_child(read_union_def(it));
+          nd->append_child(read_union_def());
         }
 
 
@@ -153,20 +163,24 @@ read_union(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_enumerator(token_iterator&  it)
+ast_builder::
+read_enumerator()
 {
-  auto  nd = std::make_unique<ast_node>("enumerator");
+  auto  nd = make_ast_node("enumerator");
 
-  auto  name_nd = read_name(++it);
+  advance();
+
+  auto  name_nd = read_name();
 
     if(name_nd)
     {
       nd->append_child(std::move(name_nd));
 
-        if(it->is_operator_code("="))
+        if(m_iterator->is_operator_code("="))
         {
-          auto  expr_nd = read_expression(++it);
+          advance();
+
+          auto  expr_nd = read_expression();
 
             if(expr_nd)
             {
@@ -188,18 +202,18 @@ read_enumerator(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_enum_def(token_iterator&  it)
+ast_builder::
+read_enum_def()
 {
-  auto  nd = std::make_unique<ast_node>("enum definition");
+  auto  nd = make_ast_node("enum definition");
 
-  ++it;
+  advance();
 
     for(;;)
     {
-      ast_loopguard  lg("read_enum_def",it);
+      ast_loopguard  lg("read_enum_def",m_iterator);
 
-      auto  en_nd = read_enumerator(it);
+      auto  en_nd = read_enumerator();
 
         if(en_nd)
         {
@@ -207,15 +221,15 @@ read_enum_def(token_iterator&  it)
         }
 
       else
-        if(it->is_operator_code(","))
+        if(m_iterator->is_operator_code(","))
         {
-          ++it;
+          advance();
         }
 
       else
-        if(it->is_operator_code("}"))
+        if(m_iterator->is_operator_code("}"))
         {
-          ++it;
+          advance();
 
           return std::move(nd);
         }
@@ -226,7 +240,7 @@ read_enum_def(token_iterator&  it)
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
@@ -235,20 +249,24 @@ read_enum_def(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_enum(token_iterator&  it)
+ast_builder::
+read_enum()
 {
-  auto  nd = std::make_unique<ast_node>("enum");
+  auto  nd = make_ast_node("enum");
 
-  auto  name_nd = read_name(++it);
+  advance();
+
+  auto  name_nd = read_name();
 
     if(name_nd)
     {
       nd->append_child(std::move(name_nd));
 
-        if(it->is_operator_code("{"))
+      nd->content().set_data(new typesystem::type_info());
+
+        if(m_iterator->is_operator_code("{"))
         {
-          nd->append_child(read_enum_def(it));
+          nd->append_child(read_enum_def());
         }
 
 
@@ -261,13 +279,15 @@ read_enum(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_alias(token_iterator&  it)
+ast_builder::
+read_alias()
 {
-  auto  nd = std::make_unique<ast_node>("alias");
+  auto  nd = make_ast_node("alias");
 
-  auto  type_nd = read_type(++it);
-  auto  name_nd = read_name(  it);
+  advance();
+
+  auto  type_nd = read_type();
+  auto  name_nd = read_name();
 
     if(type_nd && name_nd)
     {
@@ -282,39 +302,82 @@ read_alias(token_iterator&  it)
 }
 
 
+namespace{
+constexpr int  g_word_size = 8;
+}
+
+
 std::unique_ptr<ast_node>
-ast_node::
-read_type(token_iterator&  it)
+ast_builder::
+read_type()
 {
-  auto  nd = std::make_unique<ast_node>("type");
+  auto  nd = make_ast_node("type");
 
-  auto  base_nd = read_name(it);
+  auto  name_nd = read_name();
 
-    if(base_nd)
+    if(name_nd)
     {
-      nd->append_child(std::move(base_nd));
+      auto&  s = name_nd->content().get_token()->get_string();
+
+      type_info  ti = find_type_info(s);
+
+        if(!ti)
+        {
+          throw ast_error(form_string("%s as typename is not found.",s.data()));
+        }
+
+
+      nd->append_child(std::move(name_nd));
 
         for(;;)
         {
-          ast_loopguard  lg("read_type",it);
+          ast_loopguard  lg("read_type",m_iterator);
 
-            if(it->is_operator_code("*"))
+            if(m_iterator->is_operator_code("*"))
             {
-              nd->append_child(std::make_unique<ast_node>(*it++,"pointer"));
+              ti = ti.form_typed_pointer(g_word_size);
+
+              nd->append_child(make_ast_node(*m_iterator++,"pointer"));
             }
 
           else
-            if(it->is_operator_code("&"))
+            if(m_iterator->is_operator_code("&"))
             {
-              nd->append_child(std::make_unique<ast_node>(*it++,"reference"));
+              ti = ti.form_reference(g_word_size);
+
+              nd->append_child(make_ast_node(*m_iterator++,"reference"));
 
               break;
             }
 
           else
-            if(it->is_operator_code("["))
+            if(m_iterator->is_operator_code("["))
             {
-              nd->append_child(read_index(it));
+              auto  idx_nd = read_index();
+
+              auto  expr_nd = idx_nd->find_child("expression");
+
+              auto  cons = expr_nd->content().get_data<ast_constant>();
+
+                if(cons)
+                {
+                    if((*cons)->is_integer())
+                    {
+                      ti = ti.form_array(cons->get_i64());
+
+                      nd->append_child(std::move(idx_nd));
+                    }
+
+                  else
+                    {
+                      report;
+                    }
+                }
+
+              else
+                {
+                  throw ast_error("index expression is not constant\n",*m_iterator);
+                }
             }
 
           else
@@ -323,9 +386,11 @@ read_type(token_iterator&  it)
             }
 
 
-          lg(it);
+          lg(m_iterator);
         }
 
+
+      nd->content().set_data(new type_info(std::move(ti)));
 
       return std::move(nd);
     }

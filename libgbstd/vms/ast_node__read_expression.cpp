@@ -9,26 +9,26 @@ namespace gbstd{
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_operand(token_iterator&  it)
+ast_builder::
+read_operand()
 {
-    if(it->is_integer() ||
-       it->is_floating_point_number() ||
-       it->is_string() ||
-       it->is_identifier())
+    if(m_iterator->is_integer() ||
+       m_iterator->is_floating_point_number() ||
+       m_iterator->is_string() ||
+       m_iterator->is_identifier())
     {
-      return std::make_unique<ast_node>(*it++,"operand");
+      return make_ast_node(*m_iterator++,"operand");
     }
 
   else
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto       nd = std::make_unique<ast_node>(*it++,"operand");
-      auto  expr_nd = read_expression(it);
+      auto       nd = make_ast_node(*m_iterator++,"operand");
+      auto  expr_nd = read_expression();
 
-        if(expr_nd && it->is_operator_code(")"))
+        if(expr_nd && m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
           nd->append_child(std::move(expr_nd));
 
@@ -42,34 +42,34 @@ read_operand(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_argument_list(token_iterator&  it)
+ast_builder::
+read_argument_list()
 {
   auto  nd = std::make_unique<ast_node>("argument list");
 
-  ++it;
+  advance();
 
-    while(it)
+    while(m_iterator)
     {
-      ast_loopguard  lg("read_argument_list",it);
+      ast_loopguard  lg("read_argument_list",m_iterator);
 
-        if(it->is_operator_code(")"))
+        if(m_iterator->is_operator_code(")"))
         {
-          ++it;
+          advance();
 
           return std::move(nd);
         }
 
 
-      auto  expr_nd = read_expression(it);
+      auto  expr_nd = read_expression();
 
         if(expr_nd)
         {
           nd->append_child(std::move(expr_nd));
 
-            if(it->is_operator_code(","))
+            if(m_iterator->is_operator_code(","))
             {
-              ++it;
+              advance();
             }
         }
 
@@ -79,7 +79,7 @@ read_argument_list(token_iterator&  it)
         }
 
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
@@ -88,16 +88,18 @@ read_argument_list(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_index(token_iterator&  it)
+ast_builder::
+read_index()
 {
   auto  nd = std::make_unique<ast_node>("index");
 
-  auto  expr_nd = read_expression(++it);
+  advance();
 
-    if(expr_nd && it->is_operator_code("]"))
+  auto  expr_nd = read_expression();
+
+    if(expr_nd && m_iterator->is_operator_code("]"))
     {
-      ++it;
+      advance();
 
       nd->append_child(std::move(expr_nd));
 
@@ -110,30 +112,30 @@ read_index(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_primary_expression_element(token_iterator&  it)
+ast_builder::
+read_primary_expression_element()
 {
   constexpr auto  id = std::string_view("primary expression element");
 
-    if(it->is_operator_code(".") ||
-       it->is_operator_code("->"))
+    if(m_iterator->is_operator_code(".") ||
+       m_iterator->is_operator_code("->"))
     {
-      auto  nd = std::make_unique<ast_node>(*it++,id);
+      auto  nd = make_ast_node(*m_iterator++,id);
 
-        if(it->is_identifier())
+        if(m_iterator->is_identifier())
         {
-          nd->append_child(std::make_unique<ast_node>(*it++,"identifier"));
+          nd->append_child(make_ast_node(*m_iterator++,"identifier"));
 
           return std::move(nd);
         }
     }
 
   else
-    if(it->is_operator_code("["))
+    if(m_iterator->is_operator_code("["))
     {
-      auto  nd = std::make_unique<ast_node>(*it,id);
+      auto  nd = make_ast_node(*m_iterator,id);
 
-      auto  idx_nd = read_index(it);
+      auto  idx_nd = read_index();
 
         if(idx_nd)
         {
@@ -144,11 +146,11 @@ read_primary_expression_element(token_iterator&  it)
     }
 
   else
-    if(it->is_operator_code("("))
+    if(m_iterator->is_operator_code("("))
     {
-      auto  nd = std::make_unique<ast_node>(*it,id);
+      auto  nd = make_ast_node(*m_iterator,id);
 
-      auto  args_nd = read_argument_list(it);
+      auto  args_nd = read_argument_list();
 
         if(args_nd)
         {
@@ -159,10 +161,10 @@ read_primary_expression_element(token_iterator&  it)
     }
 
   else
-    if(it->is_operator_code("++") ||
-       it->is_operator_code("--"))
+    if(m_iterator->is_operator_code("++") ||
+       m_iterator->is_operator_code("--"))
     {
-      return std::make_unique<ast_node>(*it++,id);
+      return make_ast_node(*m_iterator++,id);
     }
 
 
@@ -171,12 +173,12 @@ read_primary_expression_element(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_primary_expression(token_iterator&  it)
+ast_builder::
+read_primary_expression()
 {
   auto  nd = std::make_unique<ast_node>("primary expression");
 
-  auto  o_nd = read_operand(it);
+  auto  o_nd = read_operand();
 
     if(o_nd)
     {
@@ -184,9 +186,9 @@ read_primary_expression(token_iterator&  it)
 
         for(;;)
         {
-          ast_loopguard  lg("read_primary_expression",it);
+          ast_loopguard  lg("read_primary_expression",m_iterator);
 
-          auto  prexpre = read_primary_expression_element(it);
+          auto  prexpre = read_primary_expression_element();
 
             if(!prexpre)
             {
@@ -196,7 +198,7 @@ read_primary_expression(token_iterator&  it)
 
           nd->append_child(std::move(prexpre));
 
-          lg(it);
+          lg(m_iterator);
         }
 
 
@@ -209,10 +211,10 @@ read_primary_expression(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_unary_operator(token_iterator&  it)
+ast_builder::
+read_unary_operator()
 {
-  auto  opco = it->get_operator_code();
+  auto  opco = m_iterator->get_operator_code();
 
     if((opco == "++") ||
        (opco == "--") ||
@@ -222,7 +224,7 @@ read_unary_operator(token_iterator&  it)
        (opco == "!") ||
        (opco == "~"))
     {
-      return std::make_unique<ast_node>(*it++,"unary operator");
+      return make_ast_node(*m_iterator++,"unary operator");
     } 
 
 
@@ -231,16 +233,16 @@ read_unary_operator(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_unary_expression(token_iterator&  it)
+ast_builder::
+read_unary_expression()
 {
   auto  nd = std::make_unique<ast_node>("unary expression");
 
     for(;;)
     {
-      ast_loopguard  lg("read_unary_expression",it);
+      ast_loopguard  lg("read_unary_expression",m_iterator);
 
-      auto  unop_nd = read_unary_operator(it);
+      auto  unop_nd = read_unary_operator();
 
         if(!unop_nd)
         {
@@ -250,11 +252,11 @@ read_unary_expression(token_iterator&  it)
 
       nd->append_child(std::move(unop_nd));
 
-      lg(it);
+      lg(m_iterator);
     }
 
 
-  auto  prexpr = read_primary_expression(it);
+  auto  prexpr = read_primary_expression();
 
     if(prexpr)
     {
@@ -269,10 +271,10 @@ read_unary_expression(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_binary_operator(token_iterator&  it)
+ast_builder::
+read_binary_operator()
 {
-  auto  opco = it->get_operator_code();
+  auto  opco = m_iterator->get_operator_code();
 
     if((opco == "+") ||
        (opco == "-") ||
@@ -304,7 +306,7 @@ read_binary_operator(token_iterator&  it)
        (opco == "&=") ||
        (opco == "^="))
     {
-      return std::make_unique<ast_node>(*it++,"binary operator");
+      return make_ast_node(*m_iterator++,"binary operator");
     } 
 
 
@@ -313,13 +315,13 @@ read_binary_operator(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_expression_element(token_iterator&  it)
+ast_builder::
+read_expression_element()
 {
   auto  nd = std::make_unique<ast_node>("expression element");
 
-  auto   binop_nd = read_binary_operator(it);
-  auto  unexpr_nd = read_unary_expression(it);
+  auto   binop_nd = read_binary_operator();
+  auto  unexpr_nd = read_unary_expression();
 
     if(binop_nd && unexpr_nd)
     {
@@ -335,12 +337,12 @@ read_expression_element(token_iterator&  it)
 
 
 std::unique_ptr<ast_node>
-ast_node::
-read_expression(token_iterator&  it)
+ast_builder::
+read_expression()
 {
   auto  nd = std::make_unique<ast_node>("expression");
 
-  auto first_expr_nd = read_unary_expression(it);
+  auto  first_expr_nd = read_unary_expression();
 
     if(first_expr_nd)
     {
@@ -348,9 +350,9 @@ read_expression(token_iterator&  it)
 
         for(;;)
         {
-          ast_loopguard  lg("read_expression",it);
+          ast_loopguard  lg("read_expression",m_iterator);
 
-          auto  expre_nd = read_expression_element(it);
+          auto  expre_nd = read_expression_element();
 
             if(!expre_nd)
             {
@@ -360,9 +362,11 @@ read_expression(token_iterator&  it)
 
           nd->append_child(std::move(expre_nd));
 
-          lg(it);
+          lg(m_iterator);
         }
 
+
+      nd->content().set_data(new ast_constant(0));
 
       return std::move(nd);
     }

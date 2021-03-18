@@ -24,6 +24,7 @@ set(SOURCES
   characters/text.cpp
   characters/string_set.cpp
   characters/string_form.cpp
+  characters/text_iterator.cpp
   images/image.cpp
   images/image__png.cpp
   images/canvas.cpp
@@ -71,12 +72,19 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
+  syntaxes/syntax_element.cpp
+  syntaxes/syntax_group.cpp
+  syntaxes/syntax_definition.cpp
+  syntaxes/syntax_rule.cpp
   typesystems/struct.cpp
   typesystems/union.cpp
   typesystems/enum.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
+  vms/ast_constant.cpp
   vms/ast_node.cpp
+  vms/ast_builder.cpp
+  vms/ast_node__read_global_space.cpp
   vms/ast_node__read_function.cpp
   vms/ast_node__read_expression.cpp
   vms/ast_node__read_type.cpp

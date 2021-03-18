@@ -7,9 +7,10 @@
 namespace gbstd{
 
 
-namespace{
+
+
 size_t
-utf8_byte_number(unsigned char  c) noexcept
+u8clen(unsigned char  c) noexcept
 {
        if(!(c>>7)             ){return 1;}
   else if( (c>>1) == 0b1111110){return 6;}
@@ -22,7 +23,6 @@ utf8_byte_number(unsigned char  c) noexcept
   printf("%dはUTF8の先頭ではありません\n",c);
 
   return 0;
-}
 }
 
 
@@ -109,7 +109,7 @@ operator()() noexcept
 
   char32_t  c = 0;
 
-  const auto  n = utf8_byte_number(*m_pointer);
+  const auto  n = u8clen(*m_pointer);
 
 
   auto  p = reinterpret_cast<const uint8_t*>(m_pointer);
