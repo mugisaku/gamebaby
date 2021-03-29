@@ -10,7 +10,7 @@ namespace gbstd{
 
 void
 syntax_rule::
-start_read(text_iterator&  it)
+start_read(bool  key, code_text::iterator&  it)
 {
   auto  name = read_identifier(it);
 
@@ -18,51 +18,57 @@ start_read(text_iterator&  it)
 
     if(!def)
     {
-      def = &m_definition_list.emplace_back(name);
+      def = &m_definition_list.emplace_back(false,name);
     }
 
 
   it.skip_spaces();
 
-  auto  c = *it.get().data();
+  auto  c = *it;
 
     if(c == '=')
     {
-      it.advance();
+      ++it;
 
-      read_group(*def,';',it);
+        if(key)
+        {
+          def->set_key();
+        }
+
+
+      read_expression(*def,';',it);
     }
 
   else
     if(c == ';')
     {
-      it.advance();
+      ++it;
     }
 
   else
     {
-      it.advance();
+      ++it;
 
       report;
     }
 }
 
 
-std::string
+std::u16string
 syntax_rule::
-read_identifier(text_iterator&  it)
+read_identifier(code_text::iterator&  it)
 {
-  std::string  s;
+  std::u16string  s;
 
-    while(it)
+    while(*it)
     {
-      auto  c = *it.get().data();
+      auto  c = *it;
 
         if(is_alphabet(c) || (c == '_'))
         {
           s += c;
 
-          it.advance();
+          ++it;
         }
 
       else
@@ -76,21 +82,21 @@ read_identifier(text_iterator&  it)
 }
 
 
-std::string
+std::u16string
 syntax_rule::
-read_string(text_iterator&  it)
+read_string(code_text::iterator&  it)
 {
-  std::string  s(it.get());
+  std::u16string  s({*it});
 
-  it.advance();
+  ++it;
 
-    while(it)
+    while(*it)
     {
-      auto  c = *it.get().data();
+      auto  c = *it;
 
         if(c == '\"')
         {
-          it.advance();
+          ++it;
 
           break;
         }
@@ -98,9 +104,9 @@ read_string(text_iterator&  it)
       else
         if(c == '\\')
         {
-          it.advance();
+          ++it;
 
-          c = *it.get().data();
+          c = *it;
 
                if(c ==  'n'){s += '\n';}
           else if(c ==  'r'){s += '\r';}
@@ -111,12 +117,12 @@ read_string(text_iterator&  it)
           else if(c ==  '\''){s += '\'';}
           else{report;}
 
-          it.advance();
+          ++it;
         }
 
       else
         {
-          it.advance();
+          ++it;
 
           s += c;
         }
@@ -129,21 +135,109 @@ read_string(text_iterator&  it)
 
 void
 syntax_rule::
-read_group(syntax_group&  grp, int  close, text_iterator&  it)
+read_expression_internal(syntax_expression&  expr, code_text::iterator&  it)
 {
-  int  sep = 0;
+  auto  c = *it;
 
-  bool  is_first_time = true;
+    if((c == '|') ||
+       (c == '&') ||
+       (c == ':'))
+    {
+      char  s[2] = {static_cast<char>(c),0};
 
+      expr.push(small_string(s));
+
+      ++it;
+
+      it.skip_spaces();
+
+      c = *it;
+    }
+
+
+    if(c == '\"')
+    {
+      expr.push(read_string(++it));
+    }
+
+  else
+    if(c == '(')
+    {
+      small_string  ss("()");
+
+      syntax_expression  coexpr;
+
+      read_expression(coexpr,')',++it);
+
+      syntax_expression_element  e(std::move(coexpr));
+
+      expr.push(std::move(e));
+
+      expr.push(ss);
+    }
+
+  else
+    if(c == '[')
+    {
+      small_string  ss("[]");
+
+      syntax_expression  coexpr;
+
+      read_expression(coexpr,']',++it);
+
+      syntax_expression_element  e(std::move(coexpr));
+
+      expr.push(std::move(e));
+
+      expr.push(ss);
+    }
+
+  else
+    if(c == '{')
+    {
+      small_string  ss("{}");
+
+      syntax_expression  coexpr;
+
+      read_expression(coexpr,'}',++it);
+
+      syntax_expression_element  e(std::move(coexpr));
+
+      expr.push(std::move(e));
+
+      expr.push(ss);
+    }
+
+  else
+    {
+      auto  name = read_identifier(it);
+
+      auto  def = find(name);
+
+        if(!def)
+        {
+          def = &m_definition_list.emplace_back(false,name);
+        }
+
+
+      expr.push(syntax_expression_element(*def));
+    }
+}
+
+
+void
+syntax_rule::
+read_expression(syntax_expression&  expr, int  close, code_text::iterator&  it)
+{
     for(;;)
     {
       it.skip_spaces();
 
-      auto  c = *it.get().data();
+      auto  c = *it;
 
         if(c == close)
         {
-          it.advance();
+          ++it;
 
           break;
         }
@@ -157,79 +251,20 @@ read_group(syntax_group&  grp, int  close, text_iterator&  it)
         }
 
       else
-        if(is_first_time)
         {
-          is_first_time = false;
-        }
-
-      else
-        if((c == '|') || (c == '&'))
-        {
-          it.advance();
-
-          it.skip_spaces();
-
-          sep = c                   ;
-                c = *it.get().data();
-        }
-
-
-        if(c == '\"')
-        {
-          it.advance();
-
-          grp.join(sep,read_string(it));
-        }
-
-      else
-        if(c == '(')
-        {
-          syntax_group  cogrp(c);
-
-          it.advance();
-
-          read_group(cogrp,')',it);
-
-          grp.join(sep,std::move(cogrp));
-        }
-
-      else
-        if(c == '[')
-        {
-          syntax_group  cogrp(c);
-
-          it.advance();
-
-          read_group(cogrp,']',it);
-
-          grp.join(sep,std::move(cogrp));
-        }
-
-      else
-        if(c == '{')
-        {
-          syntax_group  cogrp(c);
-
-          it.advance();
-
-          read_group(cogrp,'}',it);
-
-          grp.join(sep,std::move(cogrp));
-        }
-
-      else
-        {
-          auto  name = read_identifier(it);
-
-          auto  def = find(name);
-
-            if(!def)
+            try
             {
-              def = &m_definition_list.emplace_back(name);
+              read_expression_internal(expr,it);
             }
 
 
-          grp.join(sep,*def);
+            catch(syntax_expression_error&  e)
+            {
+              it.print();
+
+              report;
+              break;
+            }
         }
     }
 }
@@ -237,7 +272,7 @@ read_group(syntax_group&  grp, int  close, text_iterator&  it)
 
 syntax_rule&
 syntax_rule::
-assign(std::string_view  sv) noexcept
+assign(std::u16string_view  sv) noexcept
 {
   m_definition_list.clear();
 
@@ -247,21 +282,29 @@ assign(std::string_view  sv) noexcept
 
 syntax_rule&
 syntax_rule::
-append(std::string_view  sv) noexcept
+append(std::u16string_view  sv) noexcept
 {
-  text_iterator  it(sv);
+  code_text::iterator  it(sv.data());
 
   it.skip_spaces();
 
-    while(it)
+    while(*it)
     {
-      auto  sv = *it;
+      auto  c = *it;
 
-      auto  c = *sv.data();
+      bool  key = false;
+
+        if(c == '*')
+        {
+          key = true;
+
+          c = *++it;
+        }
+
 
         if(is_alphabet(c) || (c == '_'))
         {
-          start_read(it);
+          start_read(key,it);
 
           it.skip_spaces();
         }
@@ -282,7 +325,7 @@ append(std::string_view  sv) noexcept
 
 syntax_definition*
 syntax_rule::
-find(std::string_view  name) noexcept
+find(std::u16string_view  name) noexcept
 {
     for(auto&  def: m_definition_list)
     {
@@ -299,7 +342,7 @@ find(std::string_view  name) noexcept
 
 const syntax_definition*
 syntax_rule::
-find(std::string_view  name) const noexcept
+find(std::u16string_view  name) const noexcept
 {
     for(auto&  def: m_definition_list)
     {

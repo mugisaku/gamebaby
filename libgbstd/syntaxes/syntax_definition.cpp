@@ -12,9 +12,17 @@ void
 syntax_definition::
 print() const noexcept
 {
-  printf("%s = ",m_name.data());
+    if(m_key)
+    {
+      printf("*");
+    }
 
-  syntax_group::print();
+
+  gbstd::print(m_name);
+
+  printf(" = ");
+
+  syntax_expression::print();
 
   printf(";\n");
 }

@@ -5,6 +5,8 @@
 #include<string>
 #include<cstring>
 #include<vector>
+#include<list>
+#include<memory>
 #include"libgbstd/utility.hpp"
 
 
@@ -97,6 +99,59 @@ std::u16string  make_u16string(std::string_view  sv) noexcept;
 
 
 void  print(std::u16string_view  sv) noexcept;
+void  print_nl() noexcept;
+
+
+class
+code_text
+{
+  std::u16string  m_string;
+
+  std::vector<const char16_t*>  m_line_heads;
+
+public:
+  code_text(std::string_view  sv="") noexcept{assign(sv);}
+
+  code_text&  operator+=(std::string_view  sv) noexcept{return append(sv);}
+
+  code_text&  append(std::string_view  sv) noexcept;
+
+  code_text&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+
+  code_text&  assign(std::string_view  sv) noexcept;
+
+  class iterator{
+    const char16_t*  m_pointer=nullptr;
+
+    int  m_x_index=0;
+    int  m_y_index=0;
+
+  public:
+    iterator(const char16_t*  p=nullptr) noexcept: m_pointer(p){}
+
+    const char16_t&  operator*() const noexcept{return *m_pointer;}
+
+    bool  operator!=(const iterator&  rhs) const noexcept{return m_pointer != rhs.m_pointer;}
+
+    int  get_x_index() const noexcept{return m_x_index;}
+    int  get_y_index() const noexcept{return m_y_index;}
+
+    iterator&  operator++() noexcept;
+
+    void  skip_spaces() noexcept;
+    void  print() const noexcept;
+
+  };
+
+  iterator  get_iterator() const noexcept{return iterator(m_string.data());}
+
+  const std::u16string&  get_string() const noexcept{return m_string;}
+
+  int  get_number_of_lines() const noexcept{return m_line_heads.size();}
+
+  void  print() const noexcept;
+
+};
 
 
 class
@@ -201,52 +256,67 @@ public:
 
 
 class
-text_iterator
+small_string
 {
-public:
-  struct line{
-    const char*  m_begin;
+  char  m_data[4];
 
-    int  m_number_of_bytes=0;
-    int  m_number_of_characters=0;
-
-    line(const char*  p) noexcept: m_begin(p){}
-
-  };
-
-private:
-  std::vector<line>  m_lines;
-
-  size_t  m_length=0;
-
-  const char*  m_current=nullptr;
-  const char*  m_end=nullptr;
+  static constexpr char  chr(std::string_view  sv, int  i) noexcept
+  {
+    return (i < sv.size())? sv[i]:0;
+  }
 
 public:
-  text_iterator(std::string_view  sv) noexcept{assign(sv);}
+  constexpr small_string() noexcept: m_data{0,0,0,0}{}
+  constexpr small_string(const char*  s) noexcept: m_data{chr(s,0),chr(s,1),chr(s,2),0}{}
+  constexpr small_string(std::string_view  sv) noexcept: m_data{chr(sv,0),chr(sv,1),chr(sv,2),0}{}
 
-  text_iterator&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+  small_string&  operator=(std::string_view  sv) noexcept{return assign(sv);}
 
-  text_iterator&  assign(std::string_view  sv) noexcept;
+  small_string&  assign(std::string_view  sv) noexcept{
+    m_data[0] = chr(sv,0);
+    m_data[1] = chr(sv,1);
+    m_data[2] = chr(sv,2);
 
-  operator bool() const noexcept{return m_current < m_end;}
+    return *this;
+  }
 
-  std::string_view  operator*() const noexcept{return get();}
+  constexpr  operator bool() const noexcept{return m_data[0];}
 
-  std::string_view  get() const noexcept{return {m_current,m_length};}
+  constexpr const char&  operator[](int  i) const noexcept{return m_data[i];}
 
-  text_iterator&  operator++() noexcept{return advance();}
+  constexpr const char*  data() const noexcept{return m_data;}
+  constexpr int  size() const noexcept{return !m_data[0]? 0
+                                             :!m_data[1]? 1
+                                             :!m_data[2]? 2
+                                             :            3;}
 
-  text_iterator&  advance() noexcept;
+  void  clear() noexcept{reinterpret_cast<int32_t&>(m_data[0]) = 0;}
 
-  void  skip_spaces() noexcept;
+  constexpr  operator uint32_t() const noexcept{return (m_data[0]<<24)|(m_data[1]<<16)|(m_data[2]<<8);}
 
-  const std::vector<line>&  get_lines() const noexcept{return m_lines;}
+  constexpr bool  operator==(small_string  rhs) const noexcept
+  {
+    return (m_data[0] == rhs.m_data[0]) &&
+           (m_data[1] == rhs.m_data[1]) &&
+           (m_data[2] == rhs.m_data[2]);
+  }
 
-  int  get_number_of_bytes()      const noexcept;
-  int  get_number_of_characters() const noexcept;
+  constexpr bool  operator!=(small_string  rhs) const noexcept
+  {
+    return !(*this == rhs);
+  }
+
+  constexpr const char*  begin() const noexcept{return m_data;}
+  constexpr const char*    end() const noexcept{return m_data+size();}
+
+  void  print() const noexcept
+  {
+    printf("%s",m_data);
+  }
 
 };
+
+
 
 
 constexpr bool
