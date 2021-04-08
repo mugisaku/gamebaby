@@ -4,6 +4,7 @@ set(SOURCES
   math.cpp
   random.cpp
   sha256.cpp
+  tree_struct.cpp
   sns/sns_record.cpp
   sns/sns_record_table.cpp
   sns/sns_platform.cpp
@@ -19,6 +20,7 @@ set(SOURCES
   parsers/tokenizer.cpp
   parsers/tokenizer__skip.cpp
   parsers/tokenizer__read_number.cpp
+  characters/code_text_iterator.cpp
   characters/unicode.cpp
   characters/font.cpp
   characters/text.cpp
@@ -75,41 +77,42 @@ set(SOURCES
   syntaxes/syntax_expression.cpp
   syntaxes/syntax_definition.cpp
   syntaxes/syntax_rule.cpp
+  syntaxes/syntax_tree_node.cpp
   syntaxes/syntax_parser.cpp
   typesystems/struct.cpp
   typesystems/union.cpp
   typesystems/enum.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
-  vms/ast_constant.cpp
-  vms/ast_node.cpp
-  vms/ast_builder.cpp
-  vms/ast_node__read_global_space.cpp
-  vms/ast_node__read_function.cpp
-  vms/ast_node__read_expression.cpp
-  vms/ast_node__read_type.cpp
-  vms/ast_node__read_statement.cpp
-  vms/expressions/expression.cpp
-  vms/expressions/expression_element.cpp
-  vms/expressions/primary_expression.cpp
-  vms/expressions/primary_expression_element.cpp
-  vms/expressions/unary_expression.cpp
-  vms/expressions/operand.cpp
-  vms/irs/ir_operand.cpp
-  vms/irs/ir_operation.cpp
-  vms/irs/ir_operation__read.cpp
-  vms/irs/ir_block_info.cpp
-  vms/irs/ir_function.cpp
-  vms/irs/ir_context.cpp
-  vms/irs/ir_memory.cpp
-  vms/irs/ir_value.cpp
-  vms/irs/ir_variable.cpp
-  vms/irs/ir_processor.cpp
-  vms/irs/ir_processor__operate.cpp
-  vms/assemblies/asm_parameter.cpp
-  vms/assemblies/asm_line.cpp
-  vms/assemblies/asm_context.cpp
-  vms/assemblies/asm_processor.cpp
+#  vms/ast_constant.cpp
+#  vms/ast_node.cpp
+#  vms/ast_builder.cpp
+#  vms/ast_node__read_global_space.cpp
+#  vms/ast_node__read_function.cpp
+#  vms/ast_node__read_expression.cpp
+#  vms/ast_node__read_type.cpp
+#  vms/ast_node__read_statement.cpp
+#  vms/expressions/expression.cpp
+#  vms/expressions/expression_element.cpp
+#  vms/expressions/primary_expression.cpp
+#  vms/expressions/primary_expression_element.cpp
+#  vms/expressions/unary_expression.cpp
+#  vms/expressions/operand.cpp
+#  vms/irs/ir_operand.cpp
+#  vms/irs/ir_operation.cpp
+#  vms/irs/ir_operation__read.cpp
+#  vms/irs/ir_block_info.cpp
+#  vms/irs/ir_function.cpp
+#  vms/irs/ir_context.cpp
+#  vms/irs/ir_memory.cpp
+#  vms/irs/ir_value.cpp
+#  vms/irs/ir_variable.cpp
+#  vms/irs/ir_processor.cpp
+#  vms/irs/ir_processor__operate.cpp
+#  vms/assemblies/asm_parameter.cpp
+#  vms/assemblies/asm_line.cpp
+#  vms/assemblies/asm_context.cpp
+#  vms/assemblies/asm_processor.cpp
 #  vms/spaces/function.cpp
 #  vms/spaces/basic_space.cpp
 #  vms/spaces/basic_space__read_type.cpp

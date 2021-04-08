@@ -45,6 +45,23 @@ u8slen(const char*  s) noexcept
 }
 
 
+std::string
+make_string(std::u16string_view  sv) noexcept
+{
+  std::string  s;
+
+  utf8_encoder  enc;
+
+    for(auto  c: sv)
+    {
+      s += enc(c).codes;
+    }
+
+
+  return std::move(s);
+}
+
+
 std::u16string
 make_u16string(std::string_view  sv) noexcept
 {
@@ -232,7 +249,21 @@ print(std::u16string_view  sv) noexcept
 
     for(auto  u16: sv)
     {
-      printf("%s",enc(u16).codes);
+        if(u16 == '\n')
+        {
+          printf("\\n");
+        }
+
+      else
+        if(u16 == '\t')
+        {
+          printf("\\t");
+        }
+
+      else
+        {
+          printf("%s",enc(u16).codes);
+        }
     }
 }
 
@@ -241,117 +272,6 @@ void
 print_nl() noexcept
 {
   printf("\n");
-}
-
-
-
-
-code_text&
-code_text::
-append(std::string_view  sv) noexcept
-{
-  m_string = make_u16string(sv);
-
-  auto  p = m_string.data();
-
-  m_line_heads.emplace_back(p);
-
-    while(*p)
-    {
-      auto  c = *p++;
-
-        if(c == '\n')
-        {
-          m_line_heads.emplace_back(p);
-        }
-    }
-
-
-  return *this;
-}
-
-
-code_text&
-code_text::
-assign(std::string_view  sv) noexcept
-{
-  m_line_heads.clear();
-
-  return append(sv);
-}
-
-
-void
-code_text::
-print() const noexcept
-{
-  gbstd::print(m_string);
-
-  printf("\n");
-}
-
-
-
-
-code_text::iterator&
-code_text::iterator::
-operator++() noexcept
-{
-  auto  c = *m_pointer++;
-
-    if(c == '\n')
-    {
-      m_x_index  = 0;
-      m_y_index += 1;
-    }
-
-  else
-    {
-      ++m_x_index;
-    }
-
-
-  return *this;
-}
-
-
-void
-code_text::iterator::
-print() const noexcept
-{
-  printf("{%4d行目, %4d文字目}",1+m_y_index,1+m_x_index);
-}
-
-
-void
-code_text::iterator::
-skip_spaces() noexcept
-{
-    for(;;)
-    {
-      auto  c = **this;
-
-        if((c == ' ') ||
-           (c == '\t'))
-        {
-          ++m_pointer;
-          ++m_x_index;
-        }
-
-      else
-        if(c == '\n')
-        {
-          ++m_pointer;
-
-          m_x_index  = 0;
-          m_y_index += 1;
-        }
-
-      else
-        {
-          break;
-        }
-    }
 }
 
 

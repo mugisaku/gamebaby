@@ -44,12 +44,26 @@ assign(syntax_expression&&  rhs) noexcept
 
 syntax_expression&
 syntax_expression::
-assign(small_string  c, pointer  l, pointer  r) noexcept
+assign(int  c, syntax_expression_element&&  l, syntax_expression_element&&  r) noexcept
 {
   m_code = c;
 
-  m_left  = std::move(l);
-  m_right = std::move(r);
+  m_left  = std::make_unique<syntax_expression_element>(std::move(l));
+  m_right = std::make_unique<syntax_expression_element>(std::move(r));
+
+  return *this;
+}
+
+
+syntax_expression&
+syntax_expression::
+assign(syntax_expression_element&&  e) noexcept
+{
+  m_code = 0;
+
+  m_left = std::make_unique<syntax_expression_element>(std::move(e));
+
+  m_right.reset();
 
   return *this;
 }
@@ -57,105 +71,23 @@ assign(small_string  c, pointer  l, pointer  r) noexcept
 
 
 
-std::unique_ptr<syntax_expression_element>
+syntax_expression&
 syntax_expression::
-pack_self() noexcept
+set_left(syntax_expression_element&&  e) noexcept
 {
-  return std::make_unique<syntax_expression_element>(std::move(*this));
+  m_left = std::make_unique<syntax_expression_element>(std::move(e));
+
+  return *this;
 }
 
 
-void
+syntax_expression&
 syntax_expression::
-push(syntax_expression_element&&  e)
+set_right(syntax_expression_element&&  e) noexcept
 {
-    if(!m_left && !m_code)
-    {
-      m_left = std::make_unique<syntax_expression_element>(std::move(e));
-    }
+  m_right = std::make_unique<syntax_expression_element>(std::move(e));
 
-  else
-    if(m_left && m_code && !m_right)
-    {
-      m_right = std::make_unique<syntax_expression_element>(std::move(e));
-    }
-
-  else
-    {
-      throw syntax_expression_error();
-    }
-}
-
-
-void
-syntax_expression::
-push(small_string  c)
-{
-    if((c == "()") ||
-       (c == "[]") ||
-       (c == "{}"))
-    {
-        if(m_left && m_code && m_right)
-        {
-          m_left = pack_self();
-
-          m_code = c;
-        }
-
-      else
-        if(m_left && !m_right)
-        {
-            if(m_code)
-            {
-              m_left = pack_self();
-            }
-
-
-          m_code = c;
-        }
-
-      else
-        {
-          throw syntax_expression_error();
-        }
-    }
-
-  else
-    if((c == "|") ||
-       (c == "&") ||
-       (c == ":"))
-    {
-        if(m_left && m_code && m_right)
-        {
-          m_left = pack_self();
-
-          m_code = c;
-        }
-
-      else
-        if(m_left && m_code)
-        {
-          m_left = pack_self();
-
-          m_code = c;
-        }
-
-      else
-        if(m_left && !m_code && !m_right)
-        {
-          m_code = c;
-        }
-
-      else
-        {
-          throw syntax_expression_error();
-        }
-    }
-
-  else
-    {
-      throw syntax_expression_error();
-    }
+  return *this;
 }
 
 
@@ -175,29 +107,17 @@ void
 syntax_expression::
 print() const noexcept
 {
-       if(m_code == "()"){printf("(");}
-  else if(m_code == "[]"){printf("[");}
-  else if(m_code == "{}"){printf("{");}
-
     if(m_left)
     {
       m_left->print();
 
         if(m_right)
         {
-          printf(" ");
-
-          m_code.print();
-
-          printf(" ");
+          printf(" %c ",m_code);
 
           m_right->print();
         }
     }
-
-       if(m_code == "()"){printf(")");}
-  else if(m_code == "[]"){printf("]");}
-  else if(m_code == "{}"){printf("}");}
 }
 
 

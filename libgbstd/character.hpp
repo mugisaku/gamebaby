@@ -95,6 +95,7 @@ utf8_encoder
 };
 
 
+std::string     make_string(std::u16string_view  sv) noexcept;
 std::u16string  make_u16string(std::string_view  sv) noexcept;
 
 
@@ -129,14 +130,20 @@ public:
   public:
     iterator(const char16_t*  p=nullptr) noexcept: m_pointer(p){}
 
+    operator bool() const noexcept{return m_pointer;}
+
     const char16_t&  operator*() const noexcept{return *m_pointer;}
 
+    bool  operator==(const iterator&  rhs) const noexcept{return m_pointer == rhs.m_pointer;}
     bool  operator!=(const iterator&  rhs) const noexcept{return m_pointer != rhs.m_pointer;}
 
     int  get_x_index() const noexcept{return m_x_index;}
     int  get_y_index() const noexcept{return m_y_index;}
 
-    iterator&  operator++() noexcept;
+    iterator&  operator+=(int  n) noexcept;
+
+    iterator&  operator++(   ) noexcept;
+    iterator   operator++(int) noexcept;
 
     void  skip_spaces() noexcept;
     void  print() const noexcept;
