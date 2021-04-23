@@ -58,6 +58,31 @@ print() const noexcept
 
 code_text::iterator&
 code_text::iterator::
+assign(const char16_t*  p) noexcept
+{
+  m_pointer = p;
+
+  m_x_index = 0;
+  m_y_index = 0;
+
+  return *this;
+}
+
+
+code_text::iterator
+code_text::iterator::
+operator+(int  n) const noexcept
+{
+  auto  t = *this;
+
+  t += n;
+
+  return t;
+}
+
+
+code_text::iterator&
+code_text::iterator::
 operator++() noexcept
 {
   auto  c = *m_pointer++;
@@ -144,6 +169,80 @@ skip_spaces() noexcept
       else
         {
           break;
+        }
+    }
+}
+
+
+void
+code_text::iterator::
+skip_to_newline() noexcept
+{
+    for(;;)
+    {
+      auto  c = **this;
+
+        if(c == '\0')
+        {
+          break;
+        }
+
+      else
+        if(c == '\n')
+        {
+          ++m_pointer;
+
+          m_x_index  = 0;
+          m_y_index += 1;
+
+          break;
+        }
+
+      else
+        {
+          ++m_pointer;
+          ++m_x_index;
+        }
+    }
+}
+
+
+void
+code_text::iterator::
+skip_to_block_end() noexcept
+{
+    for(;;)
+    {
+      auto  c = **this;
+
+        if(c == '\0')
+        {
+          break;
+        }
+
+      else
+        if(c == '\n')
+        {
+          ++m_pointer;
+
+          m_x_index  = 0;
+          m_y_index += 1;
+
+          break;
+        }
+
+      else
+        {
+          ++m_pointer;
+          ++m_x_index;
+
+            if((c == '*') && (*m_pointer == '/'))
+            {
+              ++m_pointer;
+              ++m_x_index;
+
+              break;
+            }
         }
     }
 }

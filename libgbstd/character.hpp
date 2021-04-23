@@ -128,9 +128,15 @@ public:
     int  m_y_index=0;
 
   public:
-    iterator(const char16_t*  p=nullptr) noexcept: m_pointer(p){}
+    iterator(const char16_t*  p=nullptr) noexcept{assign(p);}
+
+    iterator&  operator=(const char16_t*  p) noexcept{return assign(p);}
+
+    iterator&  assign(const char16_t*  p=nullptr) noexcept;
 
     operator bool() const noexcept{return m_pointer;}
+
+    const char16_t&  operator[](int  i) const noexcept{return m_pointer[i];}
 
     const char16_t&  operator*() const noexcept{return *m_pointer;}
 
@@ -140,12 +146,15 @@ public:
     int  get_x_index() const noexcept{return m_x_index;}
     int  get_y_index() const noexcept{return m_y_index;}
 
+    iterator   operator+ (int  n) const noexcept;
     iterator&  operator+=(int  n) noexcept;
 
     iterator&  operator++(   ) noexcept;
     iterator   operator++(int) noexcept;
 
     void  skip_spaces() noexcept;
+    void  skip_to_newline() noexcept;
+    void  skip_to_block_end() noexcept;
     void  print() const noexcept;
 
   };

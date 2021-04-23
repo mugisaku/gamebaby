@@ -217,15 +217,26 @@ read_expression_internal(code_text::iterator&  it)
     {
       auto  name = read_identifier(it);
 
-      auto  def = find(name);
-
-        if(!def)
+        if((name == u"integer_literal") ||
+           (name == u"floating_literal") ||
+           (name == u"string_literal") ||
+           (name == u"identifier"))
         {
-          def = &m_definition_list.emplace_back(name);
+          return syntax_expression_element(std::u16string_view(name));
         }
 
+      else
+        {
+          auto  def = find(name);
 
-      return syntax_expression_element(*def);
+            if(!def)
+            {
+              def = &m_definition_list.emplace_back(name);
+            }
+
+
+          return syntax_expression_element(*def);
+        }
     }
 
 
@@ -455,11 +466,15 @@ append(std::u16string_view  sv) noexcept
     {
       auto  c = *it;
 
+        if(c == '#')
+        {
+          it.skip_to_newline();
+        }
+
+      else
         if(is_alphabet(c) || (c == '_'))
         {
           start_read(it);
-
-          it.skip_spaces();
         }
 
       else
@@ -469,6 +484,9 @@ append(std::u16string_view  sv) noexcept
           report;
           break;
         }
+
+
+      it.skip_spaces();
     }
 
 

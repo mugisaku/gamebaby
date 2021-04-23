@@ -66,9 +66,17 @@ assign(std::u16string_view  sv) noexcept
 {
   clear();
 
-  new(&m_data) std::u16string(sv);
+       if(sv == u"integer_literal" ){m_kind = kind::integer_literal;}
+  else if(sv == u"floating_literal"){m_kind = kind::floating_literal;}
+  else if(sv == u"string_literal"  ){m_kind = kind::string_literal;}
+  else if(sv == u"identifier"      ){m_kind = kind::identifier;}
+  else
+    {
+      new(&m_data) std::u16string(sv);
 
-  m_kind = kind::string;
+      m_kind = kind::string;
+    }
+
 
   return *this;
 }
@@ -166,7 +174,6 @@ clear() noexcept
 {
     switch(m_kind)
     {
-  case(kind::null  ):;break;
   case(kind::keyword): std::destroy_at(&m_data.str);break;
   case(kind::string): std::destroy_at(&m_data.str);break;
   case(kind::expression): std::destroy_at(&m_data.expr);break;
@@ -186,7 +193,11 @@ print() const noexcept
 {
     switch(m_kind)
     {
-  case(kind::null  ): printf("<null>");break;
+  case(kind::null            ): printf("<null>");break;
+  case(kind::integer_literal ): printf("integer_literal");break;
+  case(kind::floating_literal): printf("floating_literal");break;
+  case(kind::string_literal  ): printf("string_literal");break;
+  case(kind::identifier      ): printf("identifier");break;
   case(kind::keyword):
       printf("<");
       gbstd::print(m_data.str);

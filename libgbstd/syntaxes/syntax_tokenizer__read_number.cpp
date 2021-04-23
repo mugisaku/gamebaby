@@ -1,4 +1,4 @@
-#include"libgbstd/parser.hpp"
+#include"libgbstd/syntax.hpp"
 
 
 
@@ -9,14 +9,14 @@ namespace gbstd{
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_binary_number() noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_current;
+      auto  c = *m_iterator;
 
         if((c == '0') ||
            (c == '1'))
@@ -29,7 +29,7 @@ read_binary_number() noexcept
             }
 
 
-          ++m_current;
+          ++m_iterator;
         }
 
       else
@@ -39,19 +39,19 @@ read_binary_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,get_line_number(),n));
+  m_buffer.emplace_back(n);
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_octal_number() noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_current;
+      auto  c = *m_iterator;
 
         if((c >= '0') &&
            (c <= '7'))
@@ -59,7 +59,7 @@ read_octal_number() noexcept
           n <<= 2;
           n  |= c-'0';
 
-          ++m_current;
+          ++m_iterator;
         }
 
       else
@@ -69,19 +69,19 @@ read_octal_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,get_line_number(),n));
+  m_buffer.emplace_back(n);
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_decimal_number() noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_current;
+      auto  c = *m_iterator;
 
         if((c >= '0') &&
            (c <= '9'))
@@ -89,7 +89,7 @@ read_decimal_number() noexcept
           n *=    10;
           n += c-'0';
 
-          ++m_current;
+          ++m_iterator;
         }
 
       else
@@ -99,9 +99,9 @@ read_decimal_number() noexcept
     }
 
 
-    if(*m_current == '.')
+    if(*m_iterator == '.')
     {
-      ++m_current;
+      ++m_iterator;
 
       read_floating_point_number(n);
 
@@ -110,20 +110,20 @@ read_decimal_number() noexcept
 
   else
     {
-      push(token(m_begin,m_current,get_line_number(),n));
+      m_buffer.emplace_back(n);
     }
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_hexadecimal_number() noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_current;
+      auto  c = *m_iterator;
 
         if(((c >= '0') && (c <= '9')) ||
            ((c >= 'a') && (c <= 'f')) ||
@@ -172,7 +172,7 @@ read_hexadecimal_number() noexcept
             }
 
 
-          ++m_current;
+          ++m_iterator;
         }
 
       else
@@ -182,12 +182,12 @@ read_hexadecimal_number() noexcept
     }
 
 
-  push(token(m_begin,m_current,get_line_number(),n));
+  m_buffer.emplace_back(n);
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_floating_point_number(uint64_t  i) noexcept
 {
   auto  fpn = static_cast<double>(i);
@@ -196,7 +196,7 @@ read_floating_point_number(uint64_t  i) noexcept
 
     for(;;)
     {
-      auto  c = *m_current;
+      auto  c = *m_iterator;
 
         if((c >= '0') &&
            (c <= '9'))
@@ -204,7 +204,7 @@ read_floating_point_number(uint64_t  i) noexcept
           fpn += fra*(c-'0');
           fra /= 10;
 
-          ++m_current;
+          ++m_iterator;
         }
 
       else
@@ -214,30 +214,30 @@ read_floating_point_number(uint64_t  i) noexcept
     }
 
 
-  push(token(m_begin,m_current,get_line_number(),fpn));
+  m_buffer.emplace_back(fpn);
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_number_that_begins_by_zero() noexcept
 {
-  auto  c = *++m_current;
+  auto  c = *++m_iterator;
 
-       if((c == 'b') || (c == 'B')){  ++m_current;           read_binary_number();}
-  else if((c == 'o') || (c == 'O')){  ++m_current;            read_octal_number();}
-  else if((c == 'x') || (c == 'X')){  ++m_current;      read_hexadecimal_number();}
-  else if((c == '.')              ){  ++m_current;  read_floating_point_number(0);}
-  else                             {push(token(m_begin,m_current,get_line_number(),static_cast<uint64_t>(0)));}
+       if((c == 'b') || (c == 'B')){  ++m_iterator;           read_binary_number();}
+  else if((c == 'o') || (c == 'O')){  ++m_iterator;            read_octal_number();}
+  else if((c == 'x') || (c == 'X')){  ++m_iterator;      read_hexadecimal_number();}
+  else if((c == '.')              ){  ++m_iterator;  read_floating_point_number(0);}
+  else                             {m_buffer.emplace_back(static_cast<uint64_t>(0));}
 }
 
 
 void
-tokenizer::
+syntax_tokenizer::
 read_number() noexcept
 {
-    if(*m_current == '0'){read_number_that_begins_by_zero();}
-  else                   {            read_decimal_number();}
+    if(*m_iterator == '0'){read_number_that_begins_by_zero();}
+  else                    {            read_decimal_number();}
 }
 
 

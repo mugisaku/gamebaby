@@ -1,5 +1,4 @@
 #include"libgbstd/gbstd.hpp"
-#include"libgbstd/parser.hpp"
 
 
 
@@ -22,6 +21,7 @@ void
 program_space::
 load_source(std::string_view  sv) noexcept
 {
+/*
   tokenizer  tknz;
 
   auto  root_blk = tknz(sv);
@@ -102,6 +102,7 @@ load_source(std::string_view  sv) noexcept
 
       m_image.emplace_back(el);
     }
+*/
 }
 
 

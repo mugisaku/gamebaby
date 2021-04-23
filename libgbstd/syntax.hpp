@@ -13,6 +13,173 @@ namespace gbstd{
 
 
 
+class
+syntax_identifier
+{
+  std::u16string  m_string;
+
+public:
+  syntax_identifier(std::u16string&&  s) noexcept: m_string(std::move(s)){}
+
+  std::u16string&  string() noexcept{return m_string;}
+
+};
+
+
+struct
+syntax_token_parse_error
+{
+};
+
+
+class
+syntax_token
+{
+  enum class kind{
+    null,
+    identifier,
+    string,
+    integer,
+    floating,
+    others,
+
+  } m_kind=kind::null;
+
+  union data{
+    uint64_t        i;
+    std::u16string  s;
+    double          f;
+
+    data() noexcept{}
+   ~data()         {}
+  } m_data;
+
+  int  m_x_index=0;
+  int  m_y_index=0;
+
+public:
+  syntax_token() noexcept{}
+  syntax_token(const syntax_token&   rhs) noexcept{assign(rhs);}
+  syntax_token(      syntax_token&&  rhs) noexcept{assign(std::move(rhs));}
+ ~syntax_token(){clear();}
+
+  template<class...  Args>
+  explicit syntax_token(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  operator bool() const noexcept{return !is_null();}
+
+  template<class...  Args>
+  syntax_token&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  syntax_token&  assign(const syntax_token&   rhs) noexcept;
+  syntax_token&  assign(      syntax_token&&  rhs) noexcept;
+  syntax_token&  assign(uint64_t  i) noexcept;
+  syntax_token&  assign(double  f) noexcept;
+  syntax_token&  assign(std::u16string&&  s) noexcept;
+  syntax_token&  assign(syntax_identifier&&  id) noexcept;
+  syntax_token&  assign(char16_t  c) noexcept;
+
+  void  clear() noexcept;
+
+  bool  is_null()       const noexcept{return m_kind == kind::null;}
+  bool  is_integer()    const noexcept{return m_kind == kind::integer;}
+  bool  is_identifier() const noexcept{return m_kind == kind::identifier;}
+  bool  is_string()     const noexcept{return m_kind == kind::string;}
+  bool  is_floating()   const noexcept{return m_kind == kind::floating;}
+  bool  is_others()     const noexcept{return m_kind == kind::others;}
+  bool  is_others(char16_t  c) const noexcept{return is_others() && (static_cast<char16_t>(m_data.i) == c);}
+
+  uint64_t               get_integer()  const noexcept{return m_data.i;}
+  double                 get_floating() const noexcept{return m_data.f;}
+  const std::u16string&  get_string()   const noexcept{return m_data.s;}
+
+  void  set_point(int  x, int  y) noexcept;
+
+  void  print() const noexcept;
+
+};
+
+
+using syntax_token_string = std::vector<syntax_token>;
+
+
+class
+syntax_token_iterator
+{
+  const syntax_token*  m_current=nullptr;
+  const syntax_token*  m_end    =nullptr;
+
+  static const syntax_token  m_null;
+
+public:
+  syntax_token_iterator() noexcept{}
+  syntax_token_iterator(const syntax_token_string&  s) noexcept{assign(s);}
+
+  syntax_token_iterator&  operator=(const syntax_token_string&  s) noexcept{return assign(s);}
+
+  syntax_token_iterator&  assign(const syntax_token_string&  s) noexcept;
+
+  operator bool() const noexcept{return m_current < m_end;}
+
+  bool  operator==(const syntax_token_iterator&  rhs) const noexcept{return m_current == rhs.m_current;}
+  bool  operator!=(const syntax_token_iterator&  rhs) const noexcept{return m_current != rhs.m_current;}
+
+  const syntax_token&  operator[](int  i) const noexcept{return ((m_current+i) < m_end)? m_current[i]:m_null;}
+
+  const syntax_token&  operator*()  const noexcept{return *m_current;}
+  const syntax_token*  operator->() const noexcept{return  m_current;}
+
+  syntax_token_iterator&  operator++() noexcept;
+  syntax_token_iterator   operator++(int) noexcept;
+
+  syntax_token_iterator&  operator+=(int  n) noexcept;
+  syntax_token_iterator   operator+ (int  n) const noexcept;
+
+  bool  test(std::u16string_view  sv) const noexcept;
+
+  void  skip() noexcept;
+
+};
+
+
+class
+syntax_tokenizer
+{
+  code_text::iterator  m_iterator;
+
+  syntax_token_string  m_buffer;
+
+  void       read_binary_number() noexcept;
+  void        read_octal_number() noexcept;
+  void      read_decimal_number() noexcept;
+  void  read_hexadecimal_number() noexcept;
+  void  read_floating_point_number(uint64_t  i) noexcept;
+
+  void  read_number_that_begins_by_zero() noexcept;
+  void  read_number() noexcept;
+
+  void  read_string();
+  void  read_raw_string();
+
+  static bool  test_head_of_identifier_defaultly(char16_t  c) noexcept;
+  static bool  test_body_of_identifier_defaultly(char16_t  c) noexcept;
+
+  bool  (*m_test_head_of_identifier)(char16_t  c)=test_head_of_identifier_defaultly;
+  bool  (*m_test_body_of_identifier)(char16_t  c)=test_body_of_identifier_defaultly;
+
+  void  step();
+
+public:
+  syntax_token_string  operator()(std::u16string_view  sv);
+
+};
+
+
+syntax_token_string  make_token_string(std::u16string_view  sv);
+
+
+
+
 class syntax_expression_element;
 class syntax_expression;
 class syntax_definition;
@@ -116,6 +283,12 @@ syntax_expression_element
 {
   enum class kind{
     null,
+
+    integer_literal,
+    floating_literal,
+    string_literal,
+    identifier,
+
     keyword,
     string,
     expression,
@@ -159,7 +332,11 @@ public:
   syntax_expression_element&  assign(syntax_multiple_expression&&  exp) noexcept;
   syntax_expression_element&  assign(const syntax_definition&  def) noexcept;
 
-  bool  is_null()       const noexcept{return m_kind == kind::null;}
+  bool  is_null()             const noexcept{return m_kind == kind::null;}
+  bool  is_integer_literal()  const noexcept{return m_kind == kind::integer_literal;}
+  bool  is_floating_literal() const noexcept{return m_kind == kind::floating_literal;}
+  bool  is_string_literal()   const noexcept{return m_kind == kind::string_literal;}
+  bool  is_identifier()       const noexcept{return m_kind == kind::identifier;}
   bool  is_keyword()    const noexcept{return m_kind == kind::keyword;}
   bool  is_string()     const noexcept{return m_kind == kind::string;}
   bool  is_expression() const noexcept{return m_kind == kind::expression;}
@@ -257,19 +434,18 @@ public:
 class
 syntax_tree_node: public tree_struct_node
 {
-  code_text::iterator  m_iterator;
+  const syntax_token*  m_token=nullptr;
 
   const syntax_definition*          m_definition=nullptr;
   const syntax_expression_element*  m_element=nullptr;
 
 public:
   syntax_tree_node() noexcept{}
-  syntax_tree_node(const code_text::iterator&  it) noexcept: m_iterator(it), m_element(nullptr){}
-  syntax_tree_node(const code_text::iterator&  it, const syntax_definition&  def) noexcept: m_iterator(it), m_definition(&def){}
-  syntax_tree_node(const code_text::iterator&  it, const syntax_expression_element&  e) noexcept: m_iterator(it), m_element(&e){}
+  syntax_tree_node(const syntax_token&  tok) noexcept: m_token(&tok), m_element(nullptr){}
+  syntax_tree_node(const syntax_token&  tok, const syntax_definition&  def) noexcept: m_token(&tok), m_definition(&def){}
+  syntax_tree_node(const syntax_token&  tok, const syntax_expression_element&  e) noexcept: m_token(&tok), m_element(&e){}
 
-  syntax_tree_node&  set_iterator(const code_text::iterator&  it) noexcept{  m_iterator = it;  return *this;}
-  const code_text::iterator&  iterator() const noexcept{return m_iterator;}
+  const syntax_token*  token() const noexcept{return m_token;}
 
   const syntax_definition*  definition() const noexcept{return m_definition;}
   const syntax_expression_element*  element() const noexcept{return m_element;}
@@ -292,17 +468,25 @@ syntax_parser
 
   code_text  m_text;
 
-  std::vector<const syntax_definition*>  m_def_stack;
+  syntax_token_string  m_token_string;
 
   syntax_tree_node  m_root;
 
-  struct point{
-    code_text::iterator  m_iterator;
+  int  m_depth;
+
+  bool  m_debugging=false;
+
+  class point{
+    syntax_token_iterator  m_iterator;
 
     const syntax_expression*  m_expression;
 
   public:
-    point(code_text::iterator  it, const syntax_expression&  e) noexcept: m_iterator(it), m_expression(&e){}
+    point(syntax_token_iterator  it, const syntax_expression&  e) noexcept: m_iterator(it), m_expression(&e){}
+
+    syntax_token_iterator  iterator() const noexcept{return m_iterator;}
+
+    const syntax_expression&  expression() const noexcept{return *m_expression;}
 
   };
 
@@ -311,27 +495,37 @@ syntax_parser
   using node_ptr = std::unique_ptr<syntax_tree_node>;
   using storage = std::vector<node_ptr>;
 
-  using result = std::pair<code_text::iterator,storage>;
+  using result = std::pair<syntax_token_iterator,storage>;
+
+  template<class...  Args>
+  storage  make_storage(Args&&...  args) noexcept
+  {
+    storage  st;
+
+    st.emplace_back(std::make_unique<syntax_tree_node>(std::forward<Args>(args)...));
+
+    return std::move(st);
+  }
 
   static void  transfer(storage&&  src, storage&  dst) noexcept;
 
-  result  process_keyword(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_string(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_optional(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_multiple(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_definition(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_expression(const syntax_expression_element&  e, code_text::iterator  it);
+  result  process_keyword(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_string(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_optional(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_multiple(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_definition(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_expression(const syntax_expression_element&  e, syntax_token_iterator  it);
 
-  result  process_by_expression_element(const syntax_expression_element&  e, code_text::iterator  it);
-  result  process_by_expression(const syntax_expression&  expr, code_text::iterator  it);
+  result  process_by_expression_element(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it);
 
-  result  process_and(  const syntax_expression_element&  l, const syntax_expression_element&  r, code_text::iterator  it);
-  result  process_or(   const syntax_expression_element&  l, const syntax_expression_element&  r, code_text::iterator  it);
-  result  process_colon(const syntax_expression&  expr, code_text::iterator  it);
+  result  process_and(  const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it);
+  result  process_or(   const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it);
+  result  process_colon(const syntax_expression&  expr, syntax_token_iterator  it);
 
-  void  process_top(const syntax_definition&  def);
+  syntax_token_iterator  step(const syntax_definition&  def, syntax_token_iterator  it);
 
-  std::pair<code_text::iterator,node_ptr>  process_by_definition(const syntax_definition&  def, code_text::iterator  it);
+  std::pair<syntax_token_iterator,node_ptr>  process_by_definition(const syntax_definition&  def, syntax_token_iterator  it);
 
 public:
         syntax_rule&  get_rule()       noexcept{return m_rule;}
@@ -341,6 +535,10 @@ public:
   const code_text&  get_text() const noexcept{return m_text;}
 
   void  start(std::u16string_view  def_name);
+
+  void  reset() noexcept;
+
+  void  print() const noexcept;
 
 };
 

@@ -16,10 +16,6 @@ set(SOURCES
   sns/sns_timeline_node.cpp
   sns/sns_tester.cpp
   sns/sns_index_list.cpp
-  parsers/token.cpp
-  parsers/tokenizer.cpp
-  parsers/tokenizer__skip.cpp
-  parsers/tokenizer__read_number.cpp
   characters/code_text_iterator.cpp
   characters/unicode.cpp
   characters/font.cpp
@@ -35,9 +31,9 @@ set(SOURCES
   tile_maps/tile_source.cpp
   tile_maps/tile_map.cpp
   tile_maps/tile_map_view.cpp
-  values/object.cpp
-  values/array.cpp
-  values/list.cpp
+#  values/object.cpp
+#  values/array.cpp
+#  values/list.cpp
   widgets/operating_node.cpp
   widgets/node.cpp
   widgets/node_iterator.cpp
@@ -73,12 +69,17 @@ set(SOURCES
   gpfs_node.cpp
   gpfs_node_reference.cpp
   gpfs_path.cpp
+  syntaxes/syntax_token.cpp
+  syntaxes/syntax_token_iterator.cpp
+  syntaxes/syntax_tokenizer.cpp
+  syntaxes/syntax_tokenizer__read_number.cpp
   syntaxes/syntax_expression_element.cpp
   syntaxes/syntax_expression.cpp
   syntaxes/syntax_definition.cpp
   syntaxes/syntax_rule.cpp
   syntaxes/syntax_tree_node.cpp
   syntaxes/syntax_parser.cpp
+  syntaxes/syntax_parser__lower.cpp
   typesystems/struct.cpp
   typesystems/union.cpp
   typesystems/enum.cpp
