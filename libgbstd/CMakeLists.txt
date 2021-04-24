@@ -85,14 +85,6 @@ set(SOURCES
   typesystems/enum.cpp
   typesystems/type_info.cpp
   typesystems/function_signature.cpp
-#  vms/ast_constant.cpp
-#  vms/ast_node.cpp
-#  vms/ast_builder.cpp
-#  vms/ast_node__read_global_space.cpp
-#  vms/ast_node__read_function.cpp
-#  vms/ast_node__read_expression.cpp
-#  vms/ast_node__read_type.cpp
-#  vms/ast_node__read_statement.cpp
 #  vms/expressions/expression.cpp
 #  vms/expressions/expression_element.cpp
 #  vms/expressions/primary_expression.cpp
