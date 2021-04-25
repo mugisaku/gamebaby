@@ -1,4 +1,4 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vms/typesystem.hpp"
 #include"libgbstd/misc.hpp"
 
 
@@ -9,85 +9,26 @@ namespace typesystem{
 
 
 
-class
-type_info::
-core
-{
-public:
-  int  m_reference_count;
-
-  union data{
-    function_pointer_type_def  fnptr_td;
-
-    alias_type_def  ali_td;
-
-    typed_pointer_type_def  ptr_td;
-    reference_type_def      ref_td;
-    array_type_def          arr_td;
-
-    struct_type_decl   str_td;
-    union_type_decl    uni_td;
-    enum_type_decl     enu_td;
-
-    data() noexcept{}
-   ~data(){}
-
-  } m_data;
-
-
-  core() noexcept: m_reference_count(1){}
-
-  void  clean(type_info::kinds  k) noexcept;
-
-};
-
-
-
-void
-type_info::core::
-clean(type_info::kinds  k)  noexcept
-{
-    switch(k)
-    {
-  case(type_info::kinds::alias           ): std::destroy_at(&m_data.ali_td);break;
-  case(type_info::kinds::typed_pointer   ): std::destroy_at(&m_data.ptr_td);break;
-  case(type_info::kinds::reference       ): std::destroy_at(&m_data.ref_td);break;
-  case(type_info::kinds::function_pointer): std::destroy_at(&m_data.fnptr_td);break;
-  case(type_info::kinds::array           ): std::destroy_at(&m_data.arr_td);break;
-  case(type_info::kinds::struct_         ): std::destroy_at(&m_data.str_td);break;
-  case(type_info::kinds::union_          ): std::destroy_at(&m_data.uni_td);break;
-  case(type_info::kinds::enum_           ): std::destroy_at(&m_data.enu_td);break;
-    }
-}
-
-
-
-
-type_info::type_info(alias_type_def&&             td) noexcept: m_core(new core), basic_type_info(kinds::alias           ,td.get_size(),td.get_align(),td.get_name()){create_at(&m_core->m_data.ali_td,std::move(td));}
-type_info::type_info(function_pointer_type_def&&  td) noexcept: m_core(new core), basic_type_info(kinds::function_pointer,td.get_size(),""){create_at(&m_core->m_data.fnptr_td,std::move(td));}
-type_info::type_info(typed_pointer_type_def&&     td) noexcept: m_core(new core), basic_type_info(kinds::typed_pointer   ,td.get_size(),""){create_at(&m_core->m_data.ptr_td,std::move(td));}
-type_info::type_info(reference_type_def&&         td) noexcept: m_core(new core), basic_type_info(kinds::reference       ,td.get_size(),""){create_at(&m_core->m_data.ref_td,std::move(td));}
-type_info::type_info(array_type_def&&             td) noexcept: m_core(new core), basic_type_info(kinds::array           ,td.get_size(),td.get_align(),""){create_at(&m_core->m_data.arr_td,std::move(td));}
-type_info::type_info(struct_type_decl&&           td) noexcept: m_core(new core), basic_type_info(kinds::struct_         ,td.get_size(),td.get_align(),td.get_name()){create_at(&m_core->m_data.str_td,std::move(td));}
-type_info::type_info(union_type_decl&&            td) noexcept: m_core(new core), basic_type_info(kinds::union_          ,td.get_size(),td.get_align(),td.get_name()){create_at(&m_core->m_data.uni_td,std::move(td));}
-type_info::type_info(enum_type_decl&&             td) noexcept: m_core(new core), basic_type_info(kinds::enum_           ,td.get_size()               ,td.get_name()){create_at(&m_core->m_data.enu_td,std::move(td));}
-
-
 type_info&
 type_info::
 assign(const type_info&  rhs) noexcept
 {
     if(this != &rhs)
     {
-      unrefer();
+      clear();
 
-      static_cast<basic_type_info&>(*this) = static_cast<const basic_type_info&>(rhs);
+      m_kind = rhs.m_kind;
 
-      m_core = rhs.m_core;
-
-        if(m_core)
+        switch(m_kind)
         {
-          ++(m_core->m_reference_count);
+      case(kind::basic    ): m_data.bas =      (rhs.m_data.bas);break;
+      case(kind::pointer  ): m_data.ptr = clone(rhs.m_data.ptr);break;
+      case(kind::reference): m_data.ref = clone(rhs.m_data.ref);break;
+      case(kind::alias    ): m_data.ali = clone(rhs.m_data.ali);break;
+      case(kind::array    ): m_data.arr = clone(rhs.m_data.arr);break;
+      case(kind::struct_  ): m_data.st =      (rhs.m_data.st);break;
+      case(kind::union_   ): m_data.un =      (rhs.m_data.un);break;
+      case(kind::enum_    ): m_data.en =      (rhs.m_data.en);break;
         }
     }
 
@@ -102,13 +43,93 @@ assign(type_info&&  rhs) noexcept
 {
     if(this != &rhs)
     {
-      unrefer();
+      clear();
 
-      static_cast<basic_type_info&>(*this) = static_cast<const basic_type_info&>(rhs);
+      std::swap(m_kind,rhs.m_kind);
 
-      std::swap(m_core,rhs.m_core);
+        switch(m_kind)
+        {
+      case(kind::basic    ): m_data.bas = rhs.m_data.bas;break;
+      case(kind::pointer  ): m_data.ptr = rhs.m_data.ptr;break;
+      case(kind::reference): m_data.ref = rhs.m_data.ref;break;
+      case(kind::alias    ): m_data.ali = rhs.m_data.ali;break;
+      case(kind::array    ): m_data.arr = rhs.m_data.arr;break;
+      case(kind::struct_  ): m_data.st = rhs.m_data.st;break;
+      case(kind::union_   ): m_data.un = rhs.m_data.un;break;
+      case(kind::enum_    ): m_data.en = rhs.m_data.en;break;
+        }
     }
 
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(basic_type_info  b) noexcept
+{
+  clear();
+
+  m_kind = kind::basic;
+
+  m_data.bas = b;
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(pointer_info&&  ptr) noexcept
+{
+  clear();
+
+  m_kind = kind::pointer;
+
+  m_data.ptr = new pointer_info(std::move(ptr));
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(reference_info&&  ref) noexcept
+{
+  clear();
+
+  m_kind = kind::reference;
+
+  m_data.ref = new reference_info(std::move(ref));
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(alias_info&&  ali) noexcept
+{
+  clear();
+
+  m_kind = kind::alias;
+
+  m_data.ali = new alias_info(std::move(ali));
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(array_info&&  arr) noexcept
+{
+  clear();
+
+  m_kind = kind::array;
+
+  m_data.arr = new array_info(std::move(arr));
 
   return *this;
 }
@@ -118,73 +139,62 @@ assign(type_info&&  rhs) noexcept
 
 void
 type_info::
-unrefer() noexcept
-{
-    if(m_core)
-    {
-      auto&  c = m_core->m_reference_count;
-
-        if(!--c)
-        {
-          m_core->clean(m_kind);
-
-          delete m_core;
-        }
-
-
-      m_core = nullptr;
-    }
-}
-
-
-
-
-const typed_pointer_type_def&  type_info::get_typed_pointer_type_def()   const noexcept{return m_core->m_data.ptr_td;}
-const reference_type_def&      type_info::get_reference_type_def() const noexcept{return m_core->m_data.ref_td;}
-const alias_type_def&          type_info::get_alias_type_def()     const noexcept{return m_core->m_data.ali_td;}
-const array_type_def&          type_info::get_array_type_def()     const noexcept{return m_core->m_data.arr_td;}
-
-struct_type_decl&  type_info::get_struct_type_decl() const noexcept{return m_core->m_data.str_td;}
-union_type_decl&   type_info::get_union_type_decl()  const noexcept{return m_core->m_data.uni_td;}
-enum_type_decl&    type_info::get_enum_type_decl()   const noexcept{return m_core->m_data.enu_td;}
-
-const function_pointer_type_def&  type_info::get_function_pointer_type_def() const noexcept{return m_core->m_data.fnptr_td;}
-
-
-void
-type_info::
-update_size() noexcept
+clear() noexcept
 {
     switch(m_kind)
     {
-  case(type_info::kinds::array  ): m_size = m_core->m_data.arr_td.get_size();break;
-  case(type_info::kinds::struct_): m_size = m_core->m_data.str_td->get_size();break;
-  case(type_info::kinds::union_ ): m_size = m_core->m_data.uni_td->get_size();break;
-  case(type_info::kinds::enum_  ): m_size = m_core->m_data.enu_td->get_size();break;
+  case(kind::pointer  ): std::destroy_at(m_data.ptr);break;
+  case(kind::reference): std::destroy_at(m_data.ref);break;
+  case(kind::alias    ): std::destroy_at(m_data.ali);break;
+  case(kind::array    ): std::destroy_at(m_data.arr);break;
     }
+
+
+  m_kind = kind::null;
 }
 
 
-void
+
+
+int
 type_info::
-update_align() noexcept
+size() const noexcept
 {
     switch(m_kind)
     {
-  case(type_info::kinds::array  ): m_align = m_core->m_data.arr_td.get_align();break;
-  case(type_info::kinds::struct_): m_align = m_core->m_data.str_td->get_align();break;
-  case(type_info::kinds::union_ ): m_align = m_core->m_data.uni_td->get_align();break;
-  case(type_info::kinds::enum_  ): m_align = m_core->m_data.enu_td->get_size();break;
+  case(kind::basic    ): return m_data.bas.size();break;
+  case(kind::pointer  ): return m_data.ptr->size();break;
+  case(kind::reference): return m_data.ref->size();break;
+  case(kind::alias    ): return m_data.ali->size();break;
+  case(kind::array    ): return m_data.arr->size();break;
+  case(kind::struct_): return m_data.st->size();break;
+  case(kind::union_ ): return m_data.un->size();break;
+  case(kind::enum_  ): return m_data.en->size();break;
     }
+
+
+  return 0;
 }
 
 
-void
+int
 type_info::
-update() noexcept
+align() const noexcept
 {
-   update_size();
-  update_align();
+    switch(m_kind)
+    {
+  case(kind::basic    ): return m_data.bas.size();break;
+  case(kind::pointer  ): return m_data.ptr->size();break;
+  case(kind::reference): return m_data.ref->size();break;
+  case(kind::alias    ): return m_data.ali->align();break;
+  case(kind::array    ): return m_data.arr->align();break;
+  case(kind::struct_): return m_data.st->align();break;
+  case(kind::union_ ): return m_data.un->align();break;
+  case(kind::enum_  ): return m_data.en->size();break;
+    }
+
+
+  return 0;
 }
 
 
@@ -194,15 +204,15 @@ type_info
 type_info::
 form_array(int  n) const noexcept
 {
-  return type_info(array_type_def(*this,n));
+  return type_info(array_info(*this,n));
 }
 
 
 type_info
 type_info::
-form_typed_pointer(int  sz) const noexcept
+form_pointer(int  sz) const noexcept
 {
-  return type_info(typed_pointer_type_def(*this,sz));
+  return type_info(pointer_info(*this,sz));
 }
 
 
@@ -210,7 +220,7 @@ type_info
 type_info::
 form_reference(int  sz) const noexcept
 {
-  return type_info(reference_type_def(*this,sz));
+  return type_info(reference_info(*this,sz));
 }
 
 
@@ -218,7 +228,7 @@ type_info
 type_info::
 remove_array() const noexcept
 {
-  return is_array()? get_array_type_def().get_base_type_info()
+  return is_array()? get_array_info().target()
          :*this
          ;
 }
@@ -226,9 +236,9 @@ remove_array() const noexcept
 
 type_info
 type_info::
-remove_typed_pointer() const noexcept
+remove_pointer() const noexcept
 {
-  return is_pointer()? get_typed_pointer_type_def().get_base_type_info()
+  return is_pointer()? get_pointer_info().target()
          :*this
          ;
 }
@@ -238,7 +248,7 @@ type_info
 type_info::
 remove_reference() const noexcept
 {
-  return is_reference()? get_reference_type_def().get_base_type_info()
+  return is_reference()? get_reference_info().target()
          :*this
          ;
 }
@@ -252,21 +262,19 @@ print() const noexcept
 {
     switch(m_kind)
     {
-  case(type_info::kinds::alias): printf("alias ");break;
-  case(type_info::kinds::struct_): printf("struct ");break;
-  case(type_info::kinds::union_ ): printf("union ");break;
-  case(type_info::kinds::enum_  ): printf("enum ");break;
+  case(kind::alias): printf("alias ");break;
+  case(kind::struct_): printf("struct ");break;
+  case(kind::union_ ): printf("union ");break;
+  case(kind::enum_  ): printf("enum ");break;
     }
 
 
-  printf("%s",m_name.data());
-
     switch(m_kind)
     {
-  case(type_info::kinds::alias  ): m_core->m_data.ali_td.print();break;
-  case(type_info::kinds::struct_): m_core->m_data.str_td.print();break;
-  case(type_info::kinds::union_ ): m_core->m_data.uni_td.print();break;
-  case(type_info::kinds::enum_  ): m_core->m_data.enu_td.print();break;
+  case(kind::alias  ): m_data.ali->print();break;
+  case(kind::struct_): m_data.st->print();break;
+  case(kind::union_ ): m_data.un->print();break;
+  case(kind::enum_  ): m_data.en->print();break;
     }
 }
 

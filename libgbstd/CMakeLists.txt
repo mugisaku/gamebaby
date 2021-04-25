@@ -80,11 +80,11 @@ set(SOURCES
   syntaxes/syntax_tree_node.cpp
   syntaxes/syntax_parser.cpp
   syntaxes/syntax_parser__lower.cpp
-  typesystems/struct.cpp
-  typesystems/union.cpp
-  typesystems/enum.cpp
-  typesystems/type_info.cpp
-  typesystems/function_signature.cpp
+  vms/typesystems/struct.cpp
+  vms/typesystems/union.cpp
+  vms/typesystems/enum.cpp
+  vms/typesystems/type_info.cpp
+  vms/typesystems/function_signature.cpp
 #  vms/expressions/expression.cpp
 #  vms/expressions/expression_element.cpp
 #  vms/expressions/primary_expression.cpp

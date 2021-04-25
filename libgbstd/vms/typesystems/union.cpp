@@ -1,4 +1,4 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vms/typesystem.hpp"
 
 
 
@@ -10,33 +10,33 @@ namespace typesystem{
 
 
 int
-union_type_decl::
-get_size() const noexcept
+union_decl::
+size() const noexcept
 {
-  return m_def? m_def->get_size():0;
+  return m_def? m_def->size():0;
 }
 
 
 int
-union_type_decl::
-get_align() const noexcept
+union_decl::
+align() const noexcept
 {
-  return m_def? m_def->get_align():0;
+  return m_def? m_def->align():0;
 }
 
 
-union_type_def&
-union_type_decl::
-set_def(union_type_def&&  def) noexcept
+union_def&
+union_decl::
+set_def(union_def&&  def) noexcept
 {
-  m_def = std::make_unique<union_type_def>(std::move(def));
+  m_def = std::make_unique<union_def>(std::move(def));
 
   return *m_def;
 }
 
 
 void
-union_type_decl::
+union_decl::
 print() const noexcept
 {
     if(m_def)
@@ -49,19 +49,19 @@ print() const noexcept
 
 
 void
-union_type_def::
-push(type_info&&  ti, std::string_view  name) noexcept
+union_def::
+push(type_info&&  ti, std::u16string_view  name) noexcept
 {
-  m_size  = std::max(m_size ,ti.get_size() );
-  m_align = std::max(m_align,ti.get_align());
+  m_size  = std::max(m_size ,ti.size() );
+  m_align = std::max(m_align,ti.align());
 
   m_member_list.emplace_back(std::move(ti),name);
 }
 
 
 type_info
-union_type_def::
-find(std::string_view  name) const noexcept
+union_def::
+find(std::u16string_view  name) const noexcept
 {
     for(auto&  m: m_member_list)
     {
@@ -77,7 +77,7 @@ find(std::string_view  name) const noexcept
 
 
 void
-union_type_def::
+union_def::
 print() const noexcept
 {
   printf("{\n");
@@ -86,7 +86,11 @@ print() const noexcept
     {
       m.m_type_info.print();
 
-      printf("  %s;\n",m.m_name.data());
+      printf("  ");
+
+      gbstd::print(m.m_name);
+
+      printf(";\n");
     }
 
 

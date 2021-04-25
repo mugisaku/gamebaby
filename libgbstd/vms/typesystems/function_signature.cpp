@@ -1,4 +1,4 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vms/typesystem.hpp"
 
 
 
@@ -8,31 +8,8 @@ namespace typesystem{
 
 
 
-std::string
-function_signature::
-make_name() const noexcept
-{
-  std::string  s(m_return_type_info.get_name());
-
-  s += "(";
-
-    for(auto&  p: m_parameter_list)
-    {
-      s += p.get_type_info().get_name();
-
-      s += ",";
-    }
-
-
-  s += ")";
-
-
-  return std::move(s);
-}
-
-
 void
-function_signature::
+fn_signature::
 print() const noexcept
 {
   m_return_type_info.print();
@@ -41,9 +18,13 @@ print() const noexcept
 
     for(auto&  p: m_parameter_list)
     {
-      p.get_type_info().print();
+      p.type().print();
 
-      printf("  %s, ",p.get_name().data());
+      printf("  ");
+
+      gbstd::print(p.name());
+
+      printf(", ");
     }
 
 

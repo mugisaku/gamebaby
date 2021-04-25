@@ -1,4 +1,4 @@
-#include"libgbstd/typesystem.hpp"
+#include"libgbstd/vms/typesystem.hpp"
 
 
 
@@ -10,33 +10,33 @@ namespace typesystem{
 
 
 int
-struct_type_decl::
-get_size() const noexcept
+struct_decl::
+size() const noexcept
 {
-  return m_def? m_def->get_size():0;
+  return m_def? m_def->size():0;
 }
 
 
 int
-struct_type_decl::
-get_align() const noexcept
+struct_decl::
+align() const noexcept
 {
-  return m_def? m_def->get_align():0;
+  return m_def? m_def->align():0;
 }
 
 
-struct_type_def&
-struct_type_decl::
-set_def(struct_type_def&&  def) noexcept
+struct_def&
+struct_decl::
+set_def(struct_def&&  def) noexcept
 {
-  m_def = std::make_unique<struct_type_def>(std::move(def));
+  m_def = std::make_unique<struct_def>(std::move(def));
 
   return *m_def;
 }
 
 
 void
-struct_type_decl::
+struct_decl::
 print() const noexcept
 {
     if(m_def)
@@ -63,13 +63,13 @@ get_aligned_offset(int  offset, int  align) noexcept
 
 
 void
-struct_type_def::
-push(type_info&&  ti, std::string_view  name) noexcept
+struct_def::
+push(type_info&&  ti, std::u16string_view  name) noexcept
 {
   int  offset = m_size;
 
-  const auto     sz = ti.get_size();
-  const auto  align = ti.get_align();
+  const auto     sz = ti.size();
+  const auto  align = ti.align();
 
   offset = get_aligned_offset(offset,align);
 
@@ -81,12 +81,12 @@ push(type_info&&  ti, std::string_view  name) noexcept
 
 
 const struct_member*
-struct_type_def::
-find(std::string_view  name) const noexcept
+struct_def::
+find(std::u16string_view  name) const noexcept
 {
     for(auto&  m: m_member_list)
     {
-        if(m.get_name() == name)
+        if(m.name() == name)
         {
           return &m;
         }
@@ -98,16 +98,20 @@ find(std::string_view  name) const noexcept
 
 
 void
-struct_type_def::
+struct_def::
 print() const noexcept
 {
   printf("{\n");
 
     for(auto&  m: m_member_list)
     {
-      m.get_type_info().print();
+      m.type().print();
 
-      printf("  %s(offset:%d);\n",m.get_name().data(),m.get_offset());
+      printf("  ");
+
+      gbstd::print(m.name());
+
+      printf("(offset:%d);\n",m.offset());
     }
 
 

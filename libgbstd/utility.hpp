@@ -39,6 +39,14 @@ create_at(T*  t, Args&&...  args) noexcept
 
 template<typename  T>
 inline T*
+clone(const T*  p) noexcept
+{
+  return p? new T(*p):nullptr;
+}
+
+
+template<typename  T>
+inline T*
 duplicate(const T*  src) noexcept
 {
   return src? new T(*src):nullptr;

@@ -1,5 +1,5 @@
-#ifndef gbstd_typesystem_HPP
-#define gbstd_typesystem_HPP
+#ifndef gbstd_vms_typesystem_HPP
+#define gbstd_vms_typesystem_HPP
 
 
 #include<cstddef>
@@ -14,7 +14,8 @@
 #include<array>
 #include<memory>
 #include<vector>
-#include"utility.hpp"
+#include"libgbstd/utility.hpp"
+#include"libgbstd/character.hpp"
 
 
 
@@ -25,20 +26,25 @@ namespace typesystem{
 
 
 
-class  function_signature;
-class  function_pointer_type_def;
-class  typed_pointer_type_def;
-class  reference_type_def;
+class  basic_type_info;
+class  type_info;
+class  type_lib;
 
-class   alias_type_def;
-class   array_type_def;
+class    pointer_info;
+class  reference_info;
+class      alias_info;
+class      array_info;
 
-class  struct_type_decl;
-class  struct_type_def;
-class   union_type_decl;
-class   union_type_def;
-class    enum_type_decl;
-class    enum_type_def;
+class  struct_decl;
+class  struct_def;
+class   union_decl;
+class   union_def;
+class    enum_decl;
+class    enum_def;
+
+class  fn_parameter;
+class  fn_signature;
+class  fn_pointer_info;
 
 
 
@@ -46,356 +52,221 @@ class    enum_type_def;
 class
 basic_type_info
 {
+  char  m_letter=0;
+  char  m_size=0;
+
 public:
-  enum class kinds{
+  constexpr basic_type_info(int  l=0, int  s=0) noexcept: m_letter(l), m_size(s){}
+
+  constexpr int  size() const noexcept{return m_size;}
+
+  constexpr bool  is_null()             const noexcept{return m_letter == 'n';}
+  constexpr bool  is_void()             const noexcept{return m_letter == 'v';}
+  constexpr bool  is_undefined()        const noexcept{return m_letter == 'd';}
+  constexpr bool  is_null_pointer()     const noexcept{return m_letter == 'p';}
+  constexpr bool  is_boolean()          const noexcept{return m_letter == 'b';}
+  constexpr bool  is_character()        const noexcept{return m_letter == 'c';}
+  constexpr bool  is_integer()          const noexcept{return m_letter == 'i';}
+  constexpr bool  is_unsigned_integer() const noexcept{return m_letter == 'u';}
+  constexpr bool  is_floating()         const noexcept{return m_letter == 'f';}
+
+  void  print() const noexcept{printf("%c%d",m_letter,8*m_size);}
+
+};
+
+
+class
+type_info
+{
+  const type_lib*  m_lib=nullptr;
+
+  enum class kind{
     null,
-    undefined,
+    basic,
     alias,
-    void_,
-    boolean,
-    character,
-    integer,
-    unsigned_integer,
-    fpn,
     pointer,
-    unsigned_pointer,
-    null_pointer,
-    function_pointer,
-    typed_pointer,
     reference,
     array,
     struct_,
     union_,
     enum_,
-  } m_kind=kinds::null;
+    function_pointer,
+  } m_kind=kind::null;
 
+  union data{
+    basic_type_info  bas;
 
-protected:
-  int  m_size =0;
-  int  m_align=0;
+    pointer_info*     ptr;
+    reference_info*   ref;
+    alias_info*       ali;
+    array_info*       arr;
 
-  std::string_view  m_name;
+    const struct_decl*  st;
+    const  union_decl*  un;
+    const   enum_decl*  en;
 
-public:
-  constexpr basic_type_info() noexcept{}
+    data() noexcept{}
+   ~data(){}
 
-  constexpr basic_type_info(kinds  k, int  sz, std::string_view  name) noexcept:
-  m_kind(k), m_size(sz), m_align(sz), m_name(name){}
-
-  constexpr basic_type_info(kinds  k, int  sz, int  al, std::string_view  name) noexcept:
-  m_kind(k), m_size(sz), m_align(al), m_name(name){}
-
-  constexpr std::string_view  get_name() const noexcept{return m_name;}
-
-  constexpr int   get_size() const noexcept{return  m_size;}
-  constexpr int  get_align() const noexcept{return m_align;}
-
-  operator bool() const noexcept{return m_kind != kinds::null;}
-
-  constexpr bool  is_null()             const noexcept{return m_kind == kinds::null;}
-  constexpr bool  is_void()             const noexcept{return m_kind == kinds::void_;}
-  constexpr bool  is_undefined()        const noexcept{return m_kind == kinds::undefined;}
-  constexpr bool  is_boolean()          const noexcept{return m_kind == kinds::boolean;}
-  constexpr bool  is_character()        const noexcept{return m_kind == kinds::character;}
-  constexpr bool  is_null_pointer()     const noexcept{return m_kind == kinds::null_pointer;}
-  constexpr bool  is_integer()          const noexcept{return m_kind == kinds::integer;}
-  constexpr bool  is_unsigned_integer() const noexcept{return m_kind == kinds::unsigned_integer;}
-  constexpr bool  is_fpn()              const noexcept{return m_kind == kinds::fpn;}
-  constexpr bool  is_pointer()          const noexcept{return m_kind == kinds::pointer;}
-  constexpr bool  is_unsigned_pointer() const noexcept{return m_kind == kinds::unsigned_pointer;}
-  constexpr bool  is_typed_pointer()    const noexcept{return m_kind == kinds::typed_pointer;}
-  constexpr bool  is_reference()        const noexcept{return m_kind == kinds::reference;}
-  constexpr bool  is_array()            const noexcept{return m_kind == kinds::array;}
-  constexpr bool  is_function_pointer() const noexcept{return m_kind == kinds::function_pointer;}
-  constexpr bool  is_struct()           const noexcept{return m_kind == kinds::struct_;}
-  constexpr bool  is_enum()             const noexcept{return m_kind == kinds::enum_;}
-  constexpr bool  is_union()            const noexcept{return m_kind == kinds::union_;}
-
-};
-
-
-constexpr
-basic_type_info
-g_basic_type_info_table[] =
-{
-  basic_type_info(basic_type_info::kinds::undefined       ,0,"undef"),
-  basic_type_info(basic_type_info::kinds::boolean         ,1,"bool8"),
-  basic_type_info(basic_type_info::kinds::boolean         ,2,"bool16"),
-  basic_type_info(basic_type_info::kinds::boolean         ,4,"bool32"),
-  basic_type_info(basic_type_info::kinds::boolean         ,8,"bool64"),
-  basic_type_info(basic_type_info::kinds::void_           ,0,"void"),
-  basic_type_info(basic_type_info::kinds::null_pointer    ,0,"nullptr"),
-  basic_type_info(basic_type_info::kinds::pointer         ,1,"intptr8"),
-  basic_type_info(basic_type_info::kinds::pointer         ,2,"intptr16"),
-  basic_type_info(basic_type_info::kinds::pointer         ,4,"intptr32"),
-  basic_type_info(basic_type_info::kinds::pointer         ,8,"intptr64"),
-  basic_type_info(basic_type_info::kinds::unsigned_pointer,1,"uintptr8"),
-  basic_type_info(basic_type_info::kinds::unsigned_pointer,2,"uintptr16"),
-  basic_type_info(basic_type_info::kinds::unsigned_pointer,4,"uintptr32"),
-  basic_type_info(basic_type_info::kinds::unsigned_pointer,8,"uintptr64"),
-  basic_type_info(basic_type_info::kinds::character       ,1,"char8"),
-  basic_type_info(basic_type_info::kinds::character       ,2,"char16"),
-  basic_type_info(basic_type_info::kinds::character       ,4,"char32"),
-  basic_type_info(basic_type_info::kinds::integer         ,1,"int8"),
-  basic_type_info(basic_type_info::kinds::integer         ,2,"int16"),
-  basic_type_info(basic_type_info::kinds::integer         ,4,"int32"),
-  basic_type_info(basic_type_info::kinds::integer         ,8,"int64"),
-  basic_type_info(basic_type_info::kinds::unsigned_integer,1,"uint8"),
-  basic_type_info(basic_type_info::kinds::unsigned_integer,2,"uint16"),
-  basic_type_info(basic_type_info::kinds::unsigned_integer,4,"uint32"),
-  basic_type_info(basic_type_info::kinds::unsigned_integer,8,"uint64"),
-  basic_type_info(basic_type_info::kinds::fpn             ,4,"float32"),
-  basic_type_info(basic_type_info::kinds::fpn             ,8,"float64"),
-};
-
-
-class
-type_info: public basic_type_info
-{
-  class core;
-
-  core*  m_core=nullptr;
-
-  void  unrefer() noexcept;
-
-  static constexpr basic_type_info
-  seek_basic(const basic_type_info*   it,
-                              const basic_type_info*  end,
-                              std::string_view  name) noexcept
-  {
-    return (it < end)? (it->get_name() == name)? *it
-                      :seek_basic(it+1,end,name)
-          :basic_type_info()
-          ;
-  }
-
-  static constexpr basic_type_info
-  seek_basic(std::string_view  name) noexcept
-  {
-    return seek_basic(std::begin(g_basic_type_info_table),
-                      std::end(  g_basic_type_info_table),
-                      name
-           );
-  }
+  } m_data;
 
 public:
+  type_info() noexcept{}
   type_info(const type_info&   rhs) noexcept{assign(rhs);}
   type_info(      type_info&&  rhs) noexcept{assign(std::move(rhs));}
+ ~type_info(){clear();}
 
-  constexpr type_info() noexcept{}
-  constexpr type_info(std::string_view  name) noexcept: basic_type_info(seek_basic(name)){}
-  type_info(alias_type_def&&            ti) noexcept;
-  type_info(typed_pointer_type_def&&    ti) noexcept;
-  type_info(reference_type_def&&  ti) noexcept;
-  type_info(array_type_def&&      ti) noexcept;
-  type_info(struct_type_decl&&    ti) noexcept;
-  type_info(union_type_decl&&     ti) noexcept;
-  type_info(enum_type_decl&&      ti) noexcept;
-  type_info(function_pointer_type_def&&  td) noexcept;
- ~type_info(){unrefer();}
+  template<class...  Args>
+  type_info(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  type_info&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   type_info&  operator=(const type_info&   rhs) noexcept{return assign(rhs);}
   type_info&  operator=(      type_info&&  rhs) noexcept{return assign(std::move(rhs));}
 
   type_info&  assign(const type_info&   rhs) noexcept;
   type_info&  assign(      type_info&&  rhs) noexcept;
-
-  void  update_size() noexcept;
-  void  update_align() noexcept;
-  void  update() noexcept;
-
-  const function_pointer_type_def&  get_function_pointer_type_def() const noexcept;
-  const typed_pointer_type_def&     get_typed_pointer_type_def()   const noexcept;
-  const reference_type_def&         get_reference_type_def() const noexcept;
-  const alias_type_def&             get_alias_type_def()     const noexcept;
-  const array_type_def&             get_array_type_def()     const noexcept;
-
-  struct_type_decl&  get_struct_type_decl() const noexcept;
-  union_type_decl&   get_union_type_decl()  const noexcept;
-  enum_type_decl&    get_enum_type_decl()   const noexcept;
-
-  type_info  form_array(int  n)          const noexcept;
-  type_info  form_typed_pointer(int  sz) const noexcept;
-  type_info  form_reference(int  sz)     const noexcept;
-
-  type_info  remove_array()         const noexcept;
-  type_info  remove_typed_pointer() const noexcept;
-  type_info  remove_reference()     const noexcept;
-
-  void  print() const noexcept;
-
-};
+  type_info&  assign(basic_type_info  b) noexcept;
+  type_info&  assign(pointer_info&&  ptr) noexcept;
+  type_info&  assign(reference_info&&  ref) noexcept;
+  type_info&  assign(alias_info&&  ali) noexcept;
+  type_info&  assign(array_info&&  arr) noexcept;
 
 
+  void  clear() noexcept;
 
+  const type_lib&  lib() const noexcept{return *m_lib;}
 
-class
-alias_type_def
-{
-  type_info  m_base_type_info;
+  bool  is_basic()            const noexcept{return m_kind == kind::basic;}
+  bool  is_alias()            const noexcept{return m_kind == kind::alias;}
+  bool  is_pointer()          const noexcept{return m_kind == kind::pointer;}
+  bool  is_reference()        const noexcept{return m_kind == kind::reference;}
+  bool  is_array()            const noexcept{return m_kind == kind::array;}
+  bool  is_struct()           const noexcept{return m_kind == kind::struct_;}
+  bool  is_union()            const noexcept{return m_kind == kind::union_;}
+  bool  is_function_pointer() const noexcept{return m_kind == kind::function_pointer;}
 
-  unique_string  m_name;
+  int   size() const noexcept;
+  int  align() const noexcept;
 
-public:
-  alias_type_def(const type_info&   base, std::string_view  name) noexcept: m_base_type_info(base), m_name(name){}
-  alias_type_def(      type_info&&  base, std::string_view  name) noexcept: m_base_type_info(std::move(base)), m_name(name){}
+  const basic_type_info&   get_basic_type_info() const noexcept{return m_data.bas;}
 
-  const type_info&  get_base_type_info() const noexcept{return m_base_type_info;}
+  const pointer_info&       get_pointer_info() const noexcept{return *m_data.ptr;}
+  const reference_info&   get_reference_info() const noexcept{return *m_data.ref;}
+  const alias_info&           get_alias_info() const noexcept{return *m_data.ali;}
+  const array_info&           get_array_info() const noexcept{return *m_data.arr;}
 
-  int  get_size()  const noexcept{return m_base_type_info.get_size();}
-  int  get_align() const noexcept{return m_base_type_info.get_align();}
+  const struct_decl&  get_struct_decl() const noexcept{return *m_data.st;}
+  const union_decl&    get_union_decl() const noexcept{return *m_data.un;}
+  const enum_decl&      get_enum_decl() const noexcept{return *m_data.en;}
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  type_info  form_array(int  n) const noexcept;
+  type_info  form_pointer(int  sz) const noexcept;
+  type_info  form_reference(int  sz) const noexcept;
 
-  void  print() const noexcept{m_base_type_info.print();}
-
-};
-
-
-
-
-class
-parameter
-{
-  type_info  m_type_info;
-
-  std::string  m_name;
-
-public:
-  parameter(const type_info&  ti, std::string_view  name) noexcept:
-  m_type_info(ti), m_name(name){}
-
-  parameter(type_info&&  ti, std::string_view  name) noexcept:
-  m_type_info(std::move(ti)), m_name(name){}
-
-  const type_info&  get_type_info() const noexcept{return m_type_info;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-};
-
-
-using parameter_list = std::vector<parameter>;
-
-
-class
-function_signature
-{
-  type_info  m_return_type_info;
-
-  parameter_list  m_parameter_list;
-
-public:
-  function_signature(const type_info&  retti, parameter_list&&  ls={}) noexcept:
-  m_return_type_info(retti), m_parameter_list(std::move(ls)){}
-
-  function_signature(type_info&&  retti, parameter_list&&  ls={}) noexcept:
-  m_return_type_info(std::move(retti)), m_parameter_list(std::move(ls)){}
-
-  const type_info&  get_return_type_info() const noexcept{return m_return_type_info;}
-
-  const parameter_list&  get_parameter_list() const noexcept{return m_parameter_list;}
-
-  std::string  make_name() const noexcept;
+  type_info  remove_array() const noexcept;
+  type_info  remove_pointer() const noexcept;
+  type_info  remove_reference() const noexcept;
 
   void  print() const noexcept;
 
 };
 
 
+
+
 class
-function_pointer_type_def
+type_lib
 {
-  function_signature  m_signature;
+  const type_lib*  m_parent;
 
-  int  m_size=0;
-
-  unique_string  m_name;
-
-  std::string  make_name() const noexcept{return m_signature.make_name();}
+  std::list<alias_info>    m_alias_info_list;
+  std::list<struct_decl>  m_struct_decl_list;
+  std::list<union_decl>    m_union_decl_list;
+  std::list<enum_decl>      m_enum_decl_list;
 
 public:
-  function_pointer_type_def(const function_signature&   sig, int  sz) noexcept: m_signature(sig),            m_size(sz){m_name = make_name();}
-  function_pointer_type_def(      function_signature&&  sig, int  sz) noexcept: m_signature(std::move(sig)), m_size(sz){m_name = make_name();}
 
-  const function_signature&  get_signature() const noexcept{return m_signature;}
-
-  int  get_size() const noexcept{return m_size;}
-
-  std::string_view  get_name() const noexcept{return m_name;}
 
 };
 
 
+
+
 class
-typed_pointer_type_def
+pointer_info
 {
 protected:
-  type_info  m_base_type_info;
+  type_info  m_target;
 
   int  m_size=0;
 
-  unique_string  m_name;
-
-  std::string  make_name() const noexcept{return std::string(m_base_type_info.get_name())+"*";}
-
-  typed_pointer_type_def() noexcept{}
-
 public:
-  typed_pointer_type_def(const type_info&   base, int  sz) noexcept: m_base_type_info(base),            m_size(sz){m_name = make_name();}
-  typed_pointer_type_def(      type_info&&  base, int  sz) noexcept: m_base_type_info(std::move(base)), m_size(sz){m_name = make_name();}
+  pointer_info(const type_info&   target, int  sz) noexcept: m_target(target),            m_size(sz){}
+  pointer_info(      type_info&&  target, int  sz) noexcept: m_target(std::move(target)), m_size(sz){}
 
-  const type_info&  get_base_type_info() const noexcept{return m_base_type_info;}
+  const type_info&  target() const noexcept{return m_target;}
 
-  int  get_size() const noexcept{return m_size;}
+  int   size() const noexcept{return m_size;}
+  int  align() const noexcept{return m_size;}
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  void  print() const noexcept
+  {
+    m_target.print();
+
+    printf("*");
+  }
 
 };
 
 
 class
-reference_type_def: public typed_pointer_type_def
+reference_info: public pointer_info
 {
-  std::string  make_name() const noexcept{return std::string(m_base_type_info.get_name())+"&";}
-
 public:
-  reference_type_def(const type_info&   base, int  sz) noexcept: typed_pointer_type_def(base,           sz){m_name = make_name();}
-  reference_type_def(      type_info&&  base, int  sz) noexcept: typed_pointer_type_def(std::move(base),sz){m_name = make_name();}
+  reference_info(const type_info&   target, int  sz) noexcept: pointer_info(target,           sz){}
+  reference_info(      type_info&&  target, int  sz) noexcept: pointer_info(std::move(target),sz){}
+
+  void  print() const noexcept
+  {
+    m_target.print();
+
+    printf("&");
+  }
 
 };
 
 
+
+
 class
-array_type_def
+array_info
 {
-  type_info  m_base_type_info;
+  type_info  m_target;
 
   int  m_number_of_elements;
 
-  unique_string  m_name;
-
-  std::string  make_name() const noexcept{
-    std::string  s(m_base_type_info.get_name());
-
-    return s+"["+std::to_string(m_number_of_elements)+"]";
-  }
-
 public:
-  array_type_def(const type_info&  base, int  n) noexcept:
-  m_base_type_info(base), m_number_of_elements(n){m_name = make_name();}
+  array_info(const type_info&  t, int  n) noexcept:
+  m_target(t), m_number_of_elements(n){}
 
-  array_type_def(type_info&&  base, int  n) noexcept:
-  m_base_type_info(std::move(base)), m_number_of_elements(n){m_name = make_name();}
+  array_info(type_info&&  t, int  n) noexcept:
+  m_target(std::move(t)), m_number_of_elements(n){}
 
-  const type_info&  get_base_type_info() const noexcept{return m_base_type_info;}
+  const type_info&  target() const noexcept{return m_target;}
 
-  int  get_number_of_elements() const noexcept{return m_number_of_elements;}
+  int  number_of_elements() const noexcept{return m_number_of_elements;}
 
-  int   get_size() const noexcept{return m_base_type_info.get_size()*m_number_of_elements;}
-  int  get_align() const noexcept{return m_base_type_info.get_align();}
+  int   size() const noexcept{return m_target.size()*m_number_of_elements;}
+  int  align() const noexcept{return m_target.align();}
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  void  print() const noexcept
+  {
+    m_target.print();
+
+    printf("[%d]",m_number_of_elements);
+  }
 
 };
 
@@ -403,28 +274,53 @@ public:
 
 
 class
-struct_type_decl
+alias_info
 {
-  std::unique_ptr<struct_type_def>  m_def;
+  type_info  m_target;
 
-  unique_string  m_name;
+  std::u16string  m_name;
 
 public:
-  struct_type_decl(std::string_view  name) noexcept: m_name(name){}
+  alias_info(const type_info&   t, std::u16string_view  name) noexcept: m_target(t), m_name(name){}
+  alias_info(      type_info&&  t, std::u16string_view  name) noexcept: m_target(std::move(t)), m_name(name){}
+
+  const type_info&  target() const noexcept{return m_target;}
+
+  int   size() const noexcept{return m_target.size();}
+  int  align() const noexcept{return m_target.align();}
+
+  const std::u16string&  name() const noexcept{return m_name;}
+
+  void  print() const noexcept{m_target.print();}
+
+};
+
+
+
+
+class
+struct_decl
+{
+  std::unique_ptr<struct_def>  m_def;
+
+  std::u16string  m_name;
+
+public:
+  struct_decl(std::u16string_view  name) noexcept: m_name(name){}
 
   operator bool() const noexcept{return m_def.get();}
 
-  struct_type_def&  operator*()  const noexcept{return *m_def;}
-  struct_type_def*  operator->() const noexcept{return  m_def.get();}
+  struct_def&  operator*()  const noexcept{return *m_def;}
+  struct_def*  operator->() const noexcept{return  m_def.get();}
 
-  int   get_size() const noexcept;
-  int  get_align() const noexcept;
+  int   size() const noexcept;
+  int  align() const noexcept;
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  struct_type_def&  set_def(struct_type_def&&  def) noexcept;
+  struct_def&  set_def(struct_def&&  def) noexcept;
 
-  struct_type_def&  get_def() const noexcept{return *m_def;}
+  struct_def&  get_def() const noexcept{return *m_def;}
 
   void  print() const noexcept;
 
@@ -436,25 +332,25 @@ struct_member
 {
   type_info  m_type_info;
 
-  std::string  m_name;
+  std::u16string  m_name;
 
   int  m_offset;
 
 public:
-  struct_member(type_info&&  ti, std::string_view  name, int  offset) noexcept:
+  struct_member(type_info&&  ti, std::u16string_view  name, int  offset) noexcept:
   m_type_info(std::move(ti)), m_name(name), m_offset(offset){}
 
-  const type_info&  get_type_info() const noexcept{return m_type_info;}
+  const type_info&  type() const noexcept{return m_type_info;}
 
-  const std::string&  get_name() const noexcept{return m_name;}
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  int  get_offset() const noexcept{return m_offset;}
+  int  offset() const noexcept{return m_offset;}
 
 };
 
 
 class
-struct_type_def
+struct_def
 {
   std::vector<struct_member>  m_member_list;
 
@@ -462,13 +358,13 @@ struct_type_def
   int  m_align=0;
 
 public:
-  void  push(const type_info&   ti, std::string_view  name) noexcept{push(type_info(ti),name);}
-  void  push(      type_info&&  ti, std::string_view  name) noexcept;
+  void  push(const type_info&   ti, std::u16string_view  name) noexcept{push(type_info(ti),name);}
+  void  push(      type_info&&  ti, std::u16string_view  name) noexcept;
 
-  const struct_member*  find(std::string_view  name) const noexcept;
+  const struct_member*  find(std::u16string_view  name) const noexcept;
 
-  int   get_size() const noexcept{return m_size;}
-  int  get_align() const noexcept{return m_align;}
+  int   size() const noexcept{return m_size;}
+  int  align() const noexcept{return m_align;}
 
   void  print() const noexcept;
 
@@ -478,27 +374,27 @@ public:
 
 
 class
-union_type_decl
+union_decl
 {
-  std::unique_ptr<union_type_def>  m_def;
+  std::unique_ptr<union_def>  m_def;
 
-  unique_string  m_name;
+  std::u16string  m_name;
 
 public:
-  union_type_decl(std::string_view  name) noexcept: m_name(name){}
+  union_decl(std::u16string_view  name) noexcept: m_name(name){}
 
   operator bool() const noexcept{return m_def.get();}
 
-  union_type_def&  operator*()  const noexcept{return *m_def;}
-  union_type_def*  operator->() const noexcept{return  m_def.get();}
+  union_def&  operator*()  const noexcept{return *m_def;}
+  union_def*  operator->() const noexcept{return  m_def.get();}
 
-  int   get_size() const noexcept;
-  int  get_align() const noexcept;
+  int   size() const noexcept;
+  int  align() const noexcept;
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  union_type_def&  set_def(union_type_def&&  def) noexcept;
-  union_type_def&  get_def() const noexcept{return *m_def;}
+  union_def&  set_def(union_def&&  def) noexcept;
+  union_def&  get_def() const noexcept{return *m_def;}
 
   void  print() const noexcept;
 
@@ -506,14 +402,14 @@ public:
 
 
 class
-union_type_def
+union_def
 {
   struct member{
     type_info  m_type_info;
 
-    std::string  m_name;
+    std::u16string  m_name;
 
-    member(type_info&&  ti, std::string_view  name) noexcept: m_type_info(std::move(ti)), m_name(name){}
+    member(type_info&&  ti, std::u16string_view  name) noexcept: m_type_info(std::move(ti)), m_name(name){}
   };
 
   std::vector<member>  m_member_list;
@@ -522,13 +418,13 @@ union_type_def
   int  m_align=0;
 
 public:
-  void  push(const type_info&   ti, std::string_view  name) noexcept{push(type_info(ti),name);}
-  void  push(      type_info&&  ti, std::string_view  name) noexcept;
+  void  push(const type_info&   ti, std::u16string_view  name) noexcept{push(type_info(ti),name);}
+  void  push(      type_info&&  ti, std::u16string_view  name) noexcept;
 
-  type_info  find(std::string_view  name) const noexcept;
+  type_info  find(std::u16string_view  name) const noexcept;
 
-  int   get_size() const noexcept{return m_size;}
-  int  get_align() const noexcept{return m_align;}
+  int   size() const noexcept{return m_size;}
+  int  align() const noexcept{return m_align;}
 
   void  print() const noexcept;
 
@@ -540,44 +436,48 @@ public:
 class
 enumerator
 {
-  unique_string  m_name;
+  std::u16string  m_name;
 
   int64_t  m_value;
 
 public:
-  enumerator(std::string_view  name, int64_t  value) noexcept:
+  enumerator(std::u16string_view  name, int64_t  value) noexcept:
   m_name(name), m_value(value){}
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  const int64_t&  get_value() const noexcept{return m_value;}
+  const int64_t&  value() const noexcept{return m_value;}
 
-  void  print() const noexcept{printf("%s = %" PRIi64,m_name.data(),m_value);}
+  void  print() const noexcept
+  {
+    gbstd::print(m_name);
+    printf(" = %" PRIi64,m_value);
+  }
 
 };
 
 
 class
-enum_type_decl
+enum_decl
 {
-  std::unique_ptr<enum_type_def>  m_def;
+  std::unique_ptr<enum_def>  m_def;
 
-  unique_string  m_name;
+  std::u16string  m_name;
 
 public:
-  enum_type_decl(std::string_view  name) noexcept: m_name(name){}
+  enum_decl(std::u16string_view  name) noexcept: m_name(name){}
 
   operator bool() const noexcept{return m_def.get();}
 
-  enum_type_def&  operator*()  const noexcept{return *m_def;}
-  enum_type_def*  operator->() const noexcept{return  m_def.get();}
+  enum_def&  operator*()  const noexcept{return *m_def;}
+  enum_def*  operator->() const noexcept{return  m_def.get();}
 
-  int  get_size() const noexcept;
+  int  size() const noexcept;
 
-  std::string_view  get_name() const noexcept{return m_name;}
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  enum_type_def&  set_def(enum_type_def&&  def) noexcept;
-  enum_type_def&  get_def() const noexcept{return *m_def;}
+  enum_def&  set_def(enum_def&&  def) noexcept;
+  enum_def&  get_def() const noexcept{return *m_def;}
 
   void  print() const noexcept;
 
@@ -585,22 +485,89 @@ public:
 
 
 class
-enum_type_def
+enum_def
 {
   std::vector<enumerator>  m_enumerator_list;
 
   int  m_size=0;
 
 public:
-  enum_type_def(int  sz) noexcept: m_size(sz){}
+  enum_def(int  sz) noexcept: m_size(sz){}
 
-  int  get_size() const noexcept{return m_size;}
+  int  size() const noexcept{return m_size;}
 
-  enumerator&  push(std::string_view  name, int  value) noexcept;
+  enumerator&  push(std::u16string_view  name, int  value) noexcept;
 
-  const int64_t*  find(std::string_view  name) const noexcept;
+  const int64_t*  find(std::u16string_view  name) const noexcept;
 
   void  print() const noexcept;
+
+};
+
+
+
+
+class
+fn_parameter
+{
+  type_info  m_type_info;
+
+  std::u16string  m_name;
+
+public:
+  fn_parameter(const type_info&  ti, std::u16string_view  name) noexcept:
+  m_type_info(ti), m_name(name){}
+
+  fn_parameter(type_info&&  ti, std::u16string_view  name) noexcept:
+  m_type_info(std::move(ti)), m_name(name){}
+
+  const type_info&  type() const noexcept{return m_type_info;}
+
+  const std::u16string&  name() const noexcept{return m_name;}
+
+};
+
+
+using fn_parameter_list = std::vector<fn_parameter>;
+
+
+class
+fn_signature
+{
+  type_info  m_return_type_info;
+
+  fn_parameter_list  m_parameter_list;
+
+public:
+  fn_signature(const type_info&  retti, fn_parameter_list&&  ls={}) noexcept:
+  m_return_type_info(retti), m_parameter_list(std::move(ls)){}
+
+  fn_signature(type_info&&  retti, fn_parameter_list&&  ls={}) noexcept:
+  m_return_type_info(std::move(retti)), m_parameter_list(std::move(ls)){}
+
+  const type_info&  return_type() const noexcept{return m_return_type_info;}
+
+  const fn_parameter_list&  parameter_list() const noexcept{return m_parameter_list;}
+
+  void  print() const noexcept;
+
+};
+
+
+class
+fn_pointer_info
+{
+  fn_signature  m_signature;
+
+  int  m_size=0;
+
+public:
+  fn_pointer_info(const fn_signature&   sig, int  sz) noexcept: m_signature(sig),            m_size(sz){}
+  fn_pointer_info(      fn_signature&&  sig, int  sz) noexcept: m_signature(std::move(sig)), m_size(sz){}
+
+  const fn_signature&  signature() const noexcept{return m_signature;}
+
+  int  size() const noexcept{return m_size;}
 
 };
 
