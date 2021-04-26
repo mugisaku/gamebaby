@@ -8,9 +8,9 @@ namespace gbstd{
 
 
 
-primary_expression_element&
-primary_expression_element::
-assign(const primary_expression_element&   rhs) noexcept
+postfix_element&
+postfix_element::
+assign(const postfix_element&   rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -23,7 +23,6 @@ assign(const primary_expression_element&   rhs) noexcept
       case(kinds::selector  ): create_at(&m_data.s     ,rhs.m_data.s     );break;
       case(kinds::index     ): create_at(&m_data.expr  ,rhs.m_data.expr  );break;
       case(kinds::call      ): create_at(&m_data.exprls,rhs.m_data.exprls);break;
-      case(kinds::assignment): create_at(&m_data.ass   ,rhs.m_data.ass   );break;
         }
     }
 
@@ -32,9 +31,9 @@ assign(const primary_expression_element&   rhs) noexcept
 }
 
 
-primary_expression_element&
-primary_expression_element::
-assign(primary_expression_element&&  rhs) noexcept
+postfix_element&
+postfix_element::
+assign(postfix_element&&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -47,7 +46,6 @@ assign(primary_expression_element&&  rhs) noexcept
       case(kinds::selector  ): create_at(&m_data.s     ,std::move(rhs.m_data.s     ));break;
       case(kinds::index     ): create_at(&m_data.expr  ,std::move(rhs.m_data.expr  ));break;
       case(kinds::call      ): create_at(&m_data.exprls,std::move(rhs.m_data.exprls));break;
-      case(kinds::assignment): create_at(&m_data.ass   ,std::move(rhs.m_data.ass   ));break;
         }
     }
 
@@ -56,9 +54,9 @@ assign(primary_expression_element&&  rhs) noexcept
 }
 
 
-primary_expression_element&
-primary_expression_element::
-assign(std::string_view  id) noexcept
+postfix_element&
+postfix_element::
+assign(std::u16string_view  id) noexcept
 {
   clear();
 
@@ -70,8 +68,8 @@ assign(std::string_view  id) noexcept
 }
 
 
-primary_expression_element&
-primary_expression_element::
+postfix_element&
+postfix_element::
 assign(expression&&  e) noexcept
 {
   clear();
@@ -84,8 +82,8 @@ assign(expression&&  e) noexcept
 }
 
 
-primary_expression_element&
-primary_expression_element::
+postfix_element&
+postfix_element::
 assign(std::vector<expression>&&  ls) noexcept
 {
   clear();
@@ -98,31 +96,16 @@ assign(std::vector<expression>&&  ls) noexcept
 }
 
 
-primary_expression_element&
-primary_expression_element::
-assign(assignment&&  ass) noexcept
-{
-  clear();
-
-  create_at(&m_data.ass,std::move(ass));
-
-  m_kind = kinds::assignment;
-
-  return *this;
-}
-
-
-primary_expression_element&
-primary_expression_element::
+postfix_element&
+postfix_element::
 clear() noexcept
 {
     switch(m_kind)
     {
-  case(kinds::null      ): break;
-  case(kinds::selector  ): std::destroy_at(&m_data.s     );break;
-  case(kinds::index     ): std::destroy_at(&m_data.expr  );break;
-  case(kinds::call      ): std::destroy_at(&m_data.exprls);break;
-  case(kinds::assignment): std::destroy_at(&m_data.ass);break;
+  case(kinds::null    ): break;
+  case(kinds::selector): std::destroy_at(&m_data.s     );break;
+  case(kinds::index   ): std::destroy_at(&m_data.expr  );break;
+  case(kinds::call    ): std::destroy_at(&m_data.exprls);break;
     }
 
 
@@ -133,13 +116,13 @@ clear() noexcept
 
 
 void
-primary_expression_element::
+postfix_element::
 print() const noexcept
 {
     switch(m_kind)
     {
   case(kinds::null    ): break;
-  case(kinds::selector): printf(".%s",m_data.s.data());break;
+  case(kinds::selector): printf(".");  gbstd::print(m_data.s);break;
   case(kinds::index   ): printf("[");  m_data.expr.print();  printf("]");break;
   case(kinds::call    ):
       printf("(");
@@ -154,8 +137,6 @@ print() const noexcept
 
       printf(")");
       break;
-
-  case(kinds::assignment): m_data.ass.print();break;
     }
 }
 

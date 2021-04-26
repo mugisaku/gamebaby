@@ -29,6 +29,7 @@ assign(const type_info&  rhs) noexcept
       case(kind::struct_  ): m_data.st =      (rhs.m_data.st);break;
       case(kind::union_   ): m_data.un =      (rhs.m_data.un);break;
       case(kind::enum_    ): m_data.en =      (rhs.m_data.en);break;
+      case(kind::fn_pointer): m_data.fnptr = clone(rhs.m_data.fnptr);break;
         }
     }
 
@@ -57,6 +58,7 @@ assign(type_info&&  rhs) noexcept
       case(kind::struct_  ): m_data.st = rhs.m_data.st;break;
       case(kind::union_   ): m_data.un = rhs.m_data.un;break;
       case(kind::enum_    ): m_data.en = rhs.m_data.en;break;
+      case(kind::fn_pointer): m_data.fnptr = rhs.m_data.fnptr;break;
         }
     }
 
@@ -135,6 +137,62 @@ assign(array_info&&  arr) noexcept
 }
 
 
+type_info&
+type_info::
+assign(const struct_decl&  st) noexcept
+{
+  clear();
+
+  m_kind = kind::struct_;
+
+  m_data.st = &st;
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(const union_decl&  un) noexcept
+{
+  clear();
+
+  m_kind = kind::union_;
+
+  m_data.un = &un;
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(const enum_decl&  en) noexcept
+{
+  clear();
+
+  m_kind = kind::enum_;
+
+  m_data.en = &en;
+
+  return *this;
+}
+
+
+type_info&
+type_info::
+assign(fn_pointer_info&&  fnptr) noexcept
+{
+  clear();
+
+  m_kind = kind::fn_pointer;
+
+  m_data.fnptr = new fn_pointer_info(std::move(fnptr));
+
+  return *this;
+}
+
+
 
 
 void
@@ -147,6 +205,7 @@ clear() noexcept
   case(kind::reference): std::destroy_at(m_data.ref);break;
   case(kind::alias    ): std::destroy_at(m_data.ali);break;
   case(kind::array    ): std::destroy_at(m_data.arr);break;
+  case(kind::fn_pointer): std::destroy_at(m_data.fnptr);break;
     }
 
 
@@ -170,6 +229,7 @@ size() const noexcept
   case(kind::struct_): return m_data.st->size();break;
   case(kind::union_ ): return m_data.un->size();break;
   case(kind::enum_  ): return m_data.en->size();break;
+  case(kind::fn_pointer): return m_data.fnptr->size();break;
     }
 
 
@@ -191,6 +251,7 @@ align() const noexcept
   case(kind::struct_): return m_data.st->align();break;
   case(kind::union_ ): return m_data.un->align();break;
   case(kind::enum_  ): return m_data.en->size();break;
+  case(kind::fn_pointer): return m_data.fnptr->size();break;
     }
 
 
@@ -271,10 +332,15 @@ print() const noexcept
 
     switch(m_kind)
     {
-  case(kind::alias  ): m_data.ali->print();break;
+  case(kind::basic  ): m_data.bas.print();break;
+  case(kind::pointer): m_data.ptr->print();break;
+  case(kind::reference): m_data.ref->print();break;
+  case(kind::array): m_data.arr->print();break;
+  case(kind::alias): m_data.ali->print();break;
   case(kind::struct_): m_data.st->print();break;
   case(kind::union_ ): m_data.un->print();break;
   case(kind::enum_  ): m_data.en->print();break;
+  case(kind::fn_pointer): m_data.fnptr->signature().print();break;
     }
 }
 

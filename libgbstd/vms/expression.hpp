@@ -13,8 +13,7 @@
 #include<vector>
 #include"libgbstd/misc.hpp"
 #include"libgbstd/utility.hpp"
-#include"libgbstd/typesystem.hpp"
-#include"libgbstd/parser.hpp"
+#include"libgbstd/vms/typesystem.hpp"
 
 
 namespace gbstd{
@@ -36,9 +35,10 @@ public:
 
 
 class operand;
-class primary_expression_element;
-class expression_element;
-class unary_expression;
+class expression;
+class postfix_element;
+class simple_value;
+class simple_object;
 
 
 
@@ -55,179 +55,126 @@ get_aligned_address(address_t  addr) noexcept
 }
 
 
-class
-memo_info
-{
-  typesystem::type_info  m_type_info;
-
-  std::string  m_name;
-
-  address_t  m_address=0;
-
-public:
-  memo_info() noexcept{}
-  memo_info(const typesystem::type_info&  ti, std::string_view  name) noexcept: m_type_info(ti), m_name(name){}
-
-  const typesystem::type_info&  get_type_info() const noexcept{return m_type_info;}
-
-  const std::string&  get_name() const noexcept{return m_name;}
-
-  address_t  set_address(address_t  addr) noexcept{
-    m_address = get_aligned_address(addr);
-
-    return m_address+m_type_info.get_size();
-  }
-
-  address_t  get_address() const noexcept{return m_address;}
-
-  void  print() const noexcept{
-    m_type_info.print();
-    printf("  %s[%d]",m_name.data(),m_address);
-  }
-
-};
-
-
 
 
 class
 simple_value
 {
-  enum class kinds{
-    null, boolean, fpn, integer,
-  } m_kind=kinds::null;
+  enum class kind{
+    null,
+    boolean,
+    integer, 
+    floating,
+    object,
+  } m_kind=kind::null;
 
   union data{
     int64_t  i;
     bool     b;
     double   f;
 
+    simple_object*   o;
+
     data() noexcept{}
    ~data(){}
   } m_data;
 
+
+  int  m_offset=0;
+
 public:
   simple_value() noexcept{}
+  simple_value(const simple_value&   rhs) noexcept{assign(rhs);}
+  simple_value(      simple_value&&  rhs) noexcept{assign(std::move(rhs));}
+ ~simple_value(){clear();}
 
   template<class...  Args>
-  explicit simple_value(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  simple_value(int  off, Args&&...  args) noexcept: m_offset(off){assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
   simple_value&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  simple_value  operator-() const noexcept{
-    return is_integer()? simple_value(-m_data.i)
-          :is_fpn()    ? simple_value(-m_data.f)
-          :simple_value()
-          ;
-  }
+  simple_value&  operator=(const simple_value&   rhs) noexcept{return assign(rhs);}
+  simple_value&  operator=(      simple_value&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  simple_value  operator!() const noexcept{
-    return is_integer()? simple_value(!m_data.i)
-          :is_boolean()? simple_value(!m_data.b)
-          :simple_value()
-          ;
-  }
+  simple_value&  assign(const simple_value&   rhs) noexcept;
+  simple_value&  assign(      simple_value&&  rhs) noexcept;
+  simple_value&  assign(int64_t  i) noexcept;
+  simple_value&  assign(bool     b) noexcept;
+  simple_value&  assign(double   f) noexcept;
+  simple_value&  assign(simple_object&&  o) noexcept;
 
-  simple_value  operator~() const noexcept{
-    return is_integer()? simple_value(~m_data.i)
-          :simple_value()
-          ;
-  }
+  void  clear() noexcept;
 
-  simple_value&  assign(const simple_value&   rhs) noexcept{  if(this != &rhs){  std::memcpy(this,&rhs,sizeof(*this));};  return *this;}
-  simple_value&  assign(      simple_value&&  rhs) noexcept{  if(this != &rhs){  std::memcpy(this,&rhs,sizeof(*this));};  return *this;}
-  simple_value&  assign(int64_t  i) noexcept{  m_kind = kinds::integer;  m_data.i = i;  return *this;}
-  simple_value&  assign(bool     b) noexcept{  m_kind = kinds::boolean;  m_data.b = b;  return *this;}
-  simple_value&  assign(double   f) noexcept{  m_kind = kinds::fpn    ;  m_data.f = f;  return *this;}
+  int  offset() const noexcept{return m_offset;}
 
-  int64_t  get_integer() const noexcept{return m_data.i;}
-  bool     get_boolean() const noexcept{return m_data.b;}
-  double   get_fpn()     const noexcept{return m_data.f;}
+  int64_t               get_integer() const noexcept{return m_data.i;}
+  bool                  get_boolean() const noexcept{return m_data.b;}
+  double               get_floating() const noexcept{return m_data.f;}
+  const simple_object&   get_object() const noexcept{return *m_data.o;}
 
-  bool  is_integer() const noexcept{return m_kind == kinds::integer;}
-  bool  is_boolean() const noexcept{return m_kind == kinds::boolean;}
-  bool  is_fpn()     const noexcept{return m_kind == kinds::fpn;}
+  bool  is_integer()  const noexcept{return m_kind == kind::integer;}
+  bool  is_boolean()  const noexcept{return m_kind == kind::boolean;}
+  bool  is_floating() const noexcept{return m_kind == kind::floating;}
+  bool  is_object()   const noexcept{return m_kind == kind::object;}
 
 };
 
 
 class
-primary_expression
+simple_object
 {
-  struct data;
-
-  data*  m_data=nullptr;
+  std::vector<simple_value>  m_value_list;
 
 public:
-  primary_expression() noexcept{}
-  primary_expression(const primary_expression&   rhs) noexcept{assign(rhs);}
-  primary_expression(      primary_expression&&  rhs) noexcept{assign(std::move(rhs));}
- ~primary_expression(){clear();}
+  simple_object() noexcept{}
 
-  template<class... Args>
-  explicit primary_expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  template<class...  Args>
+  simple_object(Args&&...  args) noexcept{append(std::forward<Args>(args)...);}
 
-  template<class... Args>
-  primary_expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  template<class...  Args>
+  simple_object&  operator+=(Args&&...  args) noexcept{return append(std::forward<Args>(args)...);}
 
-  operator bool() const noexcept{return m_data;}
+  template<class...  Args>
+  simple_object&  append(Args&&...  args) noexcept{m_value_list.emplace_back((int)m_value_list.size(),std::forward<Args>(args)...);  return *this;}
 
-  primary_expression&  assign(const primary_expression&   rhs) noexcept;
-  primary_expression&  assign(      primary_expression&&  rhs) noexcept;
-  primary_expression&  assign(operand&&  o, std::vector<primary_expression_element>&&  els) noexcept;
+  operator bool() const noexcept{return m_value_list.size();}
 
-  primary_expression&  clear() noexcept;
-
-        operand&  get_operand()       noexcept;
-  const operand&  get_operand() const noexcept;
-
-        std::vector<primary_expression_element>&  get_elements()       noexcept;
-  const std::vector<primary_expression_element>&  get_elements() const noexcept;
-
-  simple_value  evaluate() const noexcept;
-
-  void  print() const noexcept;
+  const simple_value&  operator[](int  i) const noexcept{return m_value_list[i];}
 
 };
+
+
 
 
 class
 expression
 {
-  struct data;
+  std::unique_ptr<operand>  m_left;
+  std::unique_ptr<operand>  m_right;
 
-  data*  m_data=nullptr;
+  small_string  m_binary_operator;
 
 public:
   expression() noexcept{}
   expression(const expression&   rhs) noexcept{assign(rhs);}
   expression(      expression&&  rhs) noexcept{assign(std::move(rhs));}
- ~expression(){clear();}
 
-  template<class... Args>
-  explicit expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
-
-  template<class... Args>
-  expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
-
-  template<class... Args>
-  expression&  operator+=(Args&&...  args) noexcept{return append(std::forward<Args>(args)...);}
-
-  operator bool() const noexcept{return m_data;}
+  expression&  operator=(const expression&   rhs) noexcept{return assign(rhs);}
+  expression&  operator=(      expression&&  rhs) noexcept{return assign(std::move(rhs));}
 
   expression&  assign(const expression&   rhs) noexcept;
   expression&  assign(      expression&&  rhs) noexcept;
-  expression&  assign(std::vector<expression_element>&&  els) noexcept;
 
-  expression&  append(expression_element&&  els) noexcept;
+  expression&  assign(operand&&  l) noexcept;
+  expression&  assign(operand&&  l, operand&&  r, small_string  binop) noexcept;
 
-  expression&  clear() noexcept;
+  const operand*   left() const noexcept{return m_left.get();}
+  const operand*  right() const noexcept{return m_right.get();}
 
-        std::vector<expression_element>&  get_elements()       noexcept;
-  const std::vector<expression_element>&  get_elements() const noexcept;
+  small_string  binary_operator() const noexcept{return m_binary_operator;}
 
-  simple_value  evaluate() const noexcept;
+  simple_object  evaluate() const noexcept;
 
   void  print() const noexcept;
 
@@ -239,14 +186,14 @@ public:
 class
 identifier
 {
-  std::string  m_string;
+  std::u16string  m_string;
 
 public:
   identifier() noexcept{}
-  identifier(std::string_view  sv) noexcept: m_string(sv){}
+  identifier(std::u16string_view  sv) noexcept: m_string(sv){}
 
-  const std::string&  get() const noexcept{return m_string;}
-  std::string     release() noexcept{return std::move(m_string);}
+  const std::u16string&  get() const noexcept{return m_string;}
+  std::u16string     release() noexcept{return std::move(m_string);}
 
 };
 
@@ -260,7 +207,7 @@ operand
     null_pointer,
     boolean,
     integer,
-    fpn,
+    floating,
     string,
     identifier,
     expression,
@@ -268,9 +215,9 @@ operand
   } m_kind=kinds::null;
 
   union data{
-    bool         b;
-    std::string  s;
-    int64_t      i;
+    bool            b;
+    std::u16string  s;
+    uint64_t        i;
 
     double  f;
 
@@ -280,6 +227,10 @@ operand
  ~data(){}
 
   } m_data;
+
+
+  std::vector<small_string>      m_prefix_list;
+  std::vector<postfix_element>  m_postfix_list;
 
 public:
   operand() noexcept{}
@@ -299,30 +250,30 @@ public:
   operand&  assign(      operand&&  rhs) noexcept;
   operand&  assign(nullptr_t  n) noexcept;
   operand&  assign(bool  b) noexcept;
-  operand&  assign(std::string_view  sv) noexcept;
-  operand&  assign(int64_t  i) noexcept;
+  operand&  assign(std::u16string_view  sv) noexcept;
+  operand&  assign(uint64_t  i) noexcept;
   operand&  assign(double  f) noexcept;
   operand&  assign(identifier&&  id) noexcept;
   operand&  assign(expression&&  e) noexcept;
 
   operand&  clear() noexcept;
 
-  bool      get_boolean() const noexcept{return m_data.b;}
-  int64_t   get_integer() const noexcept{return m_data.i;}
-  double    get_fpn()     const noexcept{return m_data.f;}
+  bool       get_boolean() const noexcept{return m_data.b;}
+  uint64_t   get_integer() const noexcept{return m_data.i;}
+  double    get_floating()     const noexcept{return m_data.f;}
 
-  const std::string&     get_string() const noexcept{return m_data.s;}
+  const std::u16string&     get_string() const noexcept{return m_data.s;}
   const expression&  get_expression() const noexcept{return m_data.expr;}
 
   bool  is_boolean()      const noexcept{return m_kind == kinds::boolean;}
   bool  is_null_pointer() const noexcept{return m_kind == kinds::null_pointer;}
   bool  is_string()       const noexcept{return m_kind == kinds::string;}
   bool  is_integer()      const noexcept{return m_kind == kinds::integer;}
-  bool  is_fpn()          const noexcept{return m_kind == kinds::fpn;}
+  bool  is_flooating()    const noexcept{return m_kind == kinds::floating;}
   bool  is_identifier() const noexcept{return m_kind == kinds::identifier;}
   bool  is_expression() const noexcept{return m_kind == kinds::expression;}
 
-  simple_value  evaluate() const noexcept;
+  simple_object  evaluate() const noexcept;
 
   void  print() const noexcept;
 
@@ -330,51 +281,20 @@ public:
 
 
 class
-assignment
-{
-  operator_code  m_operator_code;
-
-  expression  m_expression;
-
-public:
-  assignment() noexcept{}
-  assignment(expression&&  e) noexcept{assign("",std::move(e));}
-  assignment(operator_code  op, expression&&  e) noexcept{assign(op,std::move(e));}
-
-  assignment&  assign(operator_code  op, expression&&  e) noexcept{
-    m_operator_code =           op;
-    m_expression    = std::move(e);
-
-    return *this;
-  }
-
-  operator_code  get_operator_code() const noexcept{return m_operator_code;}
-
-        expression&  get_expression()       noexcept{return m_expression;}
-  const expression&  get_expression() const noexcept{return m_expression;}
-
-  void  print() const noexcept{  m_operator_code.print();  m_expression.print();}
-
-};
-
-
-class
-primary_expression_element
+postfix_element
 {
   enum class kinds{
     null,
     selector,
     index,
     call,
-    assignment,
 
   } m_kind=kinds::null;
 
   union data{
-    std::string                   s;
+    std::u16string                s;
     expression                 expr;
     std::vector<expression>  exprls;
-    assignment                  ass;
 
     data() noexcept{}
    ~data(){}
@@ -382,102 +302,41 @@ primary_expression_element
   } m_data;
 
 public:
-  primary_expression_element() noexcept{}
-  primary_expression_element(const primary_expression_element&   rhs) noexcept{assign(rhs);}
-  primary_expression_element(      primary_expression_element&&  rhs) noexcept{assign(std::move(rhs));}
- ~primary_expression_element(){clear();}
+  postfix_element() noexcept{}
+  postfix_element(const postfix_element&   rhs) noexcept{assign(rhs);}
+  postfix_element(      postfix_element&&  rhs) noexcept{assign(std::move(rhs));}
+ ~postfix_element(){clear();}
 
   template<class... Args>
-  explicit primary_expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  postfix_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
-  primary_expression_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  postfix_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  postfix_element&  operator=(const postfix_element&   rhs) noexcept{return assign(rhs);}
+  postfix_element&  operator=(      postfix_element&&  rhs) noexcept{return assign(std::move(rhs));}
 
   operator bool() const noexcept{return m_kind != kinds::null;}
 
-  primary_expression_element&  assign(const primary_expression_element&   rhs) noexcept;
-  primary_expression_element&  assign(      primary_expression_element&&  rhs) noexcept;
-  primary_expression_element&  assign(std::string_view  id) noexcept;
-  primary_expression_element&  assign(expression&&  e) noexcept;
-  primary_expression_element&  assign(std::vector<expression>&&  els) noexcept;
-  primary_expression_element&  assign(assignment&&  ass) noexcept;
+  postfix_element&  assign(const postfix_element&   rhs) noexcept;
+  postfix_element&  assign(      postfix_element&&  rhs) noexcept;
+  postfix_element&  assign(std::u16string_view  id) noexcept;
+  postfix_element&  assign(expression&&  e) noexcept;
+  postfix_element&  assign(std::vector<expression>&&  els) noexcept;
 
-  primary_expression_element&  clear() noexcept;
+  postfix_element&  clear() noexcept;
 
-  const std::string&                       get_string() const noexcept{return m_data.s;}
+  const std::u16string&                    get_string() const noexcept{return m_data.s;}
   const expression&                    get_expression() const noexcept{return m_data.expr;}
   const std::vector<expression>&  get_expression_list() const noexcept{return m_data.exprls;}
-  const assignment&                    get_assignment() const noexcept{return m_data.ass;}
 
   bool  is_selector() const noexcept{return m_kind == kinds::selector;}
   bool  is_index()    const noexcept{return m_kind == kinds::index;}
   bool  is_call()     const noexcept{return m_kind == kinds::call;}
-  bool  is_assignment() const noexcept{return m_kind == kinds::assignment;}
 
   void  print() const noexcept;
 
 };
-
-
-
-
-class
-unary_expression
-{
-  std::vector<operator_code>  m_operator_code_list;
-
-  primary_expression  m_primary_expression;
-
-public:
-  unary_expression() noexcept{}
-  unary_expression(std::vector<operator_code>&&  ops, primary_expression&&  e) noexcept{assign(std::move(ops),std::move(e));}
-
-  unary_expression&  assign(std::vector<operator_code>&&  ops, primary_expression&&  e) noexcept;
-
-  unary_expression&  clear() noexcept;
-
-  const std::vector<operator_code>&  get_operator_code_list() const noexcept{return m_operator_code_list;}
-
-        primary_expression&  get_primary_expression()       noexcept{return m_primary_expression;}
-  const primary_expression&  get_primary_expression() const noexcept{return m_primary_expression;}
-
-  simple_value  evaluate() const noexcept;
-
-  void  print() const noexcept;
-
-};
-
-
-class
-expression_element
-{
-  operator_code  m_operator_code;
-
-  unary_expression  m_expression;
-
-public:
-  template<class... Args>
-  explicit expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
-
-  template<class... Args>
-  expression_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
-
-  expression_element&  assign(                   unary_expression&&  e) noexcept;
-  expression_element&  assign(operator_code  op, unary_expression&&  e) noexcept;
-
-  expression_element&  set_operator_code(operator_code  opco)       noexcept{  m_operator_code = opco;  return *this;;}
-  operator_code        get_operator_code(                   ) const noexcept{return m_operator_code;}
-
-        unary_expression&  get_expression()       noexcept{return m_expression;}
-  const unary_expression&  get_expression() const noexcept{return m_expression;}
-
-  void  print() const noexcept;
-
-};
-
-
-expression  read_expression(token_iterator&  it, operator_code  close_code);
-expression  read_expression(std::string_view  sv, operator_code  close_code);
 
 
 

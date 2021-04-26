@@ -1,5 +1,5 @@
-#ifndef gbstd_vms_typesystem_HPP
-#define gbstd_vms_typesystem_HPP
+#ifndef gbstd_vm_typesystem_HPP
+#define gbstd_vm_typesystem_HPP
 
 
 #include<cstddef>
@@ -27,8 +27,7 @@ namespace typesystem{
 
 
 class  basic_type_info;
-class  type_info;
-class  type_lib;
+class        type_info;
 
 class    pointer_info;
 class  reference_info;
@@ -58,6 +57,7 @@ basic_type_info
 public:
   constexpr basic_type_info(int  l=0, int  s=0) noexcept: m_letter(l), m_size(s){}
 
+  constexpr int  letter() const noexcept{return m_letter;}
   constexpr int  size() const noexcept{return m_size;}
 
   constexpr bool  is_null()             const noexcept{return m_letter == 'n';}
@@ -78,8 +78,6 @@ public:
 class
 type_info
 {
-  const type_lib*  m_lib=nullptr;
-
   enum class kind{
     null,
     basic,
@@ -90,7 +88,7 @@ type_info
     struct_,
     union_,
     enum_,
-    function_pointer,
+    fn_pointer,
   } m_kind=kind::null;
 
   union data{
@@ -105,10 +103,13 @@ type_info
     const  union_decl*  un;
     const   enum_decl*  en;
 
+    fn_pointer_info*  fnptr;
+
     data() noexcept{}
    ~data(){}
 
   } m_data;
+
 
 public:
   type_info() noexcept{}
@@ -132,11 +133,13 @@ public:
   type_info&  assign(reference_info&&  ref) noexcept;
   type_info&  assign(alias_info&&  ali) noexcept;
   type_info&  assign(array_info&&  arr) noexcept;
+  type_info&  assign(const struct_decl&  st) noexcept;
+  type_info&  assign(const union_decl&  un) noexcept;
+  type_info&  assign(const enum_decl&  en) noexcept;
+  type_info&  assign(fn_pointer_info&&  fnptr) noexcept;
 
 
   void  clear() noexcept;
-
-  const type_lib&  lib() const noexcept{return *m_lib;}
 
   bool  is_basic()            const noexcept{return m_kind == kind::basic;}
   bool  is_alias()            const noexcept{return m_kind == kind::alias;}
@@ -145,7 +148,7 @@ public:
   bool  is_array()            const noexcept{return m_kind == kind::array;}
   bool  is_struct()           const noexcept{return m_kind == kind::struct_;}
   bool  is_union()            const noexcept{return m_kind == kind::union_;}
-  bool  is_function_pointer() const noexcept{return m_kind == kind::function_pointer;}
+  bool  is_fn_pointer() const noexcept{return m_kind == kind::fn_pointer;}
 
   int   size() const noexcept;
   int  align() const noexcept;
@@ -161,6 +164,8 @@ public:
   const union_decl&    get_union_decl() const noexcept{return *m_data.un;}
   const enum_decl&      get_enum_decl() const noexcept{return *m_data.en;}
 
+  const fn_pointer_info&  get_fn_pointer_info() const noexcept{return *m_data.fnptr;}
+
   type_info  form_array(int  n) const noexcept;
   type_info  form_pointer(int  sz) const noexcept;
   type_info  form_reference(int  sz) const noexcept;
@@ -170,24 +175,6 @@ public:
   type_info  remove_reference() const noexcept;
 
   void  print() const noexcept;
-
-};
-
-
-
-
-class
-type_lib
-{
-  const type_lib*  m_parent;
-
-  std::list<alias_info>    m_alias_info_list;
-  std::list<struct_decl>  m_struct_decl_list;
-  std::list<union_decl>    m_union_decl_list;
-  std::list<enum_decl>      m_enum_decl_list;
-
-public:
-
 
 };
 

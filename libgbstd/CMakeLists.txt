@@ -85,12 +85,10 @@ set(SOURCES
   vms/typesystems/enum.cpp
   vms/typesystems/type_info.cpp
   vms/typesystems/function_signature.cpp
-#  vms/expressions/expression.cpp
-#  vms/expressions/expression_element.cpp
-#  vms/expressions/primary_expression.cpp
-#  vms/expressions/primary_expression_element.cpp
-#  vms/expressions/unary_expression.cpp
-#  vms/expressions/operand.cpp
+  vms/expressions/expression.cpp
+  vms/expressions/postfix_element.cpp
+  vms/expressions/operand.cpp
+  vms/expressions/simple_value.cpp
 #  vms/irs/ir_operand.cpp
 #  vms/irs/ir_operation.cpp
 #  vms/irs/ir_operation__read.cpp
