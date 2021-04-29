@@ -66,7 +66,20 @@ syntax_parser::result
 syntax_parser::
 process_optional(const syntax_expression_element&  e, syntax_token_iterator  it)
 {
+    if(m_debugging)
+    {
+      printf("可欠要素を判定\n");
+    }
+
+
   auto  res = process_by_expression(e.get_expression(),it);
+
+    if(m_debugging)
+    {
+        if(res.first){printf("可欠要素が見付かった\n");}
+      else           {printf("可欠要素は見付からなかった\n");}
+    }
+
 
   return res.first? std::move(res)
                   : result(it,storage())
@@ -78,6 +91,12 @@ syntax_parser::result
 syntax_parser::
 process_multiple(const syntax_expression_element&  e, syntax_token_iterator  it)
 {
+    if(m_debugging)
+    {
+      printf("複数要素を判定\n");
+    }
+
+
   auto  res = process_by_expression(e.get_expression(),it);
 
     if(res.first)
@@ -94,9 +113,21 @@ process_multiple(const syntax_expression_element&  e, syntax_token_iterator  it)
 
             if(!res.first)
             {
+                if(m_debugging)
+                {
+                  printf("複数要素が%3d個見付かった\n",(int)nodes.size());
+                }
+
+
               return result(it,std::move(nodes));
             }
         }
+    }
+
+
+    if(m_debugging)
+    {
+      printf("複数要素は見付からなかった\n");
     }
 
 
@@ -160,6 +191,7 @@ process_by_expression_element(const syntax_expression_element&  e, syntax_token_
   else if(e.is_floating_literal() && it->is_floating()  ){return result(++it,make_storage(tok,e));}
   else if(e.is_string_literal()   && it->is_string()    ){return result(++it,make_storage(tok,e));}
   else if(e.is_identifier()       && it->is_identifier()){return result(++it,make_storage(tok,e));}
+
 
   return result();
 }

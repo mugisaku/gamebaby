@@ -238,7 +238,7 @@ step()
         }
 
 
-      m_buffer.emplace_back(u' ');
+      m_buffer.emplace_back((c == u'\n')? u'\n':u' ');
     }
 
   else

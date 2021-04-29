@@ -10,9 +10,9 @@ namespace gbstd{
 
 void
 syntax_rule::
-start_read(code_text::iterator&  it)
+start_read(syntax_token_iterator&  it)
 {
-  auto  name = read_identifier(it);
+  auto&  name = it++->get_string();
 
   auto  def = find(name);
 
@@ -22,17 +22,15 @@ start_read(code_text::iterator&  it)
     }
 
 
-  it.skip_spaces();
+  it.skip();
 
-  auto  c = *it;
-
-    if(c == '=')
+    if(it->is_others(u'='))
     {
       static_cast<syntax_definition&>(*def).assign(read_expression(';',++it));
     }
 
   else
-    if(c == ';')
+    if(it->is_others(u';'))
     {
       ++it;
     }
@@ -46,176 +44,67 @@ start_read(code_text::iterator&  it)
 }
 
 
-syntax_keyword
-syntax_rule::
-read_keyword(code_text::iterator&  it)
-{
-  std::u16string  s;
-
-    while(*it)
-    {
-      auto  c = *it;
-
-        if(is_alphabet(c) || (c == '_'))
-        {
-          s += c;
-
-          ++it;
-        }
-
-      else
-        if(c == '>')
-        {
-          ++it;
-
-          break;
-        }
-
-      else
-        {
-          printf("read_keyword: 不正な要素");
-
-          throw syntax_expression_error();
-        }
-    }
-
-
-  return syntax_keyword(std::move(s));
-}
-
-
-std::u16string
-syntax_rule::
-read_identifier(code_text::iterator&  it)
-{
-  std::u16string  s;
-
-    while(*it)
-    {
-      auto  c = *it;
-
-        if(is_alphabet(c) || (c == '_'))
-        {
-          s += c;
-
-          ++it;
-        }
-
-      else
-        {
-          break;
-        }
-    }
-
-
-  return std::move(s);
-}
-
-
-std::u16string
-syntax_rule::
-read_string(code_text::iterator&  it)
-{
-  std::u16string  s;
-
-    while(*it)
-    {
-      auto  c = *it;
-
-        if(c == '\"')
-        {
-          ++it;
-
-          break;
-        }
-
-      else
-        if(c == '\\')
-        {
-          ++it;
-
-          c = *it;
-
-               if(c ==  'n'){s += '\n';}
-          else if(c ==  'r'){s += '\r';}
-          else if(c ==  'v'){s += '\v';}
-          else if(c ==  't'){s += '\t';}
-          else if(c == '\\'){s += '\\';}
-          else if(c ==  '0'){s += '\0';}
-          else if(c ==  '\"'){s += '\"';}
-          else if(c ==  '\''){s += '\'';}
-          else{report;}
-
-          ++it;
-        }
-
-      else
-        {
-          ++it;
-
-          s += c;
-        }
-    }
-
-
-  return std::move(s);
-}
-
-
 syntax_rule::wrapper
 syntax_rule::
-read_expression_internal(code_text::iterator&  it)
+read_expression_internal(syntax_token_iterator&  it)
 {
-  auto  c = *it;
+    if(it->is_others(u'|') ||
+       it->is_others(u'&') ||
+       it->is_others(u':'))
+    {
+      return wrapper(static_cast<int>(it++->get_integer()));
+    }
 
-    if((c == '|') ||
-       (c == '&') ||
-       (c == ':'))
+  else
+    if(it->is_string())
+    {
+      return syntax_expression_element(std::u16string_view(it++->get_string()));
+    }
+
+  else
+    if(it->is_others(u'<'))
     {
       ++it;
 
-      return wrapper(c);
+        if(it[0].is_identifier() &&
+           it[1].is_others(u'>'))
+        {
+          syntax_keyword  k(it->get_string());
+
+          it += 2;
+
+          return syntax_expression_element(std::move(k));
+        }
     }
 
   else
-    if(c == '\"')
+    if(it->is_others(u'('))
     {
-      return syntax_expression_element(read_string(++it));
-    }
-
-  else
-    if(c == '<')
-    {
-      return syntax_expression_element(read_keyword(++it));
-    }
-
-  else
-    if(c == '(')
-    {
-      auto  e = read_expression(')',++it);
+      auto  e = read_expression(u')',++it);
 
       return syntax_expression_element(std::move(e));
     }
 
   else
-    if(c == '[')
+    if(it->is_others(u'['))
     {
-      syntax_optional_expression  e(read_expression(']',++it));
+      syntax_optional_expression  e(read_expression(u']',++it));
 
       return syntax_expression_element(std::move(e));
     }
 
   else
-    if(c == '{')
+    if(it->is_others(u'{'))
     {
-      syntax_multiple_expression  e(read_expression('}',++it));
+      syntax_multiple_expression  e(read_expression(u'}',++it));
 
       return syntax_expression_element(std::move(e));
     }
 
   else
+    if(it->is_identifier())
     {
-      auto  name = read_identifier(it);
+      auto&  name = it++->get_string();
 
         if((name == u"integer_literal") ||
            (name == u"floating_literal") ||
@@ -327,7 +216,7 @@ make_expression(std::vector<wrapper>&&  stk)
 
 syntax_expression
 syntax_rule::
-read_expression(int  close, code_text::iterator&  it)
+read_expression(char16_t  close, syntax_token_iterator&  it)
 {
   std::vector<wrapper>  stack;
 
@@ -335,11 +224,9 @@ read_expression(int  close, code_text::iterator&  it)
 
     for(;;)
     {
-      it.skip_spaces();
+      it.skip();
 
-      auto  c = *it;
-
-        if(c == close)
+        if(it->is_others(close))
         {
           ++it;
 
@@ -347,7 +234,7 @@ read_expression(int  close, code_text::iterator&  it)
         }
 
       else
-        if(!c)
+        if(!*it)
         {
           report;
 
@@ -377,8 +264,9 @@ read_expression(int  close, code_text::iterator&  it)
                 {
                     if(wr.element().is_null())
                     {
-                      tmp_it.print();
+                      tmp_it->print();
                     }
+
 
                   stack.emplace_back(std::move(wr));
                 }
@@ -387,7 +275,7 @@ read_expression(int  close, code_text::iterator&  it)
 
             catch(syntax_expression_error&  e)
             {
-              it.print();
+              it->print();
 
               report;
               throw;
@@ -398,7 +286,7 @@ read_expression(int  close, code_text::iterator&  it)
             {
               printf("read_expression: ループに陥ったので停止した\n");
 
-              tmp_it.print();
+              tmp_it->print();
 
               throw syntax_expression_error();
             }
@@ -458,35 +346,40 @@ append(std::u16string_view  sv) noexcept
     }
 
 
-  code_text::iterator  it(sv.data());
+  auto  toks = make_token_string(sv);
 
-  it.skip_spaces();
+  syntax_token_iterator  it(toks);
+
+  it.skip();
 
     while(*it)
     {
-      auto  c = *it;
-
-        if(c == '#')
+        if(it->is_others(u'#'))
         {
-          it.skip_to_newline();
+          ++it;
+
+            while(*it && !it->is_others(u'\n'))
+            {
+              ++it;
+            }
         }
 
       else
-        if(is_alphabet(c) || (c == '_'))
+        if(it->is_identifier())
         {
           start_read(it);
         }
 
       else
         {
-          printf("<%c>\n",c);
+          it->print();
 
           report;
           break;
         }
 
 
-      it.skip_spaces();
+      it.skip();
     }
 
 

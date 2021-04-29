@@ -376,11 +376,7 @@ syntax_rule
 {
   std::list<syntax_definition>  m_definition_list;
 
-  void  start_read(code_text::iterator&  it);
-
-  syntax_keyword   read_keyword(code_text::iterator&  it);
-  std::u16string   read_string(code_text::iterator&  it);
-  std::u16string   read_identifier(code_text::iterator&  it);
+  void  start_read(syntax_token_iterator&  it);
 
   class wrapper{
     int  m_code;
@@ -401,8 +397,8 @@ syntax_rule
 
   };
 
-  wrapper            read_expression_internal(code_text::iterator&  it);
-  syntax_expression  read_expression(int  close, code_text::iterator&  it);
+  wrapper            read_expression_internal(syntax_token_iterator&  it);
+  syntax_expression  read_expression(char16_t  close, syntax_token_iterator&  it);
 
   syntax_expression  make_expression(std::vector<wrapper>&&  stk);
 

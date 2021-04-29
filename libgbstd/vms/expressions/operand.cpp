@@ -194,20 +194,63 @@ simple_object
 operand::
 evaluate() const noexcept
 {
+  simple_object  o;
+
     switch(m_kind)
     {
   case(kinds::null        ): break;
   case(kinds::null_pointer): break;
-  case(kinds::boolean     ): return simple_object(m_data.b);break;
+  case(kinds::boolean     ): o.assign(m_data.b);break;
   case(kinds::string      ): break;
-  case(kinds::integer     ): return simple_object((int64_t)m_data.i);break;
-  case(kinds::floating    ): return simple_object(m_data.f);break;
+  case(kinds::integer     ): o.assign((int64_t)m_data.i);break;
+  case(kinds::floating    ): o.assign(m_data.f);break;
   case(kinds::identifier  ): gbstd::print(m_data.s);break;
-  case(kinds::expression  ): return m_data.expr.evaluate();break;
+  case(kinds::expression  ): o.assign(m_data.expr.evaluate());break;
     }
 
 
-  return simple_object();
+  auto&  v = o[0];
+
+    for(auto  op: m_prefix_list)
+    {
+        if(op == "*")
+        {
+        }
+
+      else
+        if(op == "&")
+        {
+        }
+
+      else
+        if(op == "!")
+        {
+               if(v.is_boolean()){v.assign(!v.get_boolean());}
+          else if(v.is_integer()){v.assign(!v.get_integer());}
+        }
+
+      else
+        if(op == "+")
+        {
+          if(v.is_integer()){}
+        }
+
+      else
+        if(op == "-")
+        {
+               if(v.is_integer() ){v.assign(-v.get_integer() );}
+          else if(v.is_floating()){v.assign(-v.get_floating());}
+        }
+
+      else
+        if(op == "~")
+        {
+               if(v.is_integer() ){v.assign(~v.get_integer() );}
+        }
+    }
+
+
+  return std::move(o);
 }
 
 

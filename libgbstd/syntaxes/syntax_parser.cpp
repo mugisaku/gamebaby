@@ -25,12 +25,24 @@ syntax_parser::result
 syntax_parser::
 process_or(const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it)
 {
+    if(m_debugging)
+    {
+      printf("or判定を開始\n");
+    }
+
+
   storage  nodes;
 
   auto  res = process_by_expression_element(l,it);
 
     if(res.first)
     {
+        if(m_debugging)
+        {
+          printf("左辺を採用\n");
+        }
+
+
       return std::move(res);
     }
 
@@ -39,6 +51,12 @@ process_or(const syntax_expression_element&  l, const syntax_expression_element&
 
     if(res.first)
     {
+        if(m_debugging)
+        {
+          printf("右辺を採用\n");
+        }
+
+
       return std::move(res);
     }
 
@@ -51,6 +69,12 @@ syntax_parser::result
 syntax_parser::
 process_and(const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it)
 {
+    if(m_debugging)
+    {
+      printf("and判定を開始\n");
+    }
+
+
   storage  nodes;
 
   auto  res = process_by_expression_element(l,it);
@@ -78,6 +102,12 @@ syntax_parser::result
 syntax_parser::
 process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
 {
+    if(m_debugging)
+    {
+      printf("colon判定を開始\n");
+    }
+
+
   storage  nodes;
 
   auto  res = process_by_expression_element(*expr.left(),it);
@@ -98,7 +128,11 @@ process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
         }
 
 
-      throw syntax_parse_error();
+//      printf(":後の解析失敗");
+
+//      it->print();
+
+//      throw syntax_parse_error();
     }
 
 
@@ -253,6 +287,7 @@ start(std::u16string_view  def_name)
     }
 
 
+//m_debugging=1;
     try
     {
       syntax_token_iterator  it(m_token_string);
@@ -270,7 +305,6 @@ start(std::u16string_view  def_name)
 
     catch(syntax_parse_error&)
     {
-/*
         for(auto&  pt: m_point_stack)
         {
           pt.iterator()->print();
@@ -279,7 +313,7 @@ start(std::u16string_view  def_name)
  
           printf("\n");
         }
-*/
+
 
       throw;
     }

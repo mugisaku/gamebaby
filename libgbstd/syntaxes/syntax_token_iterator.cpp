@@ -95,7 +95,8 @@ void
 syntax_token_iterator::
 skip() noexcept
 {
-    while((*this)->is_others(u' '))
+    while((*this)->is_others(u' ') ||
+          (*this)->is_others(u'\n'))
     {
       ++(*this);
     }

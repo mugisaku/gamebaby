@@ -136,10 +136,17 @@ public:
   simple_object&  operator+=(Args&&...  args) noexcept{return append(std::forward<Args>(args)...);}
 
   template<class...  Args>
+  simple_object&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
   simple_object&  append(Args&&...  args) noexcept{m_value_list.emplace_back((int)m_value_list.size(),std::forward<Args>(args)...);  return *this;}
+
+  template<class...  Args>
+  simple_object&  assign(Args&&...  args) noexcept{  m_value_list.clear();  return append(std::forward<Args>(args)...);}
 
   operator bool() const noexcept{return m_value_list.size();}
 
+        simple_value&  operator[](int  i)       noexcept{return m_value_list[i];}
   const simple_value&  operator[](int  i) const noexcept{return m_value_list[i];}
 
 };
