@@ -16,8 +16,8 @@ assign(const syntax_expression&  rhs) noexcept
     {
       m_code = rhs.m_code;
 
-      m_left  = rhs.m_left ? std::make_unique<syntax_expression_element>(*m_left ):nullptr;
-      m_right = rhs.m_right? std::make_unique<syntax_expression_element>(*m_right):nullptr;
+      m_left  = rhs.m_left ? std::make_unique<syntax_operand>(*m_left ):nullptr;
+      m_right = rhs.m_right? std::make_unique<syntax_operand>(*m_right):nullptr;
     }
 
 
@@ -44,12 +44,12 @@ assign(syntax_expression&&  rhs) noexcept
 
 syntax_expression&
 syntax_expression::
-assign(int  c, syntax_expression_element&&  l, syntax_expression_element&&  r) noexcept
+assign(int  c, syntax_operand&&  l, syntax_operand&&  r) noexcept
 {
   m_code = c;
 
-  m_left  = std::make_unique<syntax_expression_element>(std::move(l));
-  m_right = std::make_unique<syntax_expression_element>(std::move(r));
+  m_left  = std::make_unique<syntax_operand>(std::move(l));
+  m_right = std::make_unique<syntax_operand>(std::move(r));
 
   return *this;
 }
@@ -57,11 +57,11 @@ assign(int  c, syntax_expression_element&&  l, syntax_expression_element&&  r) n
 
 syntax_expression&
 syntax_expression::
-assign(syntax_expression_element&&  e) noexcept
+assign(syntax_operand&&  o) noexcept
 {
   m_code = 0;
 
-  m_left = std::make_unique<syntax_expression_element>(std::move(e));
+  m_left = std::make_unique<syntax_operand>(std::move(o));
 
   m_right.reset();
 
@@ -73,9 +73,9 @@ assign(syntax_expression_element&&  e) noexcept
 
 syntax_expression&
 syntax_expression::
-set_left(syntax_expression_element&&  e) noexcept
+set_left(syntax_operand&&  o) noexcept
 {
-  m_left = std::make_unique<syntax_expression_element>(std::move(e));
+  m_left = std::make_unique<syntax_operand>(std::move(o));
 
   return *this;
 }
@@ -83,9 +83,9 @@ set_left(syntax_expression_element&&  e) noexcept
 
 syntax_expression&
 syntax_expression::
-set_right(syntax_expression_element&&  e) noexcept
+set_right(syntax_operand&&  o) noexcept
 {
-  m_right = std::make_unique<syntax_expression_element>(std::move(e));
+  m_right = std::make_unique<syntax_operand>(std::move(o));
 
   return *this;
 }

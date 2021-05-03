@@ -4,7 +4,6 @@
 
 #include"libgbstd/utility.hpp"
 #include"libgbstd/character.hpp"
-#include"libgbstd/tree_struct.hpp"
 #include<list>
 
 
@@ -180,7 +179,7 @@ syntax_token_string  make_token_string(std::u16string_view  sv);
 
 
 
-class syntax_expression_element;
+class syntax_operand;
 class syntax_expression;
 class syntax_definition;
 
@@ -195,7 +194,7 @@ class
 syntax_expression
 {
 public:
-  using pointer = std::unique_ptr<syntax_expression_element>;
+  using pointer = std::unique_ptr<syntax_operand>;
 
 private:
   int  m_code;
@@ -219,12 +218,12 @@ public:
 
   syntax_expression&  assign(const syntax_expression&   rhs) noexcept;
   syntax_expression&  assign(      syntax_expression&&  rhs) noexcept;
-  syntax_expression&  assign(int  c, syntax_expression_element&&  l, syntax_expression_element&&  r) noexcept;
-  syntax_expression&  assign(syntax_expression_element&&  e) noexcept;
+  syntax_expression&  assign(int  c, syntax_operand&&  l, syntax_operand&&  r) noexcept;
+  syntax_expression&  assign(syntax_operand&&  e) noexcept;
 
   syntax_expression&  set_code(int  c) noexcept{  m_code = c;  return *this;}
-  syntax_expression&   set_left(syntax_expression_element&&  e) noexcept;
-  syntax_expression&  set_right(syntax_expression_element&&  e) noexcept;
+  syntax_expression&   set_left(syntax_operand&&  e) noexcept;
+  syntax_expression&  set_right(syntax_operand&&  e) noexcept;
 
   int  code() const noexcept{return m_code;}
 
@@ -279,7 +278,7 @@ public:
 
 
 class
-syntax_expression_element
+syntax_operand
 {
   enum class kind{
     null,
@@ -308,29 +307,29 @@ syntax_expression_element
   } m_data;
 
 public:
-  syntax_expression_element() noexcept{}
-  syntax_expression_element(const syntax_expression_element&   rhs) noexcept{assign(rhs);}
-  syntax_expression_element(      syntax_expression_element&&  rhs) noexcept{assign(std::move(rhs));}
- ~syntax_expression_element(){clear();}
+  syntax_operand() noexcept{}
+  syntax_operand(const syntax_operand&   rhs) noexcept{assign(rhs);}
+  syntax_operand(      syntax_operand&&  rhs) noexcept{assign(std::move(rhs));}
+ ~syntax_operand(){clear();}
 
   template<class... Args>
-  syntax_expression_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  syntax_operand(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
-  syntax_expression_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  syntax_operand&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  syntax_expression_element&  operator=(const syntax_expression_element&   rhs) noexcept{return assign(rhs);}
-  syntax_expression_element&  operator=(      syntax_expression_element&&  rhs) noexcept{return assign(std::move(rhs));}
+  syntax_operand&  operator=(const syntax_operand&   rhs) noexcept{return assign(rhs);}
+  syntax_operand&  operator=(      syntax_operand&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  syntax_expression_element&  assign(const syntax_expression_element&   rhs) noexcept;
-  syntax_expression_element&  assign(      syntax_expression_element&&  rhs) noexcept;
-  syntax_expression_element&  assign(std::u16string_view  sv) noexcept;
-  syntax_expression_element&  assign(std::u16string&&  s) noexcept;
-  syntax_expression_element&  assign(syntax_keyword&&  kw) noexcept;
-  syntax_expression_element&  assign(syntax_expression&&  exp) noexcept;
-  syntax_expression_element&  assign(syntax_optional_expression&&  exp) noexcept;
-  syntax_expression_element&  assign(syntax_multiple_expression&&  exp) noexcept;
-  syntax_expression_element&  assign(const syntax_definition&  def) noexcept;
+  syntax_operand&  assign(const syntax_operand&   rhs) noexcept;
+  syntax_operand&  assign(      syntax_operand&&  rhs) noexcept;
+  syntax_operand&  assign(std::u16string_view  sv) noexcept;
+  syntax_operand&  assign(std::u16string&&  s) noexcept;
+  syntax_operand&  assign(syntax_keyword&&  kw) noexcept;
+  syntax_operand&  assign(syntax_expression&&  exp) noexcept;
+  syntax_operand&  assign(syntax_optional_expression&&  exp) noexcept;
+  syntax_operand&  assign(syntax_multiple_expression&&  exp) noexcept;
+  syntax_operand&  assign(const syntax_definition&  def) noexcept;
 
   bool  is_null()             const noexcept{return m_kind == kind::null;}
   bool  is_integer_literal()  const noexcept{return m_kind == kind::integer_literal;}
@@ -381,17 +380,17 @@ syntax_rule
   class wrapper{
     int  m_code;
 
-    syntax_expression_element  m_element;
+    syntax_operand  m_operand;
 
   public:
     wrapper(int  c) noexcept: m_code(c){}
-    wrapper(syntax_expression_element&&  e) noexcept: m_code(0), m_element(std::move(e)){}
+    wrapper(syntax_operand&&  o) noexcept: m_code(0), m_operand(std::move(o)){}
 
     bool  is_code() const noexcept{return m_code;}
 
     int  code() const noexcept{return m_code;}
 
-    syntax_expression_element&  element() noexcept{return m_element;}
+    syntax_operand&  operand() noexcept{return m_operand;}
 
     void  print() const noexcept;
 
@@ -427,26 +426,86 @@ public:
 
 
 
+class syntax_branch;
+
+
 class
-syntax_tree_node: public tree_struct_node
+syntax_branch_element
 {
   const syntax_token*  m_token=nullptr;
 
-  const syntax_definition*          m_definition=nullptr;
-  const syntax_expression_element*  m_element=nullptr;
+  syntax_branch*  m_child=nullptr;
+
+  union data{
+    const syntax_operand*       o;
+    const syntax_definition*  def;
+  } m_data;
 
 public:
-  syntax_tree_node() noexcept{}
-  syntax_tree_node(const syntax_token&  tok) noexcept: m_token(&tok), m_element(nullptr){}
-  syntax_tree_node(const syntax_token&  tok, const syntax_definition&  def) noexcept: m_token(&tok), m_definition(&def){}
-  syntax_tree_node(const syntax_token&  tok, const syntax_expression_element&  e) noexcept: m_token(&tok), m_element(&e){}
+  syntax_branch_element() noexcept{}
+  syntax_branch_element(const syntax_branch_element&   rhs) noexcept{assign(rhs);}
+  syntax_branch_element(      syntax_branch_element&&  rhs) noexcept{assign(std::move(rhs));}
+ ~syntax_branch_element(){clear();}
 
-  const syntax_token*  token() const noexcept{return m_token;}
+  template<class...  Args>
+  syntax_branch_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
-  const syntax_definition*  definition() const noexcept{return m_definition;}
-  const syntax_expression_element*  element() const noexcept{return m_element;}
+  syntax_branch_element&  operator=(const syntax_branch_element&   rhs) noexcept{return assign(rhs);}
+  syntax_branch_element&  operator=(      syntax_branch_element&&  rhs) noexcept{return assign(std::move(rhs));}
+
+  syntax_branch_element&  assign(const syntax_branch_element&   rhs) noexcept;
+  syntax_branch_element&  assign(      syntax_branch_element&&  rhs) noexcept;
+
+  syntax_branch_element&  assign(const syntax_token&  tok, const syntax_operand&  o) noexcept;
+  syntax_branch_element&  assign(const syntax_token&  tok, std::unique_ptr<syntax_branch>&&  br, const syntax_definition&  def) noexcept;
+
+  void  clear() noexcept;
+
+  const syntax_token*            token() const noexcept{return m_token;}
+  const syntax_definition*  definition() const noexcept{return m_data.def;}
+  const syntax_operand*        operand() const noexcept{return m_data.o;}
+  const syntax_branch*           child() const noexcept{return m_child;}
+
+  std::unique_ptr<syntax_branch>  cut_child() noexcept;
 
   void  print() const noexcept;
+
+};
+
+
+class
+syntax_branch
+{
+  std::vector<syntax_branch_element>  m_elements;
+
+public:
+  syntax_branch() noexcept{}
+  syntax_branch(syntax_branch_element&&  e) noexcept{m_elements.emplace_back(std::move(e));}
+
+  int  length() const noexcept{return m_elements.size();}
+
+  template<class...  Args>
+  syntax_branch&  emplace_back(Args&&...  args) noexcept{  m_elements.emplace_back(std::forward<Args>(args)...);  return *this;}
+
+  void  cut_back(int  l=0) noexcept{m_elements.resize(l);}
+
+  void  splice(syntax_branch&&  rhs) noexcept
+  {
+      for(auto&  e: rhs.m_elements)
+      {
+        m_elements.emplace_back(std::move(e));
+      }
+  }
+
+  void  print() const noexcept
+  {
+      for(auto&  e: m_elements)
+      {
+        e.print();
+
+        printf(" ");
+      }
+  }
 
 };
 
@@ -466,7 +525,7 @@ syntax_parser
 
   syntax_token_string  m_token_string;
 
-  syntax_tree_node  m_root;
+  syntax_branch  m_branch;
 
   int  m_depth;
 
@@ -488,40 +547,25 @@ syntax_parser
 
   std::vector<point>  m_point_stack;
 
-  using node_ptr = std::unique_ptr<syntax_tree_node>;
-  using storage = std::vector<node_ptr>;
+  using result = std::pair<syntax_token_iterator,syntax_branch>;
 
-  using result = std::pair<syntax_token_iterator,storage>;
+  result  process_keyword(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_string(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_optional(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_multiple(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_definition(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_expression(const syntax_operand&  e, syntax_token_iterator  it);
 
-  template<class...  Args>
-  storage  make_storage(Args&&...  args) noexcept
-  {
-    storage  st;
-
-    st.emplace_back(std::make_unique<syntax_tree_node>(std::forward<Args>(args)...));
-
-    return std::move(st);
-  }
-
-  static void  transfer(storage&&  src, storage&  dst) noexcept;
-
-  result  process_keyword(const syntax_expression_element&  e, syntax_token_iterator  it);
-  result  process_string(const syntax_expression_element&  e, syntax_token_iterator  it);
-  result  process_optional(const syntax_expression_element&  e, syntax_token_iterator  it);
-  result  process_multiple(const syntax_expression_element&  e, syntax_token_iterator  it);
-  result  process_definition(const syntax_expression_element&  e, syntax_token_iterator  it);
-  result  process_expression(const syntax_expression_element&  e, syntax_token_iterator  it);
-
-  result  process_by_expression_element(const syntax_expression_element&  e, syntax_token_iterator  it);
+  result  process_by_operand(const syntax_operand&  o, syntax_token_iterator  it);
   result  process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it);
 
-  result  process_and(  const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it);
-  result  process_or(   const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it);
+  result  process_and(  const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it);
+  result  process_or(   const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it);
   result  process_colon(const syntax_expression&  expr, syntax_token_iterator  it);
 
   syntax_token_iterator  step(const syntax_definition&  def, syntax_token_iterator  it);
 
-  std::pair<syntax_token_iterator,node_ptr>  process_by_definition(const syntax_definition&  def, syntax_token_iterator  it);
+  result  process_by_definition(const syntax_definition&  def, syntax_token_iterator  it);
 
 public:
         syntax_rule&  get_rule()       noexcept{return m_rule;}

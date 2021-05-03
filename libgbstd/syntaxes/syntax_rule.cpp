@@ -58,7 +58,7 @@ read_expression_internal(syntax_token_iterator&  it)
   else
     if(it->is_string())
     {
-      return syntax_expression_element(std::u16string_view(it++->get_string()));
+      return syntax_operand(std::u16string_view(it++->get_string()));
     }
 
   else
@@ -73,7 +73,7 @@ read_expression_internal(syntax_token_iterator&  it)
 
           it += 2;
 
-          return syntax_expression_element(std::move(k));
+          return syntax_operand(std::move(k));
         }
     }
 
@@ -82,7 +82,7 @@ read_expression_internal(syntax_token_iterator&  it)
     {
       auto  e = read_expression(u')',++it);
 
-      return syntax_expression_element(std::move(e));
+      return syntax_operand(std::move(e));
     }
 
   else
@@ -90,7 +90,7 @@ read_expression_internal(syntax_token_iterator&  it)
     {
       syntax_optional_expression  e(read_expression(u']',++it));
 
-      return syntax_expression_element(std::move(e));
+      return syntax_operand(std::move(e));
     }
 
   else
@@ -98,7 +98,7 @@ read_expression_internal(syntax_token_iterator&  it)
     {
       syntax_multiple_expression  e(read_expression(u'}',++it));
 
-      return syntax_expression_element(std::move(e));
+      return syntax_operand(std::move(e));
     }
 
   else
@@ -111,7 +111,7 @@ read_expression_internal(syntax_token_iterator&  it)
            (name == u"string_literal") ||
            (name == u"identifier"))
         {
-          return syntax_expression_element(std::u16string_view(name));
+          return syntax_operand(std::u16string_view(name));
         }
 
       else
@@ -124,7 +124,7 @@ read_expression_internal(syntax_token_iterator&  it)
             }
 
 
-          return syntax_expression_element(*def);
+          return syntax_operand(*def);
         }
     }
 
@@ -139,7 +139,7 @@ syntax_expression
 syntax_rule::
 make_expression(std::vector<wrapper>&&  stk)
 {
-  std::vector<syntax_expression_element>  output;
+  std::vector<syntax_operand>  output;
 
     if(0)
     {
@@ -179,7 +179,7 @@ make_expression(std::vector<wrapper>&&  stk)
 
       else
         {
-          output.emplace_back(std::move(wr.element()));
+          output.emplace_back(std::move(wr.operand()));
         }
     }
 
@@ -262,7 +262,7 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
 
               else
                 {
-                    if(wr.element().is_null())
+                    if(wr.operand().is_null())
                     {
                       tmp_it->print();
                     }
@@ -445,9 +445,9 @@ print() const noexcept
 
   else
     {
-      printf("element: ");
+      printf("operand: ");
 
-      m_element.print();
+      m_operand.print();
     }
 }
 

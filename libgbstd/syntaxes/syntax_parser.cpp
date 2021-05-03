@@ -8,22 +8,9 @@ namespace gbstd{
 
 
 
-void
-syntax_parser::
-transfer(storage&&  src, storage&  dst) noexcept
-{
-    for(auto&  ptr: src)
-    {
-      dst.emplace_back(std::move(ptr));
-    }
-}
-
-
-
-
 syntax_parser::result
 syntax_parser::
-process_or(const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it)
+process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -31,9 +18,7 @@ process_or(const syntax_expression_element&  l, const syntax_expression_element&
     }
 
 
-  storage  nodes;
-
-  auto  res = process_by_expression_element(l,it);
+  auto  res = process_by_operand(l,it);
 
     if(res.first)
     {
@@ -47,7 +32,7 @@ process_or(const syntax_expression_element&  l, const syntax_expression_element&
     }
 
 
-  res = process_by_expression_element(r,it);
+  res = process_by_operand(r,it);
 
     if(res.first)
     {
@@ -67,7 +52,7 @@ process_or(const syntax_expression_element&  l, const syntax_expression_element&
 
 syntax_parser::result
 syntax_parser::
-process_and(const syntax_expression_element&  l, const syntax_expression_element&  r, syntax_token_iterator  it)
+process_and(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -75,21 +60,21 @@ process_and(const syntax_expression_element&  l, const syntax_expression_element
     }
 
 
-  storage  nodes;
-
-  auto  res = process_by_expression_element(l,it);
+  auto  res = process_by_operand(l,it);
 
     if(res.first)
     {
-      transfer(std::move(res.second),nodes);
+      auto  lbr = std::move(res.second);
 
-      res = process_by_expression_element(r,res.first);
+      res = process_by_operand(r,res.first);
 
         if(res.first)
         {
-          transfer(std::move(res.second),nodes);
+          lbr.splice(std::move(res.second));
 
-          return result(res.first,std::move(nodes));
+          res.second = std::move(lbr);
+
+          return result(res);
         }
     }
 
@@ -108,23 +93,23 @@ process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
     }
 
 
-  storage  nodes;
-
-  auto  res = process_by_expression_element(*expr.left(),it);
+  auto  res = process_by_operand(*expr.left(),it);
 
     if(res.first)
     {
+      auto  lbr = std::move(res.second);
+
       m_point_stack.emplace_back(it,expr);
 
-      transfer(std::move(res.second),nodes);
-
-      res = process_by_expression_element(*expr.right(),res.first);
+      res = process_by_operand(*expr.right(),res.first);
 
         if(res.first)
         {
-          transfer(std::move(res.second),nodes);
+          lbr.splice(std::move(res.second));
 
-          return result(res.first,std::move(nodes));
+          res.second = std::move(lbr);
+
+          return result(res);
         }
 
 
@@ -144,8 +129,6 @@ syntax_parser::result
 syntax_parser::
 process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
 {
-  storage  nodes;
-
   auto  code = expr.code();
   auto&  l = expr.left();
   auto&  r = expr.right();
@@ -156,7 +139,7 @@ process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
   else
     if(l)
     {
-      auto  res = process_by_expression_element(*l,it);
+      auto  res = process_by_operand(*l,it);
 
         if(res.first)
         {
@@ -169,7 +152,7 @@ process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
 }
 
 
-std::pair<syntax_token_iterator,syntax_parser::node_ptr>
+syntax_parser::result
 syntax_parser::
 process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
 {
@@ -203,15 +186,6 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
         }
 
 
-      auto  nd = std::make_unique<syntax_tree_node>(*it,def);
-
-        for(auto&  ptr: res.second)
-        {
-          nd->add_child(*ptr.release());
-        }
-
-
-      return std::make_pair(res.first,std::move(nd));
     }
 
   else
@@ -222,7 +196,7 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
     }
 
 
-  return std::make_pair<syntax_token_iterator,node_ptr>({},nullptr);
+  return result();
 }
 
 
@@ -250,7 +224,7 @@ step(const syntax_definition&  def, syntax_token_iterator  it)
         }
 
 
-      m_root.add_child(*res.second.release());
+      m_branch.splice(std::move(res.second));
 
       return res.first;
     }
@@ -262,7 +236,7 @@ step(const syntax_definition&  def, syntax_token_iterator  it)
 
   print_nl();
 
-  m_root.destroy_children();
+  m_branch.cut_back();
 
   throw syntax_parse_error();
 }
@@ -319,7 +293,7 @@ start(std::u16string_view  def_name)
     }
 
 
-  m_root.print();
+  m_branch.print();
 }
 
 
@@ -329,7 +303,7 @@ reset() noexcept
 {
   m_token_string = make_token_string(m_text.get_string());
 
-  m_root.destroy_children();
+  m_branch.cut_back();
 }
 
 

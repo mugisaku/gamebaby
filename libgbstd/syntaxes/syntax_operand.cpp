@@ -8,9 +8,9 @@ namespace gbstd{
 
 
 
-syntax_expression_element&
-syntax_expression_element::
-assign(const syntax_expression_element&  rhs) noexcept
+syntax_operand&
+syntax_operand::
+assign(const syntax_operand&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -34,9 +34,9 @@ assign(const syntax_expression_element&  rhs) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
-assign(syntax_expression_element&&  rhs) noexcept
+syntax_operand&
+syntax_operand::
+assign(syntax_operand&&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -60,8 +60,8 @@ assign(syntax_expression_element&&  rhs) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(std::u16string_view  sv) noexcept
 {
   clear();
@@ -82,8 +82,8 @@ assign(std::u16string_view  sv) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(std::u16string&&  s) noexcept
 {
   clear();
@@ -96,8 +96,8 @@ assign(std::u16string&&  s) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(syntax_keyword&&  kw) noexcept
 {
   clear();
@@ -110,8 +110,8 @@ assign(syntax_keyword&&  kw) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(syntax_expression&&  expr) noexcept
 {
   clear();
@@ -124,8 +124,8 @@ assign(syntax_expression&&  expr) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(syntax_optional_expression&&  expr) noexcept
 {
   clear();
@@ -138,8 +138,8 @@ assign(syntax_optional_expression&&  expr) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(syntax_multiple_expression&&  expr) noexcept
 {
   clear();
@@ -152,8 +152,8 @@ assign(syntax_multiple_expression&&  expr) noexcept
 }
 
 
-syntax_expression_element&
-syntax_expression_element::
+syntax_operand&
+syntax_operand::
 assign(const syntax_definition&  def) noexcept
 {
   clear();
@@ -169,7 +169,7 @@ assign(const syntax_definition&  def) noexcept
 
 
 void
-syntax_expression_element::
+syntax_operand::
 clear() noexcept
 {
     switch(m_kind)
@@ -188,7 +188,7 @@ clear() noexcept
 
 
 void
-syntax_expression_element::
+syntax_operand::
 print() const noexcept
 {
     switch(m_kind)

@@ -8,59 +8,6 @@ namespace gbstd{
 
 
 
-ir_operation::
-ir_operation(const ir_block_info&  bi, ir_type_info  ti, std::string_view  lb, std::string_view  instr, std::vector<ir_operand>&&  opls) noexcept:
-m_block_info(&bi),
-m_type_info(ti),
-m_instruction(instr),
-m_operand_list(opls)
-{
-  set_label(lb);
-  set_kind(instr);
-}
-
-
-
-
-void
-ir_operation::
-set_kind(std::string_view  instr) noexcept
-{
-  m_kind = ((instr == std::string_view("add")) ||
-            (instr == std::string_view("sub")) ||
-            (instr == std::string_view("mul")) ||
-            (instr == std::string_view("div")) ||
-            (instr == std::string_view("rem")))? kinds::arithmetic
-
-          :((instr == std::string_view("shl"))     ||
-            (instr == std::string_view("shr"))     ||
-            (instr == std::string_view("bit_or"))  ||
-            (instr == std::string_view("bit_and")) ||
-            (instr == std::string_view("bit_xor")) ||
-            (instr == std::string_view("bit_not")))? kinds::bitwise
-
-          :((instr == std::string_view("eq"))   ||
-            (instr == std::string_view("neq"))  ||
-            (instr == std::string_view("lt"))   ||
-            (instr == std::string_view("lteq")) ||
-            (instr == std::string_view("gt"))   ||
-            (instr == std::string_view("gteq")))? kinds::comparison
-
-          :((instr == std::string_view("ld8"))  ||
-            (instr == std::string_view("ld16")) ||
-            (instr == std::string_view("ld32")) ||
-            (instr == std::string_view("ld64")))? kinds::load
-
-          :((instr == std::string_view("st8"))  ||
-            (instr == std::string_view("st16")) ||
-            (instr == std::string_view("st32")) ||
-            (instr == std::string_view("st64")))? kinds::store
-
-          : kinds::others
-          ;
-}
-
-
 ir_operation&
 ir_operation::
 assign(const ir_operation&  rhs) noexcept
@@ -69,16 +16,18 @@ assign(const ir_operation&  rhs) noexcept
     {
       clear();
 
-      m_block_info = rhs.m_block_info;
-      m_type_info  = rhs.m_type_info ;
-
-      set_label(rhs.get_label());
-
-      m_instruction = rhs.m_instruction;
-
       m_kind = rhs.m_kind;
 
-      m_operand_list = rhs.m_operand_list;
+        switch(m_kind)
+        {
+      case(kind::unary  ): new(&m_data) ir_unary_operation(rhs.m_data.un);break;
+      case(kind::binary ): new(&m_data) ir_binary_operation(rhs.m_data.bin);break;
+      case(kind::define ): new(&m_data) ir_define_operation(rhs.m_data.def);break;
+      case(kind::load   ): new(&m_data) ir_load_operation(rhs.m_data.ld);break;
+      case(kind::address): new(&m_data) ir_address_operation(rhs.m_data.addr);break;
+      case(kind::call   ): new(&m_data) ir_call_operation(rhs.m_data.cal);break;
+      case(kind::phi    ): new(&m_data) ir_phi_operation(rhs.m_data.phi);break;
+        }
     }
 
 
@@ -94,13 +43,18 @@ assign(ir_operation&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_block_info  ,rhs.m_block_info  );
-      std::swap(m_type_info   ,rhs.m_type_info   );
-      std::swap(m_label       ,rhs.m_label       );
-      std::swap(m_label_length,rhs.m_label_length);
-      std::swap(m_instruction ,rhs.m_instruction );
-      std::swap(m_kind        ,rhs.m_kind        );
-      std::swap(m_operand_list,rhs.m_operand_list);
+      std::swap(m_kind,rhs.m_kind);
+
+        switch(m_kind)
+        {
+      case(kind::unary  ): new(&m_data) ir_unary_operation(std::move(rhs.m_data.un));break;
+      case(kind::binary ): new(&m_data) ir_binary_operation(std::move(rhs.m_data.bin));break;
+      case(kind::define ): new(&m_data) ir_define_operation(std::move(rhs.m_data.def));break;
+      case(kind::load   ): new(&m_data) ir_load_operation(std::move(rhs.m_data.ld));break;
+      case(kind::address): new(&m_data) ir_address_operation(std::move(rhs.m_data.addr));break;
+      case(kind::call   ): new(&m_data) ir_call_operation(std::move(rhs.m_data.cal));break;
+      case(kind::phi    ): new(&m_data) ir_phi_operation(std::move(rhs.m_data.phi));break;
+        }
     }
 
 
@@ -108,89 +62,196 @@ assign(ir_operation&&  rhs) noexcept
 }
 
 
+ir_operation&
+ir_operation::
+assign(ir_unary_operation&&  un) noexcept
+{
+  clear();
+
+  m_kind = kind::unary;
+
+  new(&m_data) ir_unary_operation(std::move(un));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_binary_operation&&  bin) noexcept
+{
+  clear();
+
+  m_kind = kind::binary;
+
+  new(&m_data) ir_binary_operation(std::move(bin));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_define_operation&&  def) noexcept
+{
+  clear();
+
+  m_kind = kind::define;
+
+  new(&m_data) ir_define_operation(std::move(def));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_load_operation&&  ld) noexcept
+{
+  clear();
+
+  m_kind = kind::load;
+
+  new(&m_data) ir_load_operation(std::move(ld));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_address_operation&&  addr) noexcept
+{
+  clear();
+
+  m_kind = kind::address;
+
+  new(&m_data) ir_address_operation(std::move(addr));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_call_operation&&  cal) noexcept
+{
+  clear();
+
+  m_kind = kind::call;
+
+  new(&m_data) ir_call_operation(std::move(cal));
+
+  return *this;
+}
+
+
+ir_operation&
+ir_operation::
+assign(ir_phi_operation&&  phi) noexcept
+{
+  clear();
+
+  m_kind = kind::phi;
+
+  new(&m_data) ir_phi_operation(std::move(phi));
+
+  return *this;
+}
 
 
 void
 ir_operation::
 clear() noexcept
 {
-  free(m_label)         ;
-       m_label = nullptr;
-
-  m_label_length = 0;
-
-  m_block_info = nullptr;
-
-  m_type_info = ir_type_info();
-
-  m_instruction.clear();
-
-  m_operand_list.clear();
-}
-
-
-
-
-ir_operation&
-ir_operation::
-set_label(std::string_view  sv) noexcept
-{
-  auto  len = sv.size();
-
-    if(m_label_length < len)
+    switch(m_kind)
     {
-      free(m_label)                      ;
-           m_label = (char*)malloc(len+1);
-
-        if(!m_label)
-        {
-          report;
-
-          len = 0;
-        }
+  case(kind::unary  ): std::destroy_at(&m_data.un);break;
+  case(kind::binary ): std::destroy_at(&m_data.bin);break;
+  case(kind::define ): std::destroy_at(&m_data.def);break;
+  case(kind::load   ): std::destroy_at(&m_data.ld);break;
+  case(kind::address): std::destroy_at(&m_data.addr);break;
+  case(kind::call   ): std::destroy_at(&m_data.cal);break;
+  case(kind::phi    ): std::destroy_at(&m_data.phi);break;
     }
 
 
-  m_label_length = len;
-
-  auto  dst = m_label;
-  auto  src = sv.data();
-
-    while(len--)
-    {
-      *dst++ = *src++;
-    }
-
-
-  *dst = 0;
-
-  return *this;
+  m_kind = kind::null;
 }
+
+
 
 
 void
 ir_operation::
 print() const noexcept
 {
-  m_type_info.print();
-
-  printf("  ");
-
-    if(m_label_length)
+    switch(m_kind)
     {
-      printf("%s = ",m_label);
-    }
-
-
-  printf("%s",m_instruction.data());
-
-    for(auto&  o: m_operand_list)
-    {
+  case(kind::unary):
+      m_data.un.first_opcode().print();
       printf(" ");
+      m_data.un.second_opcode().print();
+      printf(" ");
+      gbstd::print(m_data.un.operand());
+      break;
+  case(kind::binary):
+      m_data.bin.first_opcode().print();
+      printf(" ");
+      m_data.bin.second_opcode().print();
+      printf(" ");
+      gbstd::print(m_data.bin.first_operand());
+      printf(" ");
+      gbstd::print(m_data.bin.second_operand());
+      break;
+  case(kind::define):
+      printf("def ");
 
-      o.print();
+           if(m_data.def.is_integer() ){printf("%" PRIu64,m_data.def.integer());}
+      else if(m_data.def.is_floating()){printf("%f",m_data.def.floating());}
+      break;
+  case(kind::load):
+      printf("ld ");
+
+      m_data.ld.type_info().print();
+
+      gbstd::print(m_data.ld.address_operand());
+      break;
+  case(kind::address):
+      printf("addr ");
+
+      gbstd::print(m_data.addr.identifier());
+      break;
+  case(kind::call):
+      printf("cal ");
+
+      gbstd::print(m_data.cal.function_name());
+
+        for(auto&  a: m_data.cal.argument_list())
+        {
+          printf(" ");
+
+          gbstd::print(a);
+        }
+      break;
+  case(kind::phi):
+      printf("phi ");
+
+        for(auto&  e: m_data.phi.element_list())
+        {
+          printf(" ");
+
+          gbstd::print(e.label());
+
+          printf(" ");
+
+          gbstd::print(e.operand());
+        }
+      break;
     }
 }
+
+
 
 
 }

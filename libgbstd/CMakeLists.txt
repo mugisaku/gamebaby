@@ -73,11 +73,11 @@ set(SOURCES
   syntaxes/syntax_token_iterator.cpp
   syntaxes/syntax_tokenizer.cpp
   syntaxes/syntax_tokenizer__read_number.cpp
-  syntaxes/syntax_expression_element.cpp
+  syntaxes/syntax_operand.cpp
   syntaxes/syntax_expression.cpp
   syntaxes/syntax_definition.cpp
   syntaxes/syntax_rule.cpp
-  syntaxes/syntax_tree_node.cpp
+  syntaxes/syntax_branch_element.cpp
   syntaxes/syntax_parser.cpp
   syntaxes/syntax_parser__lower.cpp
   vms/typesystems/struct.cpp
@@ -89,17 +89,9 @@ set(SOURCES
   vms/expressions/postfix_element.cpp
   vms/expressions/operand.cpp
   vms/expressions/simple_value.cpp
-#  vms/irs/ir_operand.cpp
-#  vms/irs/ir_operation.cpp
-#  vms/irs/ir_operation__read.cpp
-#  vms/irs/ir_block_info.cpp
-#  vms/irs/ir_function.cpp
-#  vms/irs/ir_context.cpp
-#  vms/irs/ir_memory.cpp
-#  vms/irs/ir_value.cpp
-#  vms/irs/ir_variable.cpp
-#  vms/irs/ir_processor.cpp
-#  vms/irs/ir_processor__operate.cpp
+  vms/irs/ir_operation.cpp
+  vms/irs/ir_statement.cpp
+  vms/irs/ir_function.cpp
 #  vms/assemblies/asm_parameter.cpp
 #  vms/assemblies/asm_line.cpp
 #  vms/assemblies/asm_context.cpp
