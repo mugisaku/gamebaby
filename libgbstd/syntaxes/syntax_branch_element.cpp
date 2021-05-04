@@ -16,10 +16,9 @@ assign(const syntax_branch_element&  rhs) noexcept
     {
       clear();
 
-      m_token  = rhs.m_token;
-      m_data.o = rhs.m_data.o;
-
-      m_child = clone(rhs.m_child);
+      m_token   = rhs.m_token;
+      m_operand = rhs.m_operand;
+      m_branch  = rhs.m_branch;
     }
 
 
@@ -35,9 +34,9 @@ assign(syntax_branch_element&&  rhs) noexcept
     {
       clear();
 
-      std::swap(m_token ,rhs.m_token);
-      std::swap(m_data.o,rhs.m_data.o);
-      std::swap(m_child ,rhs.m_child);
+      std::swap(m_token  ,rhs.m_token);
+      std::swap(m_operand,rhs.m_operand);
+      std::swap(m_branch ,rhs.m_branch);
     }
 
 
@@ -52,7 +51,8 @@ assign(const syntax_token&  tok, const syntax_operand&  o) noexcept
   clear();
 
   m_token = &tok;
-  m_data.o = &o;
+
+  m_operand = o;
 
   return *this;
 }
@@ -60,15 +60,15 @@ assign(const syntax_token&  tok, const syntax_operand&  o) noexcept
 
 syntax_branch_element&
 syntax_branch_element::
-assign(const syntax_token&  tok, std::unique_ptr<syntax_branch>&&  br, const syntax_definition&  def) noexcept
+assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&&  br) noexcept
 {
   clear();
 
   m_token = &tok;
 
-  m_child = br.release();
+  m_operand.assign(def);
 
-  m_data.def = &def;
+  m_branch = std::move(br);
 
   return *this;
 }
@@ -80,24 +80,21 @@ void
 syntax_branch_element::
 clear() noexcept
 {
-  m_token  = nullptr;
-  m_data.o = nullptr;
+  m_token = nullptr;
 
-  delete m_child          ;
-         m_child = nullptr;
+  m_operand.clear();
+
+  m_branch.cut_back();
 }
 
 
-std::unique_ptr<syntax_branch>
+syntax_branch
 syntax_branch_element::
 cut_child() noexcept
 {
-  std::unique_ptr<syntax_branch>   u(m_child)         ;
-                                     m_child = nullptr;
+  m_operand.clear();
 
-  m_data.def = nullptr;
-
-  return std::move(u);
+  return std::move(m_branch);
 }
 
 
@@ -105,21 +102,20 @@ void
 syntax_branch_element::
 print() const noexcept
 {
-    if(m_child)
+    if(m_operand.is_definition())
     {
-      gbstd::print(m_data.def->get_name());
+      gbstd::print(m_operand.get_definition().get_name());
 
       printf("{\n");
 
-      m_child->print();
+      m_branch.print();
 
       printf("}\n");
     }
 
   else
-    if(m_data.o)
     {
-      m_data.o->print();
+      m_operand.print();
     }
 }
 

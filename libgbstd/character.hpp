@@ -114,12 +114,15 @@ public:
   code_text(std::string_view  sv="") noexcept{assign(sv);}
 
   code_text&  operator+=(std::string_view  sv) noexcept{return append(sv);}
-
-  code_text&  append(std::string_view  sv) noexcept;
-
-  code_text&  operator=(std::string_view  sv) noexcept{return assign(sv);}
+  code_text&  operator =(std::string_view  sv) noexcept{return assign(sv);}
+  code_text&  operator+=(std::u16string_view  sv) noexcept{return append(sv);}
+  code_text&  operator =(std::u16string_view  sv) noexcept{return assign(sv);}
 
   code_text&  assign(std::string_view  sv) noexcept;
+  code_text&  assign(std::u16string_view  sv) noexcept;
+
+  code_text&  append(std::string_view  sv) noexcept;
+  code_text&  append(std::u16string_view  sv) noexcept;
 
   class iterator{
     const char16_t*  m_pointer=nullptr;

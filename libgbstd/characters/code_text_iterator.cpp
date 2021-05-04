@@ -13,13 +13,24 @@ code_text&
 code_text::
 append(std::string_view  sv) noexcept
 {
-  m_string = make_u16string(sv);
+  auto  s = make_u16string(sv);
 
-  auto  p = m_string.data();
+  return append(s);
+}
+
+
+code_text&
+code_text::
+append(std::u16string_view  sv) noexcept
+{
+  m_string += sv;
+
+  auto  p     = m_string.data();
+  auto  p_end = m_string.data()+m_string.size();
 
   m_line_heads.emplace_back(p);
 
-    while(*p)
+    while(p < p_end)
     {
       auto  c = *p++;
 
@@ -38,6 +49,17 @@ code_text&
 code_text::
 assign(std::string_view  sv) noexcept
 {
+  auto  s = make_u16string(sv);
+
+  return assign(s);
+}
+
+
+code_text&
+code_text::
+assign(std::u16string_view  sv) noexcept
+{
+  m_string.clear();
   m_line_heads.clear();
 
   return append(sv);

@@ -10,6 +10,18 @@ namespace gbstd{
 
 syntax_parser::result
 syntax_parser::
+combine(result&&  l, result&&  r) noexcept
+{
+  l.branch().splice(r.release());
+
+  return result(r.iterator(),l.release());
+}
+
+
+
+
+syntax_parser::result
+syntax_parser::
 process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it)
 {
     if(m_debugging)
@@ -20,7 +32,7 @@ process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iter
 
   auto  res = process_by_operand(l,it);
 
-    if(res.first)
+    if(res)
     {
         if(m_debugging)
         {
@@ -34,7 +46,7 @@ process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iter
 
   res = process_by_operand(r,it);
 
-    if(res.first)
+    if(res)
     {
         if(m_debugging)
         {
@@ -60,21 +72,15 @@ process_and(const syntax_operand&  l, const syntax_operand&  r, syntax_token_ite
     }
 
 
-  auto  res = process_by_operand(l,it);
+  auto  lres = process_by_operand(l,it);
 
-    if(res.first)
+    if(lres)
     {
-      auto  lbr = std::move(res.second);
+      auto  rres = process_by_operand(r,lres.iterator());
 
-      res = process_by_operand(r,res.first);
-
-        if(res.first)
+        if(rres)
         {
-          lbr.splice(std::move(res.second));
-
-          res.second = std::move(lbr);
-
-          return result(res);
+          return combine(std::move(lres),std::move(rres));
         }
     }
 
@@ -93,23 +99,17 @@ process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
     }
 
 
-  auto  res = process_by_operand(*expr.left(),it);
+  auto  lres = process_by_operand(*expr.left(),it);
 
-    if(res.first)
+    if(lres)
     {
-      auto  lbr = std::move(res.second);
-
       m_point_stack.emplace_back(it,expr);
 
-      res = process_by_operand(*expr.right(),res.first);
+      auto  rres = process_by_operand(*expr.right(),lres.iterator());
 
-        if(res.first)
+        if(rres)
         {
-          lbr.splice(std::move(res.second));
-
-          res.second = std::move(lbr);
-
-          return result(res);
+          return combine(std::move(lres),std::move(rres));
         }
 
 
@@ -141,7 +141,7 @@ process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
     {
       auto  res = process_by_operand(*l,it);
 
-        if(res.first)
+        if(res)
         {
           return std::move(res);
         }
@@ -177,7 +177,7 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
 
   --m_depth;
 
-    if(res.first)
+    if(res)
     {
         if(m_debugging)
         {
@@ -186,6 +186,9 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
         }
 
 
+      syntax_branch_element  e(*it,def,res.release());
+
+      return result(res.iterator(),syntax_branch(std::move(e)));
     }
 
   else
@@ -200,7 +203,7 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
 }
 
 
-syntax_token_iterator
+syntax_parser::result
 syntax_parser::
 step(const syntax_definition&  def, syntax_token_iterator  it)
 {
@@ -210,9 +213,9 @@ step(const syntax_definition&  def, syntax_token_iterator  it)
 
   auto  res = process_by_definition(def,it);
 
-    if(res.first)
+    if(res)
     {
-        if(res.first == it)
+        if(res.iterator() == it)
         {
           printf("ループしたので停止した\n");
 
@@ -224,9 +227,7 @@ step(const syntax_definition&  def, syntax_token_iterator  it)
         }
 
 
-      m_branch.splice(std::move(res.second));
-
-      return res.first;
+      return std::move(res);
     }
 
 
@@ -236,43 +237,60 @@ step(const syntax_definition&  def, syntax_token_iterator  it)
 
   print_nl();
 
-  m_branch.cut_back();
-
   throw syntax_parse_error();
 }
 
 
-void
+syntax_parser&
 syntax_parser::
-start(std::u16string_view  def_name)
+set_rule(const syntax_rule&  r) noexcept
 {
-  reset();
+  m_rule = &r;
+
+  return *this;
+}
 
 
-  auto  def = m_rule.find(def_name);
-
-    if(!def)
+syntax_branch
+syntax_parser::
+start(const syntax_branch_source&  src)
+{
+    if(!m_rule || !*m_rule)
     {
-      printf("定義が見付からない\n");
-
-      gbstd::print(def_name);
+      printf("定義がひとつもない\n");
 
       throw syntax_parse_error();
     }
 
 
+  auto&  def = m_rule->first();
+
+  syntax_branch  br;
+
 //m_debugging=1;
     try
     {
-      syntax_token_iterator  it(m_token_string);
+      auto  it = src.iterator();
 
       it.skip();
 
         while(*it)
         {
-          it = step(*def,it);
+          auto  res = step(def,it);
 
-          it.skip();
+            if(res)
+            {
+              it = res.iterator();
+
+              it.skip();
+
+              br.splice(res.release());
+            }
+
+          else
+            {
+              break;
+            }
         }
     }
 
@@ -293,30 +311,7 @@ start(std::u16string_view  def_name)
     }
 
 
-  m_branch.print();
-}
-
-
-void
-syntax_parser::
-reset() noexcept
-{
-  m_token_string = make_token_string(m_text.get_string());
-
-  m_branch.cut_back();
-}
-
-
-void
-syntax_parser::
-print() const noexcept
-{
-    for(auto&  tok: m_token_string)
-    {
-      tok.print();
-
-      print_nl();
-    }
+  return std::move(br);
 }
 
 

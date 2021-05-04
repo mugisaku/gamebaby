@@ -406,6 +406,8 @@ public:
   syntax_rule(std::string_view  sv) noexcept{assign(sv);}
   syntax_rule(std::u16string_view  sv) noexcept{assign(sv);}
 
+  operator bool() const noexcept{return m_definition_list.size();}
+
   syntax_rule&  operator =(std::string_view  sv) noexcept{return assign(sv);}
   syntax_rule&  operator+=(std::string_view  sv) noexcept{return append(sv);}
   syntax_rule&  operator =(std::u16string_view  sv) noexcept{return assign(sv);}
@@ -419,6 +421,8 @@ public:
         syntax_definition*  find(std::u16string_view  name)       noexcept;
   const syntax_definition*  find(std::u16string_view  name) const noexcept;
 
+  const syntax_definition&  first() const noexcept{return m_definition_list.front();}
+
   void  print() const noexcept;
 
 };
@@ -427,6 +431,63 @@ public:
 
 
 class syntax_branch;
+class syntax_branch_source;
+class syntax_branch_element;
+
+
+class
+syntax_branch_source
+{
+  code_text  m_text;
+
+  syntax_token_string  m_token_string;
+
+public:
+  syntax_branch_source() noexcept{}
+  syntax_branch_source(std::string_view  sv) noexcept{assign(sv);}
+  syntax_branch_source(std::u16string_view  sv) noexcept{assign(sv);}
+
+  syntax_branch_source&  assign(std::string_view  sv) noexcept
+  {
+    m_text = sv;
+    m_token_string = make_token_string(m_text.get_string());
+
+    return *this;
+  }
+
+  syntax_branch_source&  assign(std::u16string_view  sv) noexcept
+  {
+    m_text = sv;
+    m_token_string = make_token_string(m_text.get_string());
+
+    return *this;
+  }
+
+  syntax_token_iterator  iterator() const noexcept{return {m_token_string};}
+
+};
+
+
+class
+syntax_branch
+{
+  std::vector<syntax_branch_element>  m_elements;
+
+public:
+  syntax_branch() noexcept{}
+  syntax_branch(syntax_branch_element&&  e) noexcept;
+
+  int  length() const noexcept;
+
+  template<class...  Args>
+  syntax_branch_element&  emplace_back(Args&&...  args) noexcept{return m_elements.emplace_back(std::forward<Args>(args)...);}
+
+  void  cut_back(int  l=0) noexcept;
+
+  void  splice(syntax_branch&&  rhs) noexcept;
+  void  print() const noexcept;
+
+};
 
 
 class
@@ -434,12 +495,8 @@ syntax_branch_element
 {
   const syntax_token*  m_token=nullptr;
 
-  syntax_branch*  m_child=nullptr;
-
-  union data{
-    const syntax_operand*       o;
-    const syntax_definition*  def;
-  } m_data;
+  syntax_operand  m_operand;
+  syntax_branch    m_branch;
 
 public:
   syntax_branch_element() noexcept{}
@@ -457,55 +514,17 @@ public:
   syntax_branch_element&  assign(      syntax_branch_element&&  rhs) noexcept;
 
   syntax_branch_element&  assign(const syntax_token&  tok, const syntax_operand&  o) noexcept;
-  syntax_branch_element&  assign(const syntax_token&  tok, std::unique_ptr<syntax_branch>&&  br, const syntax_definition&  def) noexcept;
+  syntax_branch_element&  assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&&  br) noexcept;
 
   void  clear() noexcept;
 
-  const syntax_token*            token() const noexcept{return m_token;}
-  const syntax_definition*  definition() const noexcept{return m_data.def;}
-  const syntax_operand*        operand() const noexcept{return m_data.o;}
-  const syntax_branch*           child() const noexcept{return m_child;}
+  const syntax_token&      token() const noexcept{return *m_token;}
+  const syntax_operand&  operand() const noexcept{return m_operand;}
+  const syntax_branch&    branch() const noexcept{return m_branch;}
 
-  std::unique_ptr<syntax_branch>  cut_child() noexcept;
+  syntax_branch  cut_child() noexcept;
 
   void  print() const noexcept;
-
-};
-
-
-class
-syntax_branch
-{
-  std::vector<syntax_branch_element>  m_elements;
-
-public:
-  syntax_branch() noexcept{}
-  syntax_branch(syntax_branch_element&&  e) noexcept{m_elements.emplace_back(std::move(e));}
-
-  int  length() const noexcept{return m_elements.size();}
-
-  template<class...  Args>
-  syntax_branch&  emplace_back(Args&&...  args) noexcept{  m_elements.emplace_back(std::forward<Args>(args)...);  return *this;}
-
-  void  cut_back(int  l=0) noexcept{m_elements.resize(l);}
-
-  void  splice(syntax_branch&&  rhs) noexcept
-  {
-      for(auto&  e: rhs.m_elements)
-      {
-        m_elements.emplace_back(std::move(e));
-      }
-  }
-
-  void  print() const noexcept
-  {
-      for(auto&  e: m_elements)
-      {
-        e.print();
-
-        printf(" ");
-      }
-  }
 
 };
 
@@ -519,13 +538,7 @@ syntax_parse_error
 class
 syntax_parser
 {
-  syntax_rule  m_rule;
-
-  code_text  m_text;
-
-  syntax_token_string  m_token_string;
-
-  syntax_branch  m_branch;
+  const syntax_rule*  m_rule=nullptr;
 
   int  m_depth;
 
@@ -547,14 +560,30 @@ syntax_parser
 
   std::vector<point>  m_point_stack;
 
-  using result = std::pair<syntax_token_iterator,syntax_branch>;
+  class result{
+    syntax_token_iterator  m_iterator;
+    syntax_branch            m_branch;
+
+  public:
+    result() noexcept{}
+    result(syntax_token_iterator  it, syntax_branch&&  br=syntax_branch()) noexcept: m_iterator(it), m_branch(std::move(br)){}
+
+    operator bool() const noexcept{return m_iterator;}
+
+    syntax_token_iterator  iterator() const noexcept{return m_iterator;}
+    syntax_branch&           branch()       noexcept{return m_branch;}
+
+    syntax_branch  release() noexcept{return std::move(m_branch);}
+
+  };
+
+
+  static result  combine(result&&  l, result&&  r) noexcept;
 
   result  process_keyword(const syntax_operand&  e, syntax_token_iterator  it);
   result  process_string(const syntax_operand&  e, syntax_token_iterator  it);
   result  process_optional(const syntax_operand&  e, syntax_token_iterator  it);
   result  process_multiple(const syntax_operand&  e, syntax_token_iterator  it);
-  result  process_definition(const syntax_operand&  e, syntax_token_iterator  it);
-  result  process_expression(const syntax_operand&  e, syntax_token_iterator  it);
 
   result  process_by_operand(const syntax_operand&  o, syntax_token_iterator  it);
   result  process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it);
@@ -563,22 +592,16 @@ syntax_parser
   result  process_or(   const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it);
   result  process_colon(const syntax_expression&  expr, syntax_token_iterator  it);
 
-  syntax_token_iterator  step(const syntax_definition&  def, syntax_token_iterator  it);
+  result  step(const syntax_definition&  def, syntax_token_iterator  it);
 
   result  process_by_definition(const syntax_definition&  def, syntax_token_iterator  it);
 
 public:
-        syntax_rule&  get_rule()       noexcept{return m_rule;}
-  const syntax_rule&  get_rule() const noexcept{return m_rule;}
+  syntax_parser&  set_rule(const syntax_rule&  r) noexcept;
 
-        code_text&  get_text()       noexcept{return m_text;}
-  const code_text&  get_text() const noexcept{return m_text;}
+  const syntax_rule*  rule() const noexcept{return m_rule;}
 
-  void  start(std::u16string_view  def_name);
-
-  void  reset() noexcept;
-
-  void  print() const noexcept;
+  syntax_branch  start(const syntax_branch_source&  src);
 
 };
 

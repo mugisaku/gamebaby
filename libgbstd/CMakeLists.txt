@@ -77,6 +77,7 @@ set(SOURCES
   syntaxes/syntax_expression.cpp
   syntaxes/syntax_definition.cpp
   syntaxes/syntax_rule.cpp
+  syntaxes/syntax_branch.cpp
   syntaxes/syntax_branch_element.cpp
   syntaxes/syntax_parser.cpp
   syntaxes/syntax_parser__lower.cpp
