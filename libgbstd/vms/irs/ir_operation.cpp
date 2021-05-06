@@ -189,16 +189,16 @@ print() const noexcept
     switch(m_kind)
     {
   case(kind::unary):
-      m_data.un.first_opcode().print();
+      gbstd::print(m_data.un.first_opcode());
       printf(" ");
-      m_data.un.second_opcode().print();
+      gbstd::print(m_data.un.second_opcode());
       printf(" ");
       gbstd::print(m_data.un.operand());
       break;
   case(kind::binary):
-      m_data.bin.first_opcode().print();
+      gbstd::print(m_data.bin.first_opcode());
       printf(" ");
-      m_data.bin.second_opcode().print();
+      gbstd::print(m_data.bin.second_opcode());
       printf(" ");
       gbstd::print(m_data.bin.first_operand());
       printf(" ");
@@ -225,7 +225,7 @@ print() const noexcept
   case(kind::call):
       printf("cal ");
 
-      gbstd::print(m_data.cal.function_name());
+      gbstd::print(m_data.cal.identifier());
 
         for(auto&  a: m_data.cal.argument_list())
         {

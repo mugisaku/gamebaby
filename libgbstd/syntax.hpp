@@ -297,8 +297,8 @@ syntax_operand
   } m_kind=kind::null;
 
   union data{
-    std::u16string         str;
-    syntax_expression      expr;
+    std::u16string            str;
+    syntax_expression        expr;
     const syntax_definition*  def;
 
   data() noexcept{}
@@ -477,6 +477,8 @@ public:
   syntax_branch() noexcept{}
   syntax_branch(syntax_branch_element&&  e) noexcept;
 
+  const syntax_branch_element&  operator[](int  i) const noexcept{return m_elements[i];}
+
   int  length() const noexcept;
 
   template<class...  Args>
@@ -486,6 +488,9 @@ public:
 
   void  splice(syntax_branch&&  rhs) noexcept;
   void  print() const noexcept;
+
+  const syntax_branch_element*  begin() const noexcept;
+  const syntax_branch_element*    end() const noexcept;
 
 };
 
@@ -517,6 +522,11 @@ public:
   syntax_branch_element&  assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&&  br) noexcept;
 
   void  clear() noexcept;
+
+  bool  is_definition(std::u16string_view  sv) const noexcept
+  {
+    return m_operand.is_definition() && (m_operand.get_definition().get_name() == sv);
+  }
 
   const syntax_token&      token() const noexcept{return *m_token;}
   const syntax_operand&  operand() const noexcept{return m_operand;}

@@ -27,12 +27,11 @@ public:
 class
 ir_type_info
 {
-  int  m_letter=0;
-  int  m_size=0;
+  int  m_letter;
+  int  m_size;
 
 public:
-  constexpr ir_type_info() noexcept{}
-  constexpr ir_type_info(int  l, int  sz) noexcept: m_letter(l), m_size(sz){}
+  constexpr ir_type_info(int  l='v', int  sz=0) noexcept: m_letter(l), m_size(sz){}
 
   constexpr bool  is_void()     const noexcept{return m_letter == 'v';}
   constexpr bool  is_integer()  const noexcept{return m_letter == 'i';}
@@ -55,14 +54,17 @@ public:
 class
 ir_unary_operation
 {
-  small_string   m_first_opcode;
-  small_string  m_second_opcode;
+  std::u16string   m_first_opcode;
+  std::u16string  m_second_opcode;
 
   std::u16string  m_operand;
 
 public:
-  small_string   first_opcode() const noexcept{return m_first_opcode;};
-  small_string  second_opcode() const noexcept{return m_second_opcode;};
+  ir_unary_operation(std::u16string_view  opco1, std::u16string_view  opco2, std::u16string_view  o) noexcept:
+  m_first_opcode(opco1), m_second_opcode(opco2), m_operand(o){}
+
+  const std::u16string&   first_opcode() const noexcept{return m_first_opcode;};
+  const std::u16string&  second_opcode() const noexcept{return m_second_opcode;};
 
   const std::u16string&  operand() const noexcept{return m_operand;}
 
@@ -72,15 +74,19 @@ public:
 class
 ir_binary_operation
 {
-  small_string   m_first_opcode;
-  small_string  m_second_opcode;
+  std::u16string   m_first_opcode;
+  std::u16string  m_second_opcode;
 
   std::u16string  m_first_operand;
   std::u16string  m_second_operand;
 
 public:
-  small_string   first_opcode() const noexcept{return m_first_opcode;};
-  small_string  second_opcode() const noexcept{return m_second_opcode;};
+  ir_binary_operation(std::u16string_view  opco1, std::u16string_view  opco2, std::u16string_view  o1, std::u16string_view  o2) noexcept:
+  m_first_opcode(opco1), m_second_opcode(opco2),
+  m_first_operand(o1), m_second_operand(o2){}
+
+  const std::u16string&   first_opcode() const noexcept{return m_first_opcode;};
+  const std::u16string&  second_opcode() const noexcept{return m_second_opcode;};
 
   const std::u16string&  first_operand() const noexcept{return m_first_operand;}
   const std::u16string&  second_operand() const noexcept{return m_second_operand;}
@@ -150,14 +156,14 @@ public:
 class
 ir_call_operation
 {
-  std::u16string  m_function_name;
+  std::u16string  m_identifier;
 
   std::vector<std::u16string>  m_argument_list;
 
 public:
-  ir_call_operation(std::u16string_view  fnname, std::vector<std::u16string>&&  args) noexcept: m_function_name(fnname), m_argument_list(std::move(args)){}
+  ir_call_operation(std::u16string_view  id, std::vector<std::u16string>&&  args) noexcept: m_identifier(id), m_argument_list(std::move(args)){}
 
-  const std::u16string&  function_name() const noexcept{return m_function_name;}
+  const std::u16string&  identifier() const noexcept{return m_identifier;}
 
   const std::vector<std::u16string>&  argument_list() const noexcept{return m_argument_list;}
   
@@ -204,18 +210,19 @@ ir_operation
     binary,
     load,
     address,
+    function_address,
     call,
     phi,
   } m_kind=kind::null;
 
   union data{
-    ir_unary_operation      un;
-    ir_binary_operation    bin;
-    ir_define_operation    def;
-    ir_load_operation       ld;
-    ir_address_operation  addr;
-    ir_call_operation      cal;
-    ir_phi_operation       phi;
+    ir_unary_operation                 un;
+    ir_binary_operation               bin;
+    ir_define_operation               def;
+    ir_load_operation                  ld;
+    ir_address_operation             addr;
+    ir_call_operation                 cal;
+    ir_phi_operation                  phi;
 
     data() noexcept{}
    ~data(){}

@@ -55,6 +55,8 @@ print() const noexcept
 }
 
 
+const syntax_branch_element*  syntax_branch::begin() const noexcept{return m_elements.data();}
+const syntax_branch_element*    syntax_branch::end() const noexcept{return m_elements.data()+m_elements.size();}
 
 
 }
