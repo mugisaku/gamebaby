@@ -182,6 +182,51 @@ clear() noexcept
 
 
 
+ir_type_info
+ir_operation::
+type_info() const noexcept
+{
+  constexpr ir_type_info  i64_ti('i',8);
+  constexpr ir_type_info  f64_ti('f',8);
+
+    switch(m_kind)
+    {
+  case(kind::unary):
+      return (m_data.un.first_opcode() == u"fneg")? f64_ti
+            :                                       i64_ti
+            ;
+      break;
+  case(kind::binary):
+      return (m_data.bin.first_opcode() == u"fari")? f64_ti
+            :                                        i64_ti
+            ;
+      break;
+  case(kind::define):
+      return m_data.def.is_integer()? i64_ti
+            :                         f64_ti
+            ;
+      break;
+  case(kind::load):
+      return m_data.ld.type_info();
+      break;
+  case(kind::address):
+      return i64_ti;
+      break;
+  case(kind::call):
+      return m_data.cal.type_info();
+      break;
+  case(kind::phi):
+      return m_data.phi.type_info();
+      break;
+    }
+
+
+  return ir_type_info();
+}
+
+
+
+
 void
 ir_operation::
 print() const noexcept

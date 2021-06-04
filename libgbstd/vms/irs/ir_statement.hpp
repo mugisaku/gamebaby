@@ -147,11 +147,11 @@ public:
   bool  is_store()    const noexcept{return m_kind == kind::store;}
   bool  is_register() const noexcept{return m_kind == kind::register_;}
 
-  const ir_return_statement&      get_return()  const noexcept{return m_data.ret;}
-  const ir_branch_statement&      get_branch()  const noexcept{return m_data.br;}
-  const ir_label_statement&        get_label()  const noexcept{return m_data.lb;}
-  const ir_store_statement&        get_store()  const noexcept{return m_data.st;}
-  const ir_register_statement&  iget_register() const noexcept{return m_data.reg;}
+  const ir_return_statement&      get_return() const noexcept{return m_data.ret;}
+  const ir_branch_statement&      get_branch() const noexcept{return m_data.br;}
+  const ir_label_statement&        get_label() const noexcept{return m_data.lb;}
+  const ir_store_statement&        get_store() const noexcept{return m_data.st;}
+  const ir_register_statement&  get_register() const noexcept{return m_data.reg;}
 
   void  print() const noexcept;
 

@@ -11,8 +11,8 @@ namespace gbstd{
 ir_parameter
 make_parameter(const syntax_branch&  br) noexcept
 {
-  auto     ti = make_type_info(br[0].branch());
-  auto&  name = br[1].token().get_string();
+  auto    ti = make_type_info(br[0].branch());
+  auto  name = make_string_view(br[1]);
 
   return ir_parameter(ti,name);
 }
@@ -50,9 +50,9 @@ make_define_operation(const syntax_branch&  br) noexcept
 ir_unary_operation
 make_unary_operation(const syntax_branch&  br) noexcept
 {
-  auto&  opco1 = br[0].branch()[0].token().get_string();
-  auto&  opco2 = br[0].branch()[1].token().get_string();
-  auto       o = make_identifier(br[1].branch());
+  auto  opco1 = make_string_view(br[0].branch()[0]);
+  auto  opco2 = make_string_view(br[0].branch()[1]);
+  auto      o = make_string_view(br[1]);
 
   return ir_unary_operation(opco1,opco2,o);
 }
@@ -61,10 +61,10 @@ make_unary_operation(const syntax_branch&  br) noexcept
 ir_binary_operation
 make_binary_operation(const syntax_branch&  br) noexcept
 {
-  auto&  opco1 = br[0].branch()[0].token().get_string();
-  auto&  opco2 = br[0].branch()[1].branch()[0].token().get_string();
-  auto      o1 = make_identifier(br[1].branch());
-  auto      o2 = make_identifier(br[2].branch());
+  auto  opco1 = make_string_view(br[0].branch()[0]);
+  auto  opco2 = make_string_view(br[0].branch()[1]);
+  auto     o1 = make_string_view(br[1]);
+  auto     o2 = make_string_view(br[2]);
 
   return ir_binary_operation(opco1,opco2,o1,o2);
 }
@@ -73,8 +73,8 @@ make_binary_operation(const syntax_branch&  br) noexcept
 ir_load_operation
 make_load_operation(const syntax_branch&  br) noexcept
 {
-  auto   ti = make_type_info(br[0].branch());
-  auto&  id = make_identifier(br[1].branch());
+  auto  ti = make_type_info(br[0].branch());
+  auto  id = make_string_view(br[1]);
 
   return ir_load_operation(ti,id);
 }
@@ -125,10 +125,47 @@ make_operation(const syntax_branch&  br) noexcept
 ir_register_statement
 make_register_statement(const syntax_branch&  br) noexcept
 {
-  auto&  id = br[1].token().get_string();
-  auto   op = make_operation(br[2].branch());
+  auto  id = make_string_view(br[1]);
+  auto  op = make_operation(br[2].branch());
 
   return ir_register_statement(id,std::move(op));
+}
+
+
+ir_return_statement
+make_return_statement(const syntax_branch&  br) noexcept
+{
+  return (br.length() == 1)? ir_return_statement()
+        :                    ir_return_statement(make_string_view(br[1]))
+        ;
+}
+
+
+ir_branch_statement
+make_branch_statement(const syntax_branch&  br) noexcept
+{
+  auto   o = make_string_view(br[1]);
+  auto  lb = make_string_view(br[2]);
+
+  return ir_branch_statement(o,lb);
+}
+
+
+ir_label_statement
+make_label_statement(const syntax_branch&  br) noexcept
+{
+  return ir_label_statement(make_string_view(br[1]));
+}
+
+
+ir_store_statement
+make_store_statement(const syntax_branch&  br) noexcept
+{
+  auto     ti = make_type_info(br[1].branch());
+  auto  addro = make_string_view(br[2]);
+  auto   valo = make_string_view(br[3]);
+
+  return ir_store_statement(ti,addro,valo);
 }
 
 
@@ -139,7 +176,12 @@ make_statement(const syntax_branch&  br) noexcept
 
   auto&  e = br[0];
 
-    if(e.is_definition(u"register_statement")){stmt = make_register_statement(e.branch());}
+       if(e.is_definition(u"register_statement")){stmt = make_register_statement(e.branch());}
+  else if(e.is_definition(u"return_statement")  ){stmt = make_return_statement(e.branch());}
+  else if(e.is_definition(u"branch_statement")  ){stmt = make_branch_statement(e.branch());}
+  else if(e.is_definition(u"label_statement")   ){stmt = make_label_statement(e.branch());}
+  else if(e.is_definition(u"store_statement")   ){stmt = make_store_statement(e.branch());}
+  else{;}
 
 
   return std::move(stmt);
@@ -169,7 +211,7 @@ make_type_info(const syntax_branch&  br) noexcept
 {
   ir_type_info  ti;
 
-  auto&  kw = br[0].token().get_string();
+  auto  kw = make_string_view(br[0]);
 
        if(kw == u"void"){}
   else if(kw == u"i8" ){ti = ir_type_info('i',1);}
@@ -188,9 +230,13 @@ make_type_info(const syntax_branch&  br) noexcept
 
 
 std::u16string_view
-make_identifier(const syntax_branch&  br) noexcept
+make_string_view(const syntax_branch_element&  e) noexcept
 {
-  return br[0].token().get_string();
+  auto&  o = e.operand();
+
+  return (o.is_identifier() || o.is_keyword())? e.token().get_string()
+        :o.is_definition()? make_string_view(e.branch()[0])
+        :u"<make_string_view_failed>";
 }
 
 
@@ -199,7 +245,7 @@ make_function(const syntax_branch&  br) noexcept
 {
   auto     ti = make_type_info(br[1].branch());
   auto  paras = make_parameter_list(br[2].branch());
-  auto&    id = br[3].token().get_string();
+  auto     id = make_string_view(br[3]);
   auto  stmts = make_statement_list(br[4].branch());
 
   return ir_function(ti,std::move(paras),id,std::move(stmts));

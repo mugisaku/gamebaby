@@ -5,13 +5,12 @@
 
 
 namespace gbstd{
-namespace values{
 
 
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(token_iterator&  it) noexcept
 {
   clear();
@@ -35,14 +34,14 @@ assign(token_iterator&  it) noexcept
   else if(tok.is_operator_code("[")){assign(array(++it));}
   else if(tok.is_operator_code(",")){}
   else if(tok.is_string()){assign(tok.get_string());}
-  else {  printf("[object assign error]");  tok.print();}
+  else {  printf("[dn_object assign error]");  tok.print();}
 
   return *this;
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(bool   b) noexcept
 {
   clear();
@@ -55,13 +54,13 @@ assign(bool   b) noexcept
 }
 
 
-object&
-object::
-assign(int  i) noexcept
+dn_object&
+dn_object::
+assign(int64_t  i) noexcept
 {
   clear();
 
-  new(&m_data) int(i);
+  new(&m_data) int64_t(i);
 
   m_kind = kind::integer;
 
@@ -69,22 +68,22 @@ assign(int  i) noexcept
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(double  f) noexcept
 {
   clear();
 
   new(&m_data) double(f);
 
-  m_kind = kind::real_number;
+  m_kind = kind::floating;
 
   return *this;
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(std::string_view  s) noexcept
 {
   clear();
@@ -97,8 +96,8 @@ assign(std::string_view  s) noexcept
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(std::u16string_view  u16s) noexcept
 {
   clear();
@@ -111,8 +110,8 @@ assign(std::u16string_view  u16s) noexcept
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(array&&  arr) noexcept
 {
   clear();
@@ -125,8 +124,8 @@ assign(array&&  arr) noexcept
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 assign(list&&  ls) noexcept
 {
   clear();
@@ -139,17 +138,16 @@ assign(list&&  ls) noexcept
 }
 
 
-object&
-object::
-assign(const object&  rhs) noexcept
+dn_object&
+dn_object::
+assign(const dn_object&  rhs) noexcept
 {
     if(this != &rhs)
     {
       clear();
 
-      m_has_name = rhs.m_has_name;
-      m_kind     = rhs.m_kind;
-      m_name     = rhs.m_name;
+      m_kind = rhs.m_kind;
+      m_name = rhs.m_name;
 
         switch(m_kind)
         {
@@ -157,7 +155,7 @@ assign(const object&  rhs) noexcept
       case(kind::undefined): break;
       case(kind::boolean): m_data.b = rhs.m_data.b;break;
       case(kind::integer): m_data.i = rhs.m_data.i;break;
-      case(kind::real_number): m_data.r = rhs.m_data.r;break;
+      case(kind::floating): m_data.f = rhs.m_data.f;break;
       case(kind::string ): new(&m_data) std::string(rhs.m_data.s);break;
       case(kind::u16string ): new(&m_data) std::u16string(rhs.m_data.u16s);break;
       case(kind::array): m_data.arr = new array(*rhs.m_data.arr);break;
@@ -170,16 +168,14 @@ assign(const object&  rhs) noexcept
 }
 
 
-object&
-object::
-assign(object&&  rhs) noexcept
+dn_object&
+dn_object::
+assign(dn_object&&  rhs) noexcept
 {
     if(this != &rhs)
     {
       clear();
 
-
-      std::swap(m_has_name,rhs.m_has_name);
       std::swap(m_kind,rhs.m_kind);
       std::swap(m_name,rhs.m_name);
 
@@ -189,7 +185,7 @@ assign(object&&  rhs) noexcept
       case(kind::undefined): break;
       case(kind::boolean  ): m_data.b = rhs.m_data.b;break;
       case(kind::integer  ): m_data.i = rhs.m_data.i;break;
-      case(kind::real_number): m_data.r = rhs.m_data.r;break;
+      case(kind::floating ): m_data.f = rhs.m_data.f;break;
       case(kind::string   ): new(&m_data) std::string(std::move(rhs.m_data.s));break;
       case(kind::u16string): new(&m_data) std::u16string(std::move(rhs.m_data.u16s));break;
       case(kind::array    ): m_data.arr = rhs.m_data.arr;break;
@@ -205,7 +201,7 @@ assign(object&&  rhs) noexcept
 
 
 void
-object::
+dn_object::
 clear() noexcept
 {
     switch(m_kind)
@@ -214,7 +210,7 @@ clear() noexcept
   case(kind::undefined): break;
   case(kind::boolean): break;
   case(kind::integer): break;
-  case(kind::real_number): break;
+  case(kind::floating): break;
   case(kind::string ): std::destroy_at(&m_data.s);break;
   case(kind::u16string): std::destroy_at(&m_data.u16s);break;
   case(kind::array): delete m_data.arr;break;
@@ -228,8 +224,8 @@ clear() noexcept
 }
 
 
-object&
-object::
+dn_object&
+dn_object::
 set_name(std::string_view  name) noexcept
 {
   m_has_name = true;
@@ -240,23 +236,11 @@ set_name(std::string_view  name) noexcept
 }
 
 
-object&
-object::
-unset_name() noexcept
-{
-  m_has_name = false;
-
-  m_name.clear();
-
-  return *this;
-}
-
-
 void
-object::
+dn_object::
 print() const noexcept
 {
-    if(has_name())
+    if(name.size())
     {
       printf("%s:",m_name.data());
     }
@@ -267,8 +251,8 @@ print() const noexcept
   case(kind::undefined): printf("undefined");break;
   case(kind::null): printf("null");break;
   case(kind::boolean): printf("%s",m_data.b? "true":"false");break;
-  case(kind::integer): printf("%d",m_data.i);break;
-  case(kind::real_number): printf("%f",m_data.r);break;
+  case(kind::integer): printf("%" PRIi64,m_data.i);break;
+  case(kind::floating): printf("%f",m_data.f);break;
   case(kind::string ): printf("\"%s\"",m_data.s.data());break;
   case(kind::u16string ):
     printf("u\"");
@@ -282,13 +266,7 @@ print() const noexcept
 }
 
 
-namespace objects{
-object  null      = object::make_null();
-object  undefined = object::make_undefined();
 }
-
-
-}}
 
 
 

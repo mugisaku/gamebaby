@@ -4,13 +4,12 @@
 
 
 namespace gbstd{
-namespace values{
 
 
 
 
-list&
-list::
+dn_list&
+dn_list::
 assign(std::string_view  sv) noexcept
 {
   tokenizer  tknz;
@@ -23,8 +22,8 @@ assign(std::string_view  sv) noexcept
 }
 
 
-list&
-list::
+dn_list&
+dn_list::
 assign(token_iterator&  it) noexcept
 {
   clear();
@@ -33,7 +32,7 @@ assign(token_iterator&  it) noexcept
     {
         if(it->is_operator_code(")") || it->is_operator_code("]"))
         {
-          printf("list::assign error");
+          printf("dn_list::assign error");
 
           break;
         }
@@ -45,7 +44,7 @@ assign(token_iterator&  it) noexcept
         }
 
 
-      push_back(object(it));
+      push_back(dn_object(it));
     }
 
 
@@ -53,9 +52,9 @@ assign(token_iterator&  it) noexcept
 }
 
 
-list&
-list::
-assign(std::initializer_list<object>  ls) noexcept
+dn_list&
+dn_list::
+assign(std::initializer_dn_list<dn_object>  ls) noexcept
 {
   clear();
 
@@ -69,9 +68,9 @@ assign(std::initializer_list<object>  ls) noexcept
 }
 
 
-list&
-list::
-assign(const list&   rhs) noexcept
+dn_list&
+dn_list::
+assign(const dn_list&   rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -88,9 +87,9 @@ assign(const list&   rhs) noexcept
 }
 
 
-list&
-list::
-assign(list&&  rhs) noexcept
+dn_list&
+dn_list::
+assign(dn_list&&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -107,7 +106,7 @@ assign(list&&  rhs) noexcept
 
 
 void
-list::
+dn_list::
 clear() noexcept
 {
   auto  next = m_first;
@@ -126,7 +125,7 @@ clear() noexcept
 
 
 void
-list::
+dn_list::
 resize(size_t  n) noexcept
 {
     if(n < m_length)
@@ -142,7 +141,7 @@ resize(size_t  n) noexcept
     {
         while(n < m_length)
         {
-          push_back(object());
+          push_back(dn_object());
         }
     }
 }
@@ -150,9 +149,9 @@ resize(size_t  n) noexcept
 
 
 
-object&
-list::
-push_front(object&&  v) noexcept
+dn_object&
+dn_list::
+push_front(dn_object&&  v) noexcept
 {
   auto  nd = new node(std::move(v));
 
@@ -175,13 +174,13 @@ push_front(object&&  v) noexcept
   ++m_length;
 
 
-  return nd->m_object;
+  return nd->m_dn_object;
 }
 
 
-object&
-list::
-push_back(object&&  v)  noexcept
+dn_object&
+dn_list::
+push_back(dn_object&&  v)  noexcept
 {
   auto  nd = new node(std::move(v));
 
@@ -204,17 +203,17 @@ push_back(object&&  v)  noexcept
   ++m_length;
 
 
-  return nd->m_object;
+  return nd->m_dn_object;
 }
 
 
-object
-list::
+dn_object
+dn_list::
 pop_back()  noexcept
 {
     if(m_last)
     {
-      auto  v = std::move(m_last->m_object);
+      auto  v = std::move(m_last->m_dn_object);
 
       auto  new_last = m_last->m_prev;
 
@@ -234,17 +233,17 @@ pop_back()  noexcept
     }
 
 
-  return object();
+  return dn_object();
 }
 
 
-object
-list::
+dn_object
+dn_list::
 pop_front() noexcept
 {
     if(m_first)
     {
-      auto  v = std::move(m_first->m_object);
+      auto  v = std::move(m_first->m_dn_object);
 
       auto  new_first = m_first->m_next;
 
@@ -263,15 +262,15 @@ pop_front() noexcept
     }
 
 
-  return object();
+  return dn_object();
 }
 
 
 
 
-object&
-list::
-insert_before(iterator  it, object  v) noexcept
+dn_object&
+dn_list::
+insert_before(iterator  it, dn_object  v) noexcept
 {
   auto  nd = new node(std::move(v));
 
@@ -283,13 +282,13 @@ insert_before(iterator  it, object  v) noexcept
   ++m_length;
 
 
-  return nd->m_object;
+  return nd->m_dn_object;
 }
 
 
-object&
-list::
-insert_after(iterator  it, object  v) noexcept
+dn_object&
+dn_list::
+insert_after(iterator  it, dn_object  v) noexcept
 {
   auto  nd = new node(std::move(v));
 
@@ -301,12 +300,12 @@ insert_after(iterator  it, object  v) noexcept
   ++m_length;
 
 
-  return nd->m_object;
+  return nd->m_dn_object;
 }
 
 
-list::iterator
-list::
+dn_list::iterator
+dn_list::
 erase(iterator  it) noexcept
 {
     if(it)
@@ -323,8 +322,8 @@ erase(iterator  it) noexcept
 }
 
 
-object*
-list::
+dn_object*
+dn_list::
 find(std::string_view  name) const noexcept
 {
     for(auto&  o: *this)
@@ -343,7 +342,7 @@ find(std::string_view  name) const noexcept
 
 
 void
-list::
+dn_list::
 print() const noexcept
 {
   printf("{");
@@ -362,7 +361,7 @@ print() const noexcept
 
 
 
-}}
+}
 
 
 

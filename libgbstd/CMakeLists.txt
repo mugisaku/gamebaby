@@ -94,6 +94,10 @@ set(SOURCES
   vms/irs/ir_statement.cpp
   vms/irs/ir_function.cpp
   vms/irs/ir_global_space.cpp
+  vms/irs/ir_value.cpp
+  vms/irs/ir_memory.cpp
+  vms/irs/ir__assemble.cpp
+  vms/irs/ir_processor.cpp
 #  vms/assemblies/asm_parameter.cpp
 #  vms/assemblies/asm_line.cpp
 #  vms/assemblies/asm_context.cpp

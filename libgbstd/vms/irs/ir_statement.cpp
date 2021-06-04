@@ -153,12 +153,12 @@ print() const noexcept
     switch(m_kind)
     {
   case(kind::return_):
-      printf("<ret> ");
+      printf("ret ");
 
       gbstd::print(m_data.ret.operand());
       break;
   case(kind::branch):
-      printf("<br> ");
+      printf("br ");
 
       gbstd::print(m_data.br.operand());
 
@@ -167,12 +167,12 @@ print() const noexcept
       gbstd::print(m_data.br.label());
       break;
   case(kind::label):
-      printf("<lb> ");
+      printf("lb ");
 
       gbstd::print(m_data.lb.identifier());
       break;
   case(kind::store):
-      printf("<st> ");
+      printf("st ");
 
       m_data.st.type_info().print();
 
@@ -185,7 +185,7 @@ print() const noexcept
       gbstd::print(m_data.st.value_operand());
       break;
   case(kind::register_):
-      printf("<reg> ");
+      printf("reg ");
 
       gbstd::print(m_data.reg.identifier());
 

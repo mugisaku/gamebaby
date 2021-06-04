@@ -4,23 +4,22 @@
 
 
 namespace gbstd{
-namespace values{
 
 
 
 
-object&
-array::
+dn_object&
+dn_array::
 operator[](std::string_view  sv) const noexcept
 {
   auto  ptr = find(sv);
 
-  return ptr? *ptr:objects::null;
+  return ptr? *ptr:dn_objects::null;
 }
 
 
-array&
-array::
+dn_array&
+dn_array::
 assign(std::string_view  sv) noexcept
 {
   tokenizer  tknz;
@@ -33,8 +32,8 @@ assign(std::string_view  sv) noexcept
 }
 
 
-array&
-array::
+dn_array&
+dn_array::
 assign(token_iterator&  it) noexcept
 {
   clear();
@@ -43,7 +42,7 @@ assign(token_iterator&  it) noexcept
     {
         if(it->is_operator_code(")") || it->is_operator_code("}"))
         {
-          printf("array::assign error");
+          printf("dn_array::assign error");
 
           break;
         }
@@ -55,7 +54,7 @@ assign(token_iterator&  it) noexcept
         }
 
 
-      push(object(it));
+      push(dn_object(it));
     }
 
 
@@ -63,9 +62,9 @@ assign(token_iterator&  it) noexcept
 }
 
 
-array&
-array::
-assign(std::initializer_list<object>  ls) noexcept
+dn_array&
+dn_array::
+assign(std::initializer_list<dn_object>  ls) noexcept
 {
   resize(ls.size());
 
@@ -81,9 +80,9 @@ assign(std::initializer_list<object>  ls) noexcept
 }
 
 
-array&
-array::
-assign(const array&   rhs) noexcept
+dn_array&
+dn_array::
+assign(const dn_array&   rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -104,9 +103,9 @@ assign(const array&   rhs) noexcept
 }
 
 
-array&
-array::
-assign(array&&  rhs) noexcept
+dn_array&
+dn_array::
+assign(dn_array&&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -123,7 +122,7 @@ assign(array&&  rhs) noexcept
 
 
 void
-array::
+dn_array::
 clear() noexcept
 {
   delete[] m_data          ;
@@ -136,13 +135,13 @@ clear() noexcept
 
 
 void
-array::
+dn_array::
 reallocate(size_t  n) noexcept
 {
     if(m_number_of_elements < n)
     {
       auto  old_data = m_data               ;
-                       m_data = new object[n];
+                       m_data = new dn_object[n];
 
         for(int  i = 0;  i < m_length;  ++i)
         {
@@ -159,7 +158,7 @@ reallocate(size_t  n) noexcept
 
 
 void
-array::
+dn_array::
 resize(size_t  n) noexcept
 {
   reallocate(n);
@@ -168,9 +167,9 @@ resize(size_t  n) noexcept
 }
 
 
-object&
-array::
-push(object&&  v) noexcept
+dn_object&
+dn_array::
+push(dn_object&&  v) noexcept
 {
     if(m_length >= m_number_of_elements)
     {
@@ -188,8 +187,8 @@ push(object&&  v) noexcept
 }
 
 
-object&
-array::
+dn_object&
+dn_array::
 pop() noexcept
 {
   return m_data[--m_length];
@@ -198,8 +197,8 @@ pop() noexcept
 
 
 
-object*
-array::
+dn_object*
+dn_array::
 find(std::string_view  name) const noexcept
 {
     for(auto&  o: *this)
@@ -218,7 +217,7 @@ find(std::string_view  name) const noexcept
 
 
 void
-array::
+dn_array::
 print() const noexcept
 {
   printf("[");
@@ -237,7 +236,7 @@ print() const noexcept
 
 
 
-}}
+}
 
 
 

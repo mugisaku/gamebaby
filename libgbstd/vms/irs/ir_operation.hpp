@@ -13,6 +13,9 @@ namespace gbstd{
 
 
 
+constexpr size_t  max_size(size_t  sz) noexcept{return (sz+7)/8*8;}
+
+
 class
 ir_error
 {
@@ -36,14 +39,18 @@ public:
   constexpr bool  is_void()     const noexcept{return m_letter == 'v';}
   constexpr bool  is_integer()  const noexcept{return m_letter == 'i';}
   constexpr bool  is_floating() const noexcept{return m_letter == 'f';}
+  constexpr bool  is_object() const noexcept{return m_letter == 'o';}
 
-  constexpr int  size() const noexcept{return m_size;}
+  constexpr int      size() const noexcept{return m_size;}
+  constexpr int  max_size() const noexcept{return gbstd::max_size(m_size);}
 
   void  print() const noexcept
   {
          if(m_letter == 'v'){printf("void");}
     else if(m_letter == 'i'){printf("i%d",8*m_size);}
     else if(m_letter == 'f'){printf("f%d",8*m_size);}
+    else if(m_letter == 'o'){printf("o%d",m_size);}
+    else {printf("unknown");}
   }
 
 };
@@ -156,12 +163,16 @@ public:
 class
 ir_call_operation
 {
+  ir_type_info  m_type_info;
+
   std::u16string  m_identifier;
 
   std::vector<std::u16string>  m_argument_list;
 
 public:
   ir_call_operation(std::u16string_view  id, std::vector<std::u16string>&&  args) noexcept: m_identifier(id), m_argument_list(std::move(args)){}
+
+  ir_type_info  type_info() const noexcept{return m_type_info;}
 
   const std::u16string&  identifier() const noexcept{return m_identifier;}
 
@@ -188,10 +199,14 @@ public:
 class
 ir_phi_operation
 {
+  ir_type_info  m_type_info;
+
   std::vector<ir_phi_element>  m_element_list;
 
 public:
   ir_phi_operation(std::vector<ir_phi_element>&&  els) noexcept: m_element_list(std::move(els)){}
+
+  ir_type_info  type_info() const noexcept{return m_type_info;}
 
   const std::vector<ir_phi_element>&  element_list() const noexcept{return m_element_list;}
 
@@ -254,6 +269,8 @@ public:
   ir_operation&  assign(ir_phi_operation&&       phi) noexcept;
 
   void  clear() noexcept;
+
+  ir_type_info  type_info() const noexcept;
 
   bool  is_unary()   const noexcept{return m_kind == kind::unary;}
   bool  is_binary()  const noexcept{return m_kind == kind::binary;}

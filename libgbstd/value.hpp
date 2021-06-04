@@ -1,9 +1,10 @@
-#ifndef gbstd_value_HPP
-#define gbstd_value_HPP
+#ifndef gbstd_dn_HPP
+#define gbstd_dn_HPP
 
 
 #include"libgbstd/utility.hpp"
 #include"libgbstd/parser.hpp"
+#include"libgbstd/character.hpp"
 #include<new>
 #include<utility>
 #include<string>
@@ -12,19 +13,16 @@
 
 
 namespace  gbstd{
-namespace values{
 
 
-class array;
-class list;
+class dn_array;
+class dn_list;
 
 
 class
-object
+dn_object
 {
-  bool  m_has_name=false;
-
-  std::string  m_name;
+  std::u16string  m_name;
 
   enum class kind{
     null,
@@ -32,7 +30,7 @@ object
     integer,
     string,
     u16string,
-    real_number,
+    floating,
     list,
     array,
 
@@ -42,90 +40,81 @@ object
 
   union data{
     bool                 b;
-    int                  i;
+    int64_t              i;
     std::string          s;
     std::u16string    u16s;
-    double               r;
+    double               f;
 
-    array*     arr;
-    list*       ls;
+    dn_array*     arr;
+    dn_list*       ls;
 
     data(){}
    ~data(){}
 
   } m_data;
 
-  object(kind  k) noexcept: m_kind(k){}
+  dn_object(kind  k) noexcept: m_kind(k){}
 
 public:
-  object() noexcept{}
-  object(const object&   rhs) noexcept{assign(rhs);}
-  object(      object&&  rhs) noexcept{assign(std::move(rhs));}
- ~object(){clear();}
+  dn_object() noexcept{}
+  dn_object(const dn_object&   rhs) noexcept{assign(rhs);}
+  dn_object(      dn_object&&  rhs) noexcept{assign(std::move(rhs));}
+ ~dn_object(){clear();}
 
   template<class...  Args>
-  explicit object(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit dn_object(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
-  object&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  dn_object&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  object&  assign(token_iterator&  it) noexcept;
-  object&  assign(bool  b) noexcept;
-  object&  assign(int  i) noexcept;
-  object&  assign(double  f) noexcept;
-  object&  assign(std::string_view  sv) noexcept;
-  object&  assign(std::u16string_view  sv) noexcept;
-  object&  assign(array&&  arr) noexcept;
-  object&  assign(list&&  ls) noexcept;
-  object&  assign(const object&   rhs) noexcept;
-  object&  assign(      object&&  rhs) noexcept;
+  dn_object&  assign(token_iterator&  it) noexcept;
+  dn_object&  assign(bool  b) noexcept;
+  dn_object&  assign(int  i) noexcept{return assign(static_cast<int64_t>(i));}
+  dn_object&  assign(int64_t  i) noexcept;
+  dn_object&  assign(double  f) noexcept;
+  dn_object&  assign(std::string_view  sv) noexcept;
+  dn_object&  assign(std::u16string_view  sv) noexcept;
+  dn_object&  assign(dn_array&&  arr) noexcept;
+  dn_object&  assign(dn_list&&  ls) noexcept;
+  dn_object&  assign(const dn_object&   rhs) noexcept;
+  dn_object&  assign(      dn_object&&  rhs) noexcept;
 
   void  clear() noexcept;
 
-  const std::string&  get_name(                      ) const noexcept{return m_name;}
-  object&             set_name(std::string_view  name)       noexcept;
-  object&           unset_name(                      )       noexcept;
+  const std::u16string&  name() const noexcept{return m_name;}
 
-  bool  has_name() const noexcept{return m_has_name;}
-
-  bool  test_name(std::string_view  sv) const noexcept{return m_has_name && (m_name == sv);}
+  dn_object&  set_name(std::u16string_view  name) noexcept;
 
   bool  is_null()       const noexcept{return m_kind == kind::null;}
   bool  is_undefined()  const noexcept{return m_kind == kind::undefined;}
   bool  is_boolean()    const noexcept{return m_kind == kind::boolean;}
   bool  is_integer()    const noexcept{return m_kind == kind::integer;}
-  bool  is_real_number() const noexcept{return m_kind == kind::real_number;}
+  bool  is_floating()   const noexcept{return m_kind == kind::real_number;}
   bool  is_string()     const noexcept{return m_kind == kind::string;}
   bool  is_u16string()  const noexcept{return m_kind == kind::u16string;}
   bool  is_array()      const noexcept{return m_kind == kind::array;}
   bool  is_list()       const noexcept{return m_kind == kind::list;}
 
-  bool                   get_boolean()    const noexcept{return m_data.b;}
-  int                    get_integer()    const noexcept{return m_data.i;}
-  double                 get_real_number() const noexcept{return m_data.r;}
-  const std::string&     get_string()     const noexcept{return m_data.s;}
-  const std::u16string&  get_u16string()  const noexcept{return m_data.u16s;}
-  array&                 get_array()      const noexcept{return *m_data.arr;}
-  list&                  get_list()       const noexcept{return *m_data.ls;}
+  bool                   boolean()   const noexcept{return m_data.b;}
+  int64_t                integer()   const noexcept{return m_data.i;}
+  double                 floating()  const noexcept{return m_data.r;}
+  const std::string&     string()    const noexcept{return m_data.s;}
+  const std::u16string&  u16string() const noexcept{return m_data.u16s;}
+  dn_array&              array()     const noexcept{return *m_data.arr;}
+  dn_list&               list()      const noexcept{return *m_data.ls;}
 
-  static object  make_null() noexcept{return object(kind::null);}
-  static object  make_undefined() noexcept{return object(kind::undefined);}
+  static dn_object  make_null() noexcept{return dn_object(kind::null);}
+  static dn_object  make_undefined() noexcept{return dn_object(kind::undefined);}
 
   void  print() const noexcept;
 
 };
 
 
-namespace objects{
-extern object       null;
-extern object  undefined;
-}
-
-
 class
-array
+dn_array
 {
-  object*  m_data=nullptr;
+  dn_object*  m_data=nullptr;
 
   size_t  m_number_of_elements=0;
 
@@ -134,42 +123,42 @@ array
   void  reallocate(size_t  n) noexcept;
 
 public:
-  array() noexcept{}
-  array(const array&   rhs) noexcept{assign(rhs);}
-  array(      array&&  rhs) noexcept{assign(std::move(rhs));}
- ~array(){clear();}
+  dn_array() noexcept{}
+  dn_array(const dn_array&   rhs) noexcept{assign(rhs);}
+  dn_array(      dn_array&&  rhs) noexcept{assign(std::move(rhs));}
+ ~dn_array(){clear();}
 
   template<class...  Args>
-  explicit array(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit dn_array(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
-  array&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  dn_array&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  object&  operator[](int  i) const noexcept{return m_data[i];}
-  object&  operator[](std::string_view  sv) const noexcept;
+  dn_object&  operator[](int  i) const noexcept{return m_data[i];}
+  dn_object&  operator[](std::string_view  sv) const noexcept;
 
-  array&  assign(std::string_view  sv) noexcept;
-  array&  assign(token_iterator&  it) noexcept;
-  array&  assign(std::initializer_list<object>  ls) noexcept;
-  array&  assign(const array&   rhs) noexcept;
-  array&  assign(      array&&  rhs) noexcept;
+  dn_array&  assign(std::string_view  sv) noexcept;
+  dn_array&  assign(token_iterator&  it) noexcept;
+  dn_array&  assign(std::initializer_list<object>  ls) noexcept;
+  dn_array&  assign(const dn_array&   rhs) noexcept;
+  dn_array&  assign(      dn_array&&  rhs) noexcept;
 
   void  clear() noexcept;
 
   void  resize(size_t  n) noexcept;
 
-  object&  push(const object&   v) noexcept{return push(object(v));}
-  object&  push(      object&&  v) noexcept;
+  dn_object&  push(const dn_object&   v) noexcept{return push(object(v));}
+  dn_object&  push(      dn_object&&  v) noexcept;
 
-  object&   pop()       noexcept;
-  object&  back() const noexcept{return m_data[m_length-1];}
+  dn_object&   pop()       noexcept;
+  dn_object&  back() const noexcept{return m_data[m_length-1];}
 
-  object*  find(std::string_view  name) const noexcept;
+  dn_object*  find(std::string_view  name) const noexcept;
 
   size_t  size() const noexcept{return m_length;}
 
-  object*  begin() const noexcept{return m_data;}
-  object*    end() const noexcept{return m_data+m_length;}
+  dn_object*  begin() const noexcept{return m_data;}
+  dn_object*    end() const noexcept{return m_data+m_length;}
 
   void  print() const noexcept;
 
@@ -177,15 +166,15 @@ public:
 
 
 class
-list
+dn_list
 {
   struct node{
-    object  m_object;
+    dn_object  m_object;
 
     node*  m_prev;
     node*  m_next;
 
-    node(object&&  v) noexcept: m_object(std::move(v)){}
+    node(dn_object&&  v) noexcept: m_object(std::move(v)){}
   };
 
   node*  m_first=nullptr;
@@ -194,40 +183,40 @@ list
   size_t  m_length=0;
 
 public:
-  list() noexcept{}
-  list(const list&   rhs) noexcept{assign(rhs);}
-  list(      list&&  rhs) noexcept{assign(std::move(rhs));}
- ~list(){clear();}
+  dn_list() noexcept{}
+  dn_list(const dn_list&   rhs) noexcept{assign(rhs);}
+  dn_list(      dn_list&&  rhs) noexcept{assign(std::move(rhs));}
+ ~dn_list(){clear();}
 
   template<class...  Args>
-  explicit list(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit dn_list(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
-  list&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  dn_list&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  list&  assign(std::string_view  sv) noexcept;
-  list&  assign(token_iterator&  it) noexcept;
-  list&  assign(std::initializer_list<object>  ls) noexcept;
-  list&  assign(const list&   rhs) noexcept;
-  list&  assign(      list&&  rhs) noexcept;
+  dn_list&  assign(std::string_view  sv) noexcept;
+  dn_list&  assign(token_iterator&  it) noexcept;
+  dn_list&  assign(std::initializer_list<object>  ls) noexcept;
+  dn_list&  assign(const dn_list&   rhs) noexcept;
+  dn_list&  assign(      dn_list&&  rhs) noexcept;
 
   void  clear() noexcept;
 
   void  resize(size_t  n) noexcept;
 
-  object&  push_front(const object&   v) noexcept{return push_front(object(v));}
-  object&  push_front(      object&&  v) noexcept;
+  dn_object&  push_front(const dn_object&   v) noexcept{return push_front(object(v));}
+  dn_object&  push_front(      dn_object&&  v) noexcept;
 
-  object&  push_back(const object&   v)  noexcept{return push_back(object(v));}
-  object&  push_back(      object&&  v)  noexcept;
+  dn_object&  push_back(const dn_object&   v)  noexcept{return push_back(object(v));}
+  dn_object&  push_back(      dn_object&&  v)  noexcept;
 
-  object   pop_back()  noexcept;
-  object   pop_front() noexcept;
+  dn_object   pop_back()  noexcept;
+  dn_object   pop_front() noexcept;
 
-  object&  front() const noexcept{return m_first->m_object;}
-  object&   back() const noexcept{return m_last->m_object;}
+  dn_object&  front() const noexcept{return m_first->m_object;}
+  dn_object&   back() const noexcept{return m_last->m_object;}
 
-  object*  find(std::string_view  name) const noexcept;
+  dn_object*  find(std::string_view  name) const noexcept;
 
   size_t  size() const noexcept{return m_length;}
 
@@ -248,7 +237,7 @@ public:
     constexpr bool  operator==(node*  nd) const noexcept{return m_node == nd;}
     constexpr bool  operator!=(node*  nd) const noexcept{return m_node != nd;}
 
-    object&  operator*() const noexcept{return m_node->m_object;}
+    dn_object&  operator*() const noexcept{return m_node->m_object;}
 
     iterator&  operator++() noexcept
     {
@@ -289,8 +278,8 @@ public:
   iterator    end() const noexcept{return iterator(       );}
 
 
-  object&  insert_before(iterator  it, object  v) noexcept;
-  object&  insert_after( iterator  it, object  v) noexcept;
+  dn_object&  insert_before(iterator  it, dn_object  v) noexcept;
+  dn_object&  insert_after( iterator  it, dn_object  v) noexcept;
 
   iterator  erase(iterator  it) noexcept;
 
