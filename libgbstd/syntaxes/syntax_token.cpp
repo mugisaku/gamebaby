@@ -19,8 +19,8 @@ assign(const syntax_token&  rhs) noexcept
 
       m_kind = rhs.m_kind;
 
-      m_x_index = rhs.m_x_index;
-      m_y_index = rhs.m_y_index;
+      m_x_position = rhs.m_x_position;
+      m_y_position = rhs.m_y_position;
 
         switch(m_kind)
         {
@@ -55,8 +55,8 @@ assign(syntax_token&&  rhs) noexcept
 
       std::swap(m_kind,rhs.m_kind);
 
-      std::swap(m_x_index,rhs.m_x_index);
-      std::swap(m_y_index,rhs.m_y_index);
+      std::swap(m_x_position,rhs.m_x_position);
+      std::swap(m_y_position,rhs.m_y_position);
 
         switch(m_kind)
         {
@@ -178,17 +178,17 @@ clear() noexcept
 
   m_kind = kind::null;
 
-  m_x_index = 0;
-  m_y_index = 0;
+  m_x_position = 0;
+  m_y_position = 0;
 }
 
 
 void
 syntax_token::
-set_point(int  x, int  y) noexcept
+set_position(int  x, int  y) noexcept
 {
-  m_x_index = x;
-  m_y_index = y;
+  m_x_position = x;
+  m_y_position = y;
 }
 
 
@@ -204,7 +204,7 @@ print() const noexcept
 
   utf8_encoder  u8enc;
 
-  printf("[%4d,%4d]: ",1+m_y_index,1+m_x_index);
+  printf("[%4d,%4d]: ",1+m_y_position,1+m_x_position);
 
     switch(m_kind)
     {

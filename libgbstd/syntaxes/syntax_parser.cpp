@@ -12,7 +12,7 @@ syntax_parser::result
 syntax_parser::
 combine(result&&  l, result&&  r) noexcept
 {
-  l.branch().splice(r.release());
+  l.branch().append(r.release());
 
   return result(r.iterator(),l.release());
 }
@@ -22,7 +22,7 @@ combine(result&&  l, result&&  r) noexcept
 
 syntax_parser::result
 syntax_parser::
-process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it)
+process_or(const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -30,7 +30,7 @@ process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iter
     }
 
 
-  auto  res = process_by_operand(l,it);
+  auto  res = process_by_element(l,it);
 
     if(res)
     {
@@ -44,7 +44,7 @@ process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iter
     }
 
 
-  res = process_by_operand(r,it);
+  res = process_by_element(r,it);
 
     if(res)
     {
@@ -64,7 +64,7 @@ process_or(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iter
 
 syntax_parser::result
 syntax_parser::
-process_and(const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it)
+process_and(const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -72,11 +72,11 @@ process_and(const syntax_operand&  l, const syntax_operand&  r, syntax_token_ite
     }
 
 
-  auto  lres = process_by_operand(l,it);
+  auto  lres = process_by_element(l,it);
 
     if(lres)
     {
-      auto  rres = process_by_operand(r,lres.iterator());
+      auto  rres = process_by_element(r,lres.iterator());
 
         if(rres)
         {
@@ -91,7 +91,7 @@ process_and(const syntax_operand&  l, const syntax_operand&  r, syntax_token_ite
 
 syntax_parser::result
 syntax_parser::
-process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
+process_colon(const syntax_formula&  f, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -99,13 +99,13 @@ process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
     }
 
 
-  auto  lres = process_by_operand(*expr.left(),it);
+  auto  lres = process_by_element(*f.left(),it);
 
     if(lres)
     {
-      m_point_stack.emplace_back(it,expr);
+      m_point_stack.emplace_back(it,f);
 
-      auto  rres = process_by_operand(*expr.right(),lres.iterator());
+      auto  rres = process_by_element(*f.right(),lres.iterator());
 
         if(rres)
         {
@@ -127,19 +127,19 @@ process_colon(const syntax_expression&  expr, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
+process_by_formula(const syntax_formula&  f, syntax_token_iterator  it)
 {
-  auto  code = expr.code();
-  auto&  l = expr.left();
-  auto&  r = expr.right();
+  auto  code = f.code();
+  auto&    l = f.left();
+  auto&    r = f.right();
 
        if(code == '|'){return process_or( *l,*r,it);}
   else if(code == '&'){return process_and(*l,*r,it);}
-  else if(code == ':'){return process_colon(expr,it);}
+  else if(code == ':'){return process_colon(f,it);}
   else
     if(l)
     {
-      auto  res = process_by_operand(*l,it);
+      auto  res = process_by_element(*l,it);
 
         if(res)
         {
@@ -154,11 +154,11 @@ process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
+process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
-      gbstd::print(def.get_name());
+      gbstd::print(f.name());
       printf("による解析を開始\n");
     }
 
@@ -173,7 +173,7 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
     }
 
 
-  auto  res = process_by_expression(def,it);
+  auto  res = process_by_formula(f,it);
 
   --m_depth;
 
@@ -181,20 +181,18 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
     {
         if(m_debugging)
         {
-          gbstd::print(def.get_name());
+          gbstd::print(f.name());
           printf("による解析は成功 \n");
         }
 
 
-      syntax_branch_element  e(*it,def,res.release());
-
-      return result(res.iterator(),syntax_branch(std::move(e)));
+      return result(res.iterator(),syntax_branch(f.name(),res.release()));
     }
 
   else
     if(m_debugging)
     {
-      gbstd::print(def.get_name());
+      gbstd::print(f.name());
       printf("による解析は失敗\n");
     }
 
@@ -205,13 +203,29 @@ process_by_definition(const syntax_definition&  def, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-step(const syntax_definition&  def, syntax_token_iterator  it)
+process_by_reference(std::u16string_view  name, syntax_token_iterator  it)
+{
+  auto  f = m_rule->find(name);
+
+    if(f)
+    {
+      return process_by_named_formula(*f,it);
+    }
+
+
+  return result();
+}
+
+
+syntax_parser::result
+syntax_parser::
+step(const syntax_formula&  f, syntax_token_iterator  it)
 {
   m_depth = 0;
 
   m_point_stack.clear();
 
-  auto  res = process_by_definition(def,it);
+  auto  res = process_by_named_formula(f,it);
 
     if(res)
     {
@@ -263,7 +277,7 @@ start(const syntax_branch_source&  src)
     }
 
 
-  auto&  def = m_rule->first();
+  auto&  f = m_rule->first();
 
   syntax_branch  br;
 
@@ -276,7 +290,7 @@ start(const syntax_branch_source&  src)
 
         while(*it)
         {
-          auto  res = step(def,it);
+          auto  res = step(f,it);
 
             if(res)
             {
@@ -284,7 +298,7 @@ start(const syntax_branch_source&  src)
 
               it.skip();
 
-              br.splice(res.release());
+              br.append(res.release());
             }
 
           else
@@ -301,7 +315,7 @@ start(const syntax_branch_source&  src)
         {
           pt.iterator()->print();
 
-          pt.expression().print();
+          pt.formula().print();
  
           printf("\n");
         }

@@ -249,7 +249,7 @@ step()
     }
 
 
-  m_buffer.back().set_point(x,y);
+  m_buffer.back().set_position(x,y);
 }
 
 

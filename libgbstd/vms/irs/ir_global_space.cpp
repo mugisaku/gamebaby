@@ -25,7 +25,7 @@ make_parameter_list(const syntax_branch&  br) noexcept
 
     for(auto&  e: br)
     {
-        if(e.is_definition(u"parameter"))
+        if(e.is_branch(u"parameter"))
         {
           ls.emplace_back(make_parameter(e.branch()));
         }
@@ -41,8 +41,8 @@ make_define_operation(const syntax_branch&  br) noexcept
 {
   auto&  tok = br[1].token();
 
-  return tok.is_integer()? ir_define_operation(tok.get_integer())
-        :                  ir_define_operation(tok.get_floating())
+  return tok.is_integer()? ir_define_operation(tok.integer())
+        :                  ir_define_operation(tok.floating())
         ;
 }
 
@@ -67,16 +67,6 @@ make_binary_operation(const syntax_branch&  br) noexcept
   auto     o2 = make_string_view(br[2]);
 
   return ir_binary_operation(opco1,opco2,o1,o2);
-}
-
-
-ir_load_operation
-make_load_operation(const syntax_branch&  br) noexcept
-{
-  auto  ti = make_type_info(br[0].branch());
-  auto  id = make_string_view(br[1]);
-
-  return ir_load_operation(ti,id);
 }
 
 
@@ -108,13 +98,12 @@ make_operation(const syntax_branch&  br) noexcept
 
   auto&  e = br[0];
 
-       if(e.is_definition(u"define_operation") ){op = make_define_operation(e.branch());}
-  else if(e.is_definition(u"unary_operation")  ){op = make_unary_operation(e.branch());}
-  else if(e.is_definition(u"binary_operation") ){op = make_binary_operation(e.branch());}
-  else if(e.is_definition(u"load_operation")   ){op = make_load_operation(e.branch());}
-  else if(e.is_definition(u"address_operation")){op = make_address_operation(e.branch());}
-  else if(e.is_definition(u"call_operation")   ){op = make_call_operation(e.branch());}
-  else if(e.is_definition(u"phi_operation")    ){op = make_phi_operation(e.branch());}
+       if(e.is_branch(u"define_operation") ){op = make_define_operation(e.branch());}
+  else if(e.is_branch(u"unary_operation")  ){op = make_unary_operation(e.branch());}
+  else if(e.is_branch(u"binary_operation") ){op = make_binary_operation(e.branch());}
+  else if(e.is_branch(u"address_operation")){op = make_address_operation(e.branch());}
+  else if(e.is_branch(u"call_operation")   ){op = make_call_operation(e.branch());}
+  else if(e.is_branch(u"phi_operation")    ){op = make_phi_operation(e.branch());}
   else{}
 
 
@@ -176,11 +165,11 @@ make_statement(const syntax_branch&  br) noexcept
 
   auto&  e = br[0];
 
-       if(e.is_definition(u"register_statement")){stmt = make_register_statement(e.branch());}
-  else if(e.is_definition(u"return_statement")  ){stmt = make_return_statement(e.branch());}
-  else if(e.is_definition(u"branch_statement")  ){stmt = make_branch_statement(e.branch());}
-  else if(e.is_definition(u"label_statement")   ){stmt = make_label_statement(e.branch());}
-  else if(e.is_definition(u"store_statement")   ){stmt = make_store_statement(e.branch());}
+       if(e.is_branch(u"register_statement")){stmt = make_register_statement(e.branch());}
+  else if(e.is_branch(u"return_statement")  ){stmt = make_return_statement(e.branch());}
+  else if(e.is_branch(u"branch_statement")  ){stmt = make_branch_statement(e.branch());}
+  else if(e.is_branch(u"label_statement")   ){stmt = make_label_statement(e.branch());}
+  else if(e.is_branch(u"store_statement")   ){stmt = make_store_statement(e.branch());}
   else{;}
 
 
@@ -195,7 +184,7 @@ make_statement_list(const syntax_branch&  br) noexcept
 
     for(auto&  e: br)
     {
-        if(e.is_definition(u"statement"))
+        if(e.is_branch(u"statement"))
         {
           ls.emplace_back(make_statement(e.branch()));
         }
@@ -232,11 +221,7 @@ make_type_info(const syntax_branch&  br) noexcept
 std::u16string_view
 make_string_view(const syntax_branch_element&  e) noexcept
 {
-  auto&  o = e.operand();
-
-  return (o.is_identifier() || o.is_keyword())? e.token().get_string()
-        :o.is_definition()? make_string_view(e.branch()[0])
-        :u"<make_string_view_failed>";
+  return u"<make_string_view_failed>";
 }
 
 
@@ -260,11 +245,11 @@ assign(const syntax_branch&  br) noexcept
 
     for(auto&  e: br)
     {
-        if(e.is_definition(u"element"))
+        if(e.is_branch(u"element"))
         {
             for(auto&  ee: e.branch())
             {
-                if(ee.is_definition(u"function_declaration"))
+                if(ee.is_branch(u"function_declaration"))
                 {
                   auto  fn = make_function(ee.branch());
 

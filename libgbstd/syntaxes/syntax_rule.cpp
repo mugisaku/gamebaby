@@ -12,13 +12,13 @@ void
 syntax_rule::
 start_read(syntax_token_iterator&  it)
 {
-  auto&  name = it++->get_string();
+  auto&  name = it++->string();
 
-  auto  def = find(name);
+  auto  f = find(name);
 
-    if(!def)
+    if(!f)
     {
-      def = &m_definition_list.emplace_back(name);
+      f = &m_formula_list.emplace_back();
     }
 
 
@@ -26,7 +26,9 @@ start_read(syntax_token_iterator&  it)
 
     if(it->is_others(u'='))
     {
-      static_cast<syntax_definition&>(*def).assign(read_expression(';',++it));
+      *f = read_formula(';',++it);
+
+      f->set_name(name);
     }
 
   else
@@ -46,19 +48,19 @@ start_read(syntax_token_iterator&  it)
 
 syntax_rule::wrapper
 syntax_rule::
-read_expression_internal(syntax_token_iterator&  it)
+read_formula_internal(syntax_token_iterator&  it)
 {
     if(it->is_others(u'|') ||
        it->is_others(u'&') ||
        it->is_others(u':'))
     {
-      return wrapper(static_cast<int>(it++->get_integer()));
+      return wrapper(static_cast<int>(it++->integer()));
     }
 
   else
     if(it->is_string())
     {
-      return syntax_operand(std::u16string_view(it++->get_string()));
+      return syntax_element(std::u16string_view(it++->string()));
     }
 
   else
@@ -69,81 +71,81 @@ read_expression_internal(syntax_token_iterator&  it)
         if(it[0].is_identifier() &&
            it[1].is_others(u'>'))
         {
-          syntax_keyword  k(it->get_string());
+          syntax_keyword  k(it->string());
 
           it += 2;
 
-          return syntax_operand(std::move(k));
+          return syntax_element(std::move(k));
         }
     }
 
   else
     if(it->is_others(u'('))
     {
-      auto  e = read_expression(u')',++it);
+      auto  f = read_formula(u')',++it);
 
-      return syntax_operand(std::move(e));
+      return syntax_element(std::move(f));
     }
 
   else
     if(it->is_others(u'['))
     {
-      syntax_optional_expression  e(read_expression(u']',++it));
+      syntax_optional_formula  f(read_formula(u']',++it));
 
-      return syntax_operand(std::move(e));
+      return syntax_element(std::move(f));
     }
 
   else
     if(it->is_others(u'{'))
     {
-      syntax_multiple_expression  e(read_expression(u'}',++it));
+      syntax_multiple_formula  f(read_formula(u'}',++it));
 
-      return syntax_operand(std::move(e));
+      return syntax_element(std::move(f));
     }
 
   else
     if(it->is_identifier())
     {
-      auto&  name = it++->get_string();
+      auto&  name = it++->string();
 
         if((name == u"integer_literal") ||
            (name == u"floating_literal") ||
            (name == u"string_literal") ||
            (name == u"identifier"))
         {
-          return syntax_operand(std::u16string_view(name));
+          return syntax_element(std::u16string_view(name));
         }
 
       else
         {
-          auto  def = find(name);
+          auto  f = find(name);
 
-            if(!def)
+            if(!f)
             {
-              def = &m_definition_list.emplace_back(name);
+              f = &m_formula_list.emplace_back(name);
             }
 
 
-          return syntax_operand(*def);
+          return syntax_element(syntax_reference(name));
         }
     }
 
 
-  printf("read_expression_internal: 不正な要素");
+  printf("read_formula_internal: 不正な要素");
 
-  throw syntax_expression_error();
+  throw syntax_formula_error();
 }
 
 
-syntax_expression
+syntax_formula
 syntax_rule::
-make_expression(std::vector<wrapper>&&  stk)
+make_formula(std::vector<wrapper>&&  stk)
 {
-  std::vector<syntax_operand>  output;
+  std::vector<syntax_element>  output;
 
     if(0)
     {
-      printf("expression作成開始: %d\n",(int)stk.size());
+      printf("formula作成開始: %d\n",(int)stk.size());
     }
 
 
@@ -153,9 +155,9 @@ make_expression(std::vector<wrapper>&&  stk)
         {
             if(output.size() < 2)
             {
-              printf("make_expression: 不正な要素数");
+              printf("make_formula: 不正な要素数");
 
-              throw syntax_expression_error();
+              throw syntax_formula_error();
             }
 
 
@@ -167,7 +169,7 @@ make_expression(std::vector<wrapper>&&  stk)
 
           output.pop_back();
 
-          syntax_expression  expr;
+          syntax_formula  expr;
 
           expr.set_code(wr.code())
               .set_left(std::move(l))
@@ -179,7 +181,7 @@ make_expression(std::vector<wrapper>&&  stk)
 
       else
         {
-          output.emplace_back(std::move(wr.operand()));
+          output.emplace_back(std::move(wr.element()));
         }
     }
 
@@ -190,17 +192,17 @@ make_expression(std::vector<wrapper>&&  stk)
 
         if(0)
         {
-          printf("expression作成成功: ");
+          printf("formula作成成功: ");
           e.print();
           print_nl();
         }
 
 
-      return syntax_expression(std::move(e));
+      return syntax_formula(std::move(e));
     }
 
 
-  printf("expression作成失敗: %d\n",(int)output.size());
+  printf("formula作成失敗: %d\n",(int)output.size());
 
     for(auto&  e: output)
     {
@@ -210,13 +212,13 @@ make_expression(std::vector<wrapper>&&  stk)
     }
 
 
-  throw syntax_expression_error();
+  throw syntax_formula_error();
 }
 
 
-syntax_expression
+syntax_formula
 syntax_rule::
-read_expression(char16_t  close, syntax_token_iterator&  it)
+read_formula(char16_t  close, syntax_token_iterator&  it)
 {
   std::vector<wrapper>  stack;
 
@@ -247,7 +249,7 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
 
             try
             {
-              auto  wr = read_expression_internal(it);
+              auto  wr = read_formula_internal(it);
 
                 if(wr.is_code())
                 {
@@ -262,7 +264,7 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
 
               else
                 {
-                    if(wr.operand().is_null())
+                    if(wr.element().is_null())
                     {
                       tmp_it->print();
                     }
@@ -273,7 +275,7 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
             }
 
 
-            catch(syntax_expression_error&  e)
+            catch(syntax_formula_error&  e)
             {
               it->print();
 
@@ -284,11 +286,11 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
 
             if(it == tmp_it)
             {
-              printf("read_expression: ループに陥ったので停止した\n");
+              printf("read_formula: ループに陥ったので停止した\n");
 
               tmp_it->print();
 
-              throw syntax_expression_error();
+              throw syntax_formula_error();
             }
         }
     }
@@ -300,7 +302,7 @@ read_expression(char16_t  close, syntax_token_iterator&  it)
     }
 
 
-  return stack.empty()? syntax_expression():make_expression(std::move(stack));
+  return stack.empty()? syntax_formula():make_formula(std::move(stack));
 }
 
 
@@ -308,7 +310,7 @@ syntax_rule&
 syntax_rule::
 assign(std::string_view  sv) noexcept
 {
-  m_definition_list.clear();
+  m_formula_list.clear();
 
   return append(sv);
 }
@@ -318,7 +320,7 @@ syntax_rule&
 syntax_rule::
 assign(std::u16string_view  sv) noexcept
 {
-  m_definition_list.clear();
+  m_formula_list.clear();
 
   return append(sv);
 }
@@ -387,15 +389,15 @@ append(std::u16string_view  sv) noexcept
 }
 
 
-syntax_definition*
+syntax_formula*
 syntax_rule::
 find(std::u16string_view  name) noexcept
 {
-    for(auto&  def: m_definition_list)
+    for(auto&  f: m_formula_list)
     {
-        if(def.get_name() == name)
+        if(f.name() == name)
         {
-          return &def;
+          return &f;
         }
     }
 
@@ -404,15 +406,15 @@ find(std::u16string_view  name) noexcept
 }
 
 
-const syntax_definition*
+const syntax_formula*
 syntax_rule::
 find(std::u16string_view  name) const noexcept
 {
-    for(auto&  def: m_definition_list)
+    for(auto&  f: m_formula_list)
     {
-        if(def.get_name() == name)
+        if(f.name() == name)
         {
-          return &def;
+          return &f;
         }
     }
 
@@ -425,11 +427,11 @@ void
 syntax_rule::
 print() const noexcept
 {
-    for(auto&  def: m_definition_list)
+    for(auto&  f: m_formula_list)
     {
-      def.print();
+      f.print();
 
-      printf("\n");
+      printf(";\n");
     }
 }
 
@@ -445,9 +447,9 @@ print() const noexcept
 
   else
     {
-      printf("operand: ");
+      printf("element: ");
 
-      m_operand.print();
+      m_element.print();
     }
 }
 

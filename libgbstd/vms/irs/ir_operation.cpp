@@ -23,8 +23,8 @@ assign(const ir_operation&  rhs) noexcept
       case(kind::unary  ): new(&m_data) ir_unary_operation(rhs.m_data.un);break;
       case(kind::binary ): new(&m_data) ir_binary_operation(rhs.m_data.bin);break;
       case(kind::define ): new(&m_data) ir_define_operation(rhs.m_data.def);break;
-      case(kind::load   ): new(&m_data) ir_load_operation(rhs.m_data.ld);break;
       case(kind::address): new(&m_data) ir_address_operation(rhs.m_data.addr);break;
+      case(kind::load   ): new(&m_data) ir_load_operation(rhs.m_data.ld);break;
       case(kind::call   ): new(&m_data) ir_call_operation(rhs.m_data.cal);break;
       case(kind::phi    ): new(&m_data) ir_phi_operation(rhs.m_data.phi);break;
         }
@@ -50,8 +50,8 @@ assign(ir_operation&&  rhs) noexcept
       case(kind::unary  ): new(&m_data) ir_unary_operation(std::move(rhs.m_data.un));break;
       case(kind::binary ): new(&m_data) ir_binary_operation(std::move(rhs.m_data.bin));break;
       case(kind::define ): new(&m_data) ir_define_operation(std::move(rhs.m_data.def));break;
-      case(kind::load   ): new(&m_data) ir_load_operation(std::move(rhs.m_data.ld));break;
       case(kind::address): new(&m_data) ir_address_operation(std::move(rhs.m_data.addr));break;
+      case(kind::load   ): new(&m_data) ir_load_operation(std::move(rhs.m_data.ld));break;
       case(kind::call   ): new(&m_data) ir_call_operation(std::move(rhs.m_data.cal));break;
       case(kind::phi    ): new(&m_data) ir_phi_operation(std::move(rhs.m_data.phi));break;
         }
@@ -99,20 +99,6 @@ assign(ir_define_operation&&  def) noexcept
   m_kind = kind::define;
 
   new(&m_data) ir_define_operation(std::move(def));
-
-  return *this;
-}
-
-
-ir_operation&
-ir_operation::
-assign(ir_load_operation&&  ld) noexcept
-{
-  clear();
-
-  m_kind = kind::load;
-
-  new(&m_data) ir_load_operation(std::move(ld));
 
   return *this;
 }
@@ -169,8 +155,8 @@ clear() noexcept
   case(kind::unary  ): std::destroy_at(&m_data.un);break;
   case(kind::binary ): std::destroy_at(&m_data.bin);break;
   case(kind::define ): std::destroy_at(&m_data.def);break;
-  case(kind::load   ): std::destroy_at(&m_data.ld);break;
   case(kind::address): std::destroy_at(&m_data.addr);break;
+  case(kind::load   ): std::destroy_at(&m_data.ld);break;
   case(kind::call   ): std::destroy_at(&m_data.cal);break;
   case(kind::phi    ): std::destroy_at(&m_data.phi);break;
     }
@@ -206,11 +192,11 @@ type_info() const noexcept
             :                         f64_ti
             ;
       break;
-  case(kind::load):
-      return m_data.ld.type_info();
-      break;
   case(kind::address):
       return i64_ti;
+      break;
+  case(kind::load):
+      return m_data.ld.type_info();
       break;
   case(kind::call):
       return m_data.cal.type_info();
@@ -255,17 +241,19 @@ print() const noexcept
            if(m_data.def.is_integer() ){printf("%" PRIu64,m_data.def.integer());}
       else if(m_data.def.is_floating()){printf("%f",m_data.def.floating());}
       break;
+  case(kind::address):
+      printf("addr ");
+
+      gbstd::print(m_data.addr.identifier());
+      break;
   case(kind::load):
       printf("ld ");
 
       m_data.ld.type_info().print();
 
-      gbstd::print(m_data.ld.address_operand());
-      break;
-  case(kind::address):
-      printf("addr ");
+      printf(" ");
 
-      gbstd::print(m_data.addr.identifier());
+      gbstd::print(m_data.ld.pointer_label());
       break;
   case(kind::call):
       printf("cal ");

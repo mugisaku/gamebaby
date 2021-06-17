@@ -14,11 +14,8 @@ assign(const syntax_branch_element&  rhs) noexcept
 {
     if(this != &rhs)
     {
-      clear();
-
-      m_token   = rhs.m_token;
-      m_operand = rhs.m_operand;
-      m_branch  = rhs.m_branch;
+      m_token  = rhs.m_token;
+      m_branch = rhs.m_branch;
     }
 
 
@@ -32,11 +29,8 @@ assign(syntax_branch_element&&  rhs) noexcept
 {
     if(this != &rhs)
     {
-      clear();
-
-      std::swap(m_token  ,rhs.m_token);
-      std::swap(m_operand,rhs.m_operand);
-      std::swap(m_branch ,rhs.m_branch);
+      std::swap(m_token ,rhs.m_token );
+      std::swap(m_branch,rhs.m_branch);
     }
 
 
@@ -46,13 +40,9 @@ assign(syntax_branch_element&&  rhs) noexcept
 
 syntax_branch_element&
 syntax_branch_element::
-assign(const syntax_token&  tok, const syntax_operand&  o) noexcept
+assign(const syntax_token&  tok) noexcept
 {
-  clear();
-
   m_token = &tok;
-
-  m_operand = o;
 
   return *this;
 }
@@ -60,15 +50,11 @@ assign(const syntax_token&  tok, const syntax_operand&  o) noexcept
 
 syntax_branch_element&
 syntax_branch_element::
-assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&&  br) noexcept
+assign(syntax_branch&&  bra) noexcept
 {
-  clear();
+  m_token = nullptr;
 
-  m_token = &tok;
-
-  m_operand.assign(def);
-
-  m_branch = std::move(br);
+  m_branch = std::move(bra);
 
   return *this;
 }
@@ -78,44 +64,24 @@ assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&& 
 
 void
 syntax_branch_element::
-clear() noexcept
+print(int  indent) const noexcept
 {
-  m_token = nullptr;
-
-  m_operand.clear();
-
-  m_branch.cut_back();
-}
-
-
-syntax_branch
-syntax_branch_element::
-cut_child() noexcept
-{
-  m_operand.clear();
-
-  return std::move(m_branch);
-}
-
-
-void
-syntax_branch_element::
-print() const noexcept
-{
-    if(m_operand.is_definition())
+    for(int  n = indent;  n;  --n)
     {
-      gbstd::print(m_operand.get_definition().get_name());
+      printf("  ");
+    }
 
-      printf("{\n");
 
-      m_branch.print();
+    if(is_token())
+    {
+      m_token->print();
 
-      printf("}\n");
+      printf("\n");
     }
 
   else
     {
-      m_operand.print();
+      m_branch.print(indent+1);
     }
 }
 

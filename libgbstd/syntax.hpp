@@ -53,8 +53,8 @@ syntax_token
    ~data()         {}
   } m_data;
 
-  int  m_x_index=0;
-  int  m_y_index=0;
+  int  m_x_position=0;
+  int  m_y_position=0;
 
 public:
   syntax_token() noexcept{}
@@ -88,11 +88,19 @@ public:
   bool  is_others()     const noexcept{return m_kind == kind::others;}
   bool  is_others(char16_t  c) const noexcept{return is_others() && (static_cast<char16_t>(m_data.i) == c);}
 
-  uint64_t               get_integer()  const noexcept{return m_data.i;}
-  double                 get_floating() const noexcept{return m_data.f;}
-  const std::u16string&  get_string()   const noexcept{return m_data.s;}
+  bool      is_string(std::u16string_view  sv) const noexcept{return     is_string() && (m_data.s == sv);}
+  bool  is_identifier(std::u16string_view  sv) const noexcept{return is_identifier() && (m_data.s == sv);}
 
-  void  set_point(int  x, int  y) noexcept;
+  bool  is(std::u16string_view  sv) const noexcept{return (is_string() || is_identifier()) && (m_data.s == sv);}
+
+  uint64_t                integer() const noexcept{return m_data.i;}
+  double                 floating() const noexcept{return m_data.f;}
+  const std::u16string&    string() const noexcept{return m_data.s;}
+
+  void  set_position(int  x, int  y) noexcept;
+
+  int  x_position() const noexcept{return m_x_position;}
+  int  y_position() const noexcept{return m_y_position;}
 
   void  print() const noexcept;
 
@@ -179,51 +187,57 @@ syntax_token_string  make_token_string(std::u16string_view  sv);
 
 
 
-class syntax_operand;
-class syntax_expression;
-class syntax_definition;
+class syntax_element;
+class syntax_formula;
 
 
 class
-syntax_expression_error
+syntax_formula_error
 {
 };
 
 
 class
-syntax_expression
+syntax_formula
 {
 public:
-  using pointer = std::unique_ptr<syntax_operand>;
+  using pointer = std::unique_ptr<syntax_element>;
 
 private:
-  int  m_code;
+  std::u16string  m_name;
+
+  int  m_code=0;
 
   pointer  m_left ;
   pointer  m_right;
 
 public:
-  syntax_expression() noexcept{}
-  syntax_expression(const syntax_expression&   rhs) noexcept{assign(rhs);}
-  syntax_expression(      syntax_expression&&  rhs) noexcept{assign(std::move(rhs));}
+  syntax_formula() noexcept{}
+  syntax_formula(const std::u16string&  name) noexcept: m_name(name){}
+  syntax_formula(std::u16string_view  name) noexcept: m_name(name){}
+  syntax_formula(const syntax_formula&   rhs) noexcept{assign(rhs);}
+  syntax_formula(      syntax_formula&&  rhs) noexcept{assign(std::move(rhs));}
 
   template<class... Args>
-  syntax_expression(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  syntax_formula(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
-  syntax_expression&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  syntax_formula&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  syntax_expression&  operator=(const syntax_expression&   rhs) noexcept{return assign(rhs);}
-  syntax_expression&  operator=(      syntax_expression&&  rhs) noexcept{return assign(std::move(rhs));}
+  syntax_formula&  operator=(const syntax_formula&   rhs) noexcept{return assign(rhs);}
+  syntax_formula&  operator=(      syntax_formula&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  syntax_expression&  assign(const syntax_expression&   rhs) noexcept;
-  syntax_expression&  assign(      syntax_expression&&  rhs) noexcept;
-  syntax_expression&  assign(int  c, syntax_operand&&  l, syntax_operand&&  r) noexcept;
-  syntax_expression&  assign(syntax_operand&&  e) noexcept;
+  syntax_formula&  assign(const syntax_formula&   rhs) noexcept;
+  syntax_formula&  assign(      syntax_formula&&  rhs) noexcept;
+  syntax_formula&  assign(int  c, syntax_element&&  l, syntax_element&&  r) noexcept;
+  syntax_formula&  assign(syntax_element&&  e) noexcept;
 
-  syntax_expression&  set_code(int  c) noexcept{  m_code = c;  return *this;}
-  syntax_expression&   set_left(syntax_operand&&  e) noexcept;
-  syntax_expression&  set_right(syntax_operand&&  e) noexcept;
+  syntax_formula&  set_name(std::u16string_view  name) noexcept{  m_name = name;  return *this;}
+  syntax_formula&  set_code(int  c) noexcept{  m_code = c;  return *this;}
+  syntax_formula&   set_left(syntax_element&&  e) noexcept;
+  syntax_formula&  set_right(syntax_element&&  e) noexcept;
+
+  const std::u16string&  name() const noexcept{return m_name;}
 
   int  code() const noexcept{return m_code;}
 
@@ -245,40 +259,55 @@ public:
   explicit syntax_keyword(std::u16string_view  sv) noexcept: m_string(sv){}
   explicit syntax_keyword(std::u16string&&  s) noexcept: m_string(std::move(s)){}
 
-        std::u16string&  get_string()       noexcept{return m_string;}
-  const std::u16string&  get_string() const noexcept{return m_string;}
+        std::u16string&  string()       noexcept{return m_string;}
+  const std::u16string&  string() const noexcept{return m_string;}
 
 };
 
 
 class
-syntax_optional_expression
+syntax_reference
 {
-  syntax_expression  m_expression;
+  std::u16string  m_string;
 
 public:
-  explicit syntax_optional_expression(syntax_expression&&  e) noexcept: m_expression(std::move(e)){}
+  explicit syntax_reference(std::u16string_view  sv) noexcept: m_string(sv){}
+  explicit syntax_reference(std::u16string&&  s) noexcept: m_string(std::move(s)){}
 
-  syntax_expression&  get_expression() noexcept{return m_expression;}
+        std::u16string&  string()       noexcept{return m_string;}
+  const std::u16string&  string() const noexcept{return m_string;}
 
 };
 
 
 class
-syntax_multiple_expression
+syntax_optional_formula
 {
-  syntax_expression  m_expression;
+  syntax_formula  m_formula;
 
 public:
-  explicit syntax_multiple_expression(syntax_expression&&  e) noexcept: m_expression(std::move(e)){}
+  explicit syntax_optional_formula(syntax_formula&&  f) noexcept: m_formula(std::move(f)){}
 
-  syntax_expression&  get_expression() noexcept{return m_expression;}
+  syntax_formula&  formula() noexcept{return m_formula;}
 
 };
 
 
 class
-syntax_operand
+syntax_multiple_formula
+{
+  syntax_formula  m_formula;
+
+public:
+  explicit syntax_multiple_formula(syntax_formula&&  f) noexcept: m_formula(std::move(f)){}
+
+  syntax_formula&  formula() noexcept{return m_formula;}
+
+};
+
+
+class
+syntax_element
 {
   enum class kind{
     null,
@@ -290,16 +319,15 @@ syntax_operand
 
     keyword,
     string,
-    expression,
-    optional_expression,
-    multiple_expression,
-    definition,
+    formula,
+    optional_formula,
+    multiple_formula,
+    reference,
   } m_kind=kind::null;
 
   union data{
-    std::u16string            str;
-    syntax_expression        expr;
-    const syntax_definition*  def;
+    std::u16string  s;
+    syntax_formula  f;
 
   data() noexcept{}
  ~data()         {}
@@ -307,29 +335,30 @@ syntax_operand
   } m_data;
 
 public:
-  syntax_operand() noexcept{}
-  syntax_operand(const syntax_operand&   rhs) noexcept{assign(rhs);}
-  syntax_operand(      syntax_operand&&  rhs) noexcept{assign(std::move(rhs));}
- ~syntax_operand(){clear();}
+  syntax_element() noexcept{}
+  syntax_element(const syntax_element&   rhs) noexcept{assign(rhs);}
+  syntax_element(      syntax_element&&  rhs) noexcept{assign(std::move(rhs));}
+ ~syntax_element(){clear();}
 
   template<class... Args>
-  syntax_operand(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  syntax_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class... Args>
-  syntax_operand&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+  syntax_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  syntax_operand&  operator=(const syntax_operand&   rhs) noexcept{return assign(rhs);}
-  syntax_operand&  operator=(      syntax_operand&&  rhs) noexcept{return assign(std::move(rhs));}
+  syntax_element&  operator=(const syntax_element&   rhs) noexcept{return assign(rhs);}
+  syntax_element&  operator=(      syntax_element&&  rhs) noexcept{return assign(std::move(rhs));}
 
-  syntax_operand&  assign(const syntax_operand&   rhs) noexcept;
-  syntax_operand&  assign(      syntax_operand&&  rhs) noexcept;
-  syntax_operand&  assign(std::u16string_view  sv) noexcept;
-  syntax_operand&  assign(std::u16string&&  s) noexcept;
-  syntax_operand&  assign(syntax_keyword&&  kw) noexcept;
-  syntax_operand&  assign(syntax_expression&&  exp) noexcept;
-  syntax_operand&  assign(syntax_optional_expression&&  exp) noexcept;
-  syntax_operand&  assign(syntax_multiple_expression&&  exp) noexcept;
-  syntax_operand&  assign(const syntax_definition&  def) noexcept;
+  syntax_element&  assign(const syntax_element&   rhs) noexcept;
+  syntax_element&  assign(      syntax_element&&  rhs) noexcept;
+  syntax_element&  assign(std::u16string_view  sv) noexcept;
+  syntax_element&  assign(const std::u16string  s) noexcept{return assign(std::u16string_view(s));}
+  syntax_element&  assign(std::u16string&&  s) noexcept;
+  syntax_element&  assign(syntax_keyword&&  kw) noexcept;
+  syntax_element&  assign(syntax_formula&&  f) noexcept;
+  syntax_element&  assign(syntax_optional_formula&&  f) noexcept;
+  syntax_element&  assign(syntax_multiple_formula&&  f) noexcept;
+  syntax_element&  assign(syntax_reference&&  ref) noexcept;
 
   bool  is_null()             const noexcept{return m_kind == kind::null;}
   bool  is_integer_literal()  const noexcept{return m_kind == kind::integer_literal;}
@@ -338,32 +367,15 @@ public:
   bool  is_identifier()       const noexcept{return m_kind == kind::identifier;}
   bool  is_keyword()    const noexcept{return m_kind == kind::keyword;}
   bool  is_string()     const noexcept{return m_kind == kind::string;}
-  bool  is_expression() const noexcept{return m_kind == kind::expression;}
-  bool  is_optional_expression() const noexcept{return m_kind == kind::optional_expression;}
-  bool  is_multiple_expression() const noexcept{return m_kind == kind::multiple_expression;}
-  bool  is_definition() const noexcept{return m_kind == kind::definition;}
+  bool  is_formula() const noexcept{return m_kind == kind::formula;}
+  bool  is_optional_formula() const noexcept{return m_kind == kind::optional_formula;}
+  bool  is_multiple_formula() const noexcept{return m_kind == kind::multiple_formula;}
+  bool  is_reference() const noexcept{return m_kind == kind::reference;}
 
   void  clear() noexcept;
 
-  const std::u16string&  get_string() const noexcept{return m_data.str;}
-
-  const syntax_expression&  get_expression() const noexcept{return  m_data.expr;}
-  const syntax_definition&  get_definition() const noexcept{return *m_data.def;}
-
-  void  print() const noexcept;
-
-};
-
-
-class
-syntax_definition: public syntax_expression
-{
-  std::u16string  m_name;
-
-public:
-  syntax_definition(std::u16string_view  name) noexcept: m_name(name){}
-
-  const std::u16string&  get_name() const noexcept{return m_name;}
+  const std::u16string&   string() const noexcept{return m_data.s;}
+  const syntax_formula&  formula() const noexcept{return m_data.f;}
 
   void  print() const noexcept;
 
@@ -373,40 +385,40 @@ public:
 class
 syntax_rule
 {
-  std::list<syntax_definition>  m_definition_list;
+  std::list<syntax_formula>  m_formula_list;
 
   void  start_read(syntax_token_iterator&  it);
 
   class wrapper{
     int  m_code;
 
-    syntax_operand  m_operand;
+    syntax_element  m_element;
 
   public:
     wrapper(int  c) noexcept: m_code(c){}
-    wrapper(syntax_operand&&  o) noexcept: m_code(0), m_operand(std::move(o)){}
+    wrapper(syntax_element&&  e) noexcept: m_code(0), m_element(std::move(e)){}
 
     bool  is_code() const noexcept{return m_code;}
 
     int  code() const noexcept{return m_code;}
 
-    syntax_operand&  operand() noexcept{return m_operand;}
+    syntax_element&  element() noexcept{return m_element;}
 
     void  print() const noexcept;
 
   };
 
-  wrapper            read_expression_internal(syntax_token_iterator&  it);
-  syntax_expression  read_expression(char16_t  close, syntax_token_iterator&  it);
+  wrapper            read_formula_internal(syntax_token_iterator&  it);
+  syntax_formula  read_formula(char16_t  close, syntax_token_iterator&  it);
 
-  syntax_expression  make_expression(std::vector<wrapper>&&  stk);
+  syntax_formula  make_formula(std::vector<wrapper>&&  stk);
 
 public:
   syntax_rule() noexcept{}
   syntax_rule(std::string_view  sv) noexcept{assign(sv);}
   syntax_rule(std::u16string_view  sv) noexcept{assign(sv);}
 
-  operator bool() const noexcept{return m_definition_list.size();}
+  operator bool() const noexcept{return m_formula_list.size();}
 
   syntax_rule&  operator =(std::string_view  sv) noexcept{return assign(sv);}
   syntax_rule&  operator+=(std::string_view  sv) noexcept{return append(sv);}
@@ -418,10 +430,10 @@ public:
   syntax_rule&  append(std::string_view     sv) noexcept;
   syntax_rule&  append(std::u16string_view  sv) noexcept;
 
-        syntax_definition*  find(std::u16string_view  name)       noexcept;
-  const syntax_definition*  find(std::u16string_view  name) const noexcept;
+        syntax_formula*  find(std::u16string_view  name)       noexcept;
+  const syntax_formula*  find(std::u16string_view  name) const noexcept;
 
-  const syntax_definition&  first() const noexcept{return m_definition_list.front();}
+  const syntax_formula&  first() const noexcept{return m_formula_list.front();}
 
   void  print() const noexcept;
 
@@ -471,23 +483,33 @@ public:
 class
 syntax_branch
 {
+  std::u16string_view  m_name;
+
   std::vector<syntax_branch_element>  m_elements;
 
 public:
   syntax_branch() noexcept{}
+  syntax_branch(std::u16string_view  name) noexcept: m_name(name){}
   syntax_branch(syntax_branch_element&&  e) noexcept;
+
+  template<class...  Args>
+  syntax_branch(std::u16string_view  name, Args&&...  args) noexcept: m_name(name){append(std::forward<Args>(args)...);}
 
   const syntax_branch_element&  operator[](int  i) const noexcept{return m_elements[i];}
 
+  syntax_branch&  operator+=(syntax_branch&&   br) noexcept{return append(std::move(br));}
+  syntax_branch&  operator+=(syntax_element&&  el) noexcept{return append(std::move(el));}
+
+  std::u16string_view  name() const noexcept{return m_name;}
+
+  bool  has_name() const noexcept{return m_name.size();}
+
   int  length() const noexcept;
 
-  template<class...  Args>
-  syntax_branch_element&  emplace_back(Args&&...  args) noexcept{return m_elements.emplace_back(std::forward<Args>(args)...);}
+  syntax_branch&  append(syntax_branch&&   br) noexcept;
+  syntax_branch&  append(syntax_element&&  el) noexcept;
 
-  void  cut_back(int  l=0) noexcept;
-
-  void  splice(syntax_branch&&  rhs) noexcept;
-  void  print() const noexcept;
+  void  print(int  indent=0) const noexcept;
 
   const syntax_branch_element*  begin() const noexcept;
   const syntax_branch_element*    end() const noexcept;
@@ -500,41 +522,31 @@ syntax_branch_element
 {
   const syntax_token*  m_token=nullptr;
 
-  syntax_operand  m_operand;
-  syntax_branch    m_branch;
+  syntax_branch  m_branch;
 
 public:
   syntax_branch_element() noexcept{}
-  syntax_branch_element(const syntax_branch_element&   rhs) noexcept{assign(rhs);}
-  syntax_branch_element(      syntax_branch_element&&  rhs) noexcept{assign(std::move(rhs));}
- ~syntax_branch_element(){clear();}
 
   template<class...  Args>
   syntax_branch_element(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
-  syntax_branch_element&  operator=(const syntax_branch_element&   rhs) noexcept{return assign(rhs);}
-  syntax_branch_element&  operator=(      syntax_branch_element&&  rhs) noexcept{return assign(std::move(rhs));}
+  template<class...  Args>
+  syntax_branch_element&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
   syntax_branch_element&  assign(const syntax_branch_element&   rhs) noexcept;
   syntax_branch_element&  assign(      syntax_branch_element&&  rhs) noexcept;
 
-  syntax_branch_element&  assign(const syntax_token&  tok, const syntax_operand&  o) noexcept;
-  syntax_branch_element&  assign(const syntax_token&  tok, const syntax_definition&  def, syntax_branch&&  br) noexcept;
+  syntax_branch_element&  assign(const syntax_token&  tok) noexcept;
+  syntax_branch_element&  assign(syntax_branch&&  bra) noexcept;
 
-  void  clear() noexcept;
+  bool  is_token()  const noexcept{return  m_token;}
+  bool  is_branch() const noexcept{return !m_token;}
+  bool  is_branch(std::u16string_view  name) const noexcept{return is_branch() && (m_branch.name() == name);}
 
-  bool  is_definition(std::u16string_view  sv) const noexcept
-  {
-    return m_operand.is_definition() && (m_operand.get_definition().get_name() == sv);
-  }
+  const syntax_token&    token() const noexcept{return *m_token;}
+  const syntax_branch&  branch() const noexcept{return m_branch;}
 
-  const syntax_token&      token() const noexcept{return *m_token;}
-  const syntax_operand&  operand() const noexcept{return m_operand;}
-  const syntax_branch&    branch() const noexcept{return m_branch;}
-
-  syntax_branch  cut_child() noexcept;
-
-  void  print() const noexcept;
+  void  print(int  indent) const noexcept;
 
 };
 
@@ -557,14 +569,13 @@ syntax_parser
   class point{
     syntax_token_iterator  m_iterator;
 
-    const syntax_expression*  m_expression;
+    const syntax_formula*  m_formula;
 
   public:
-    point(syntax_token_iterator  it, const syntax_expression&  e) noexcept: m_iterator(it), m_expression(&e){}
+    point(syntax_token_iterator  it, const syntax_formula&  e) noexcept: m_iterator(it), m_formula(&e){}
 
     syntax_token_iterator  iterator() const noexcept{return m_iterator;}
-
-    const syntax_expression&  expression() const noexcept{return *m_expression;}
+    const syntax_formula&   formula() const noexcept{return *m_formula;}
 
   };
 
@@ -590,21 +601,22 @@ syntax_parser
 
   static result  combine(result&&  l, result&&  r) noexcept;
 
-  result  process_keyword(const syntax_operand&  e, syntax_token_iterator  it);
-  result  process_string(const syntax_operand&  e, syntax_token_iterator  it);
-  result  process_optional(const syntax_operand&  e, syntax_token_iterator  it);
-  result  process_multiple(const syntax_operand&  e, syntax_token_iterator  it);
+  result  process_keyword(const syntax_element&  e, syntax_token_iterator  it);
+  result  process_string(const syntax_element&  e, syntax_token_iterator  it);
+  result  process_optional(const syntax_element&  e, syntax_token_iterator  it);
+  result  process_multiple(const syntax_element&  e, syntax_token_iterator  it);
 
-  result  process_by_operand(const syntax_operand&  o, syntax_token_iterator  it);
-  result  process_by_expression(const syntax_expression&  expr, syntax_token_iterator  it);
+  result  process_by_element(const syntax_element&  e, syntax_token_iterator  it);
+  result  process_by_formula(const syntax_formula&  f, syntax_token_iterator  it);
 
-  result  process_and(  const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it);
-  result  process_or(   const syntax_operand&  l, const syntax_operand&  r, syntax_token_iterator  it);
-  result  process_colon(const syntax_expression&  expr, syntax_token_iterator  it);
+  result  process_and(  const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it);
+  result  process_or(   const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it);
+  result  process_colon(const syntax_formula&  expr, syntax_token_iterator  it);
 
-  result  step(const syntax_definition&  def, syntax_token_iterator  it);
+  result  step(const syntax_formula&  f, syntax_token_iterator  it);
 
-  result  process_by_definition(const syntax_definition&  def, syntax_token_iterator  it);
+  result  process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it);
+  result  process_by_reference(std::u16string_view  name, syntax_token_iterator  it);
 
 public:
   syntax_parser&  set_rule(const syntax_rule&  r) noexcept;

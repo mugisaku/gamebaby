@@ -131,23 +131,6 @@ public:
 
 
 class
-ir_load_operation
-{
-  ir_type_info  m_type_info;
-
-  std::u16string  m_address_operand;
-
-public:
-  ir_load_operation(ir_type_info  ti, std::u16string_view  addro) noexcept: m_type_info(ti), m_address_operand(addro){}
-
-  const ir_type_info&  type_info() const noexcept{return m_type_info;}
-
-  const std::u16string&  address_operand() const noexcept{return m_address_operand;}
-
-};
-
-
-class
 ir_address_operation
 {
   std::u16string  m_identifier;
@@ -156,6 +139,23 @@ public:
   ir_address_operation(std::u16string_view  id) noexcept: m_identifier(id){}
 
   const std::u16string&  identifier() const noexcept{return m_identifier;}
+
+};
+
+
+class
+ir_load_operation
+{
+  ir_type_info  m_type_info;
+
+  std::u16string  m_pointer_label;
+
+public:
+  ir_load_operation(ir_type_info  ti, std::u16string_view  ptr_lb) noexcept: m_pointer_label(ptr_lb){}
+
+  ir_type_info  type_info() const noexcept{return m_type_info;}
+
+  const std::u16string&  pointer_label() const noexcept{return m_pointer_label;}
 
 };
 
@@ -223,9 +223,9 @@ ir_operation
     define,
     unary,
     binary,
-    load,
     address,
     function_address,
+    load,
     call,
     phi,
   } m_kind=kind::null;
@@ -234,8 +234,8 @@ ir_operation
     ir_unary_operation                 un;
     ir_binary_operation               bin;
     ir_define_operation               def;
-    ir_load_operation                  ld;
     ir_address_operation             addr;
+    ir_load_operation                  ld;
     ir_call_operation                 cal;
     ir_phi_operation                  phi;
 
@@ -263,8 +263,8 @@ public:
   ir_operation&  assign(ir_unary_operation&&      un) noexcept;
   ir_operation&  assign(ir_binary_operation&&    bin) noexcept;
   ir_operation&  assign(ir_define_operation&&    def) noexcept;
-  ir_operation&  assign(ir_load_operation&&       ld) noexcept;
   ir_operation&  assign(ir_address_operation&&  addr) noexcept;
+  ir_operation&  assign(ir_load_operation&&       ld) noexcept;
   ir_operation&  assign(ir_call_operation&&      cal) noexcept;
   ir_operation&  assign(ir_phi_operation&&       phi) noexcept;
 
@@ -275,16 +275,16 @@ public:
   bool  is_unary()   const noexcept{return m_kind == kind::unary;}
   bool  is_binary()  const noexcept{return m_kind == kind::binary;}
   bool  is_define()  const noexcept{return m_kind == kind::define;}
-  bool  is_load()    const noexcept{return m_kind == kind::load;}
   bool  is_address() const noexcept{return m_kind == kind::address;}
+  bool  is_load()    const noexcept{return m_kind == kind::load;}
   bool  is_call()    const noexcept{return m_kind == kind::call;}
   bool  is_phi()     const noexcept{return m_kind == kind::phi;}
 
   const ir_unary_operation&      unary() const noexcept{return m_data.un;}
   const ir_binary_operation&    binary() const noexcept{return m_data.bin;}
   const ir_define_operation&    define() const noexcept{return m_data.def;}
-  const ir_load_operation&        load() const noexcept{return m_data.ld;}
   const ir_address_operation&  address() const noexcept{return m_data.addr;}
+  const ir_load_operation&        load() const noexcept{return m_data.ld;}
   const ir_call_operation&        call() const noexcept{return m_data.cal;}
   const ir_phi_operation&          phi() const noexcept{return m_data.phi;}
 

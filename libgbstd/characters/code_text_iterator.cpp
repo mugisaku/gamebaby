@@ -239,6 +239,8 @@ skip_to_block_end() noexcept
 
         if(c == '\0')
         {
+          report;
+
           break;
         }
 
@@ -249,8 +251,6 @@ skip_to_block_end() noexcept
 
           m_x_index  = 0;
           m_y_index += 1;
-
-          break;
         }
 
       else

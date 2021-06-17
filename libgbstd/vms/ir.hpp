@@ -38,7 +38,11 @@ ir_opcode
 
   logi_and,logi_or,logi_not,
 
+  neg,
+
   br,jmp,
+
+  adr,
 
   cal,ret
 
@@ -126,14 +130,14 @@ public:
   constexpr ir_instruction(ir_opcode  o) noexcept:
   m_data(static_cast<uint64_t>(o)<<58){}
 
-  constexpr ir_instruction(ir_opcode  o, ir_register_spec  rs1_, ir_register_spec  rs2_) noexcept:
-  m_data((static_cast<uint64_t>(o)<<58)|(rs1_.bitcode().data()<<36)|(rs2_.bitcode().data()<<18)){}
+  constexpr ir_instruction(ir_opcode  o, ir_register_spec  rs1_, ir_register_spec  rs3_) noexcept:
+  m_data((static_cast<uint64_t>(o)<<58)|(rs1_.bitcode().data()<<36)|rs3_.bitcode().data()){}
 
   constexpr ir_instruction(ir_opcode  o, ir_register_spec  rs1_, ir_register_spec  rs2_, ir_register_spec  rs3_) noexcept:
-  m_data((static_cast<uint64_t>(o)<<58)|(rs1_.bitcode().data()<<36)|(rs2_.bitcode().data()<<18)|(rs3_.bitcode().data())){}
+  m_data((static_cast<uint64_t>(o)<<58)|(rs1_.bitcode().data()<<36)|(rs2_.bitcode().data()<<18)|rs3_.bitcode().data()){}
 
-  constexpr ir_instruction(ir_opcode  o, ir_register_spec  rs1_, uint32_t  u32) noexcept:
-  m_data((static_cast<uint64_t>(o)<<58)|(rs1_.bitcode().data()<<36)|u32){}
+  constexpr ir_instruction(ir_opcode  o, uint32_t  u32, ir_register_spec  rs3_) noexcept:
+  m_data((static_cast<uint64_t>(o)<<58)|(u32<<18)|rs3_.bitcode().data()){}
 
   constexpr ir_opcode  opcode() const noexcept{return static_cast<ir_opcode>(m_data>>58);}
 

@@ -31,9 +31,9 @@ set(SOURCES
   tile_maps/tile_source.cpp
   tile_maps/tile_map.cpp
   tile_maps/tile_map_view.cpp
-#  values/object.cpp
-#  values/array.cpp
-#  values/list.cpp
+  dns/dn_object.cpp
+  dns/dn_array.cpp
+  dns/dn_list.cpp
   widgets/operating_node.cpp
   widgets/node.cpp
   widgets/node_iterator.cpp
@@ -73,9 +73,8 @@ set(SOURCES
   syntaxes/syntax_token_iterator.cpp
   syntaxes/syntax_tokenizer.cpp
   syntaxes/syntax_tokenizer__read_number.cpp
-  syntaxes/syntax_operand.cpp
-  syntaxes/syntax_expression.cpp
-  syntaxes/syntax_definition.cpp
+  syntaxes/syntax_element.cpp
+  syntaxes/syntax_formula.cpp
   syntaxes/syntax_rule.cpp
   syntaxes/syntax_branch.cpp
   syntaxes/syntax_branch_element.cpp
@@ -98,35 +97,6 @@ set(SOURCES
   vms/irs/ir_memory.cpp
   vms/irs/ir__assemble.cpp
   vms/irs/ir_processor.cpp
-#  vms/assemblies/asm_parameter.cpp
-#  vms/assemblies/asm_line.cpp
-#  vms/assemblies/asm_context.cpp
-#  vms/assemblies/asm_processor.cpp
-#  vms/spaces/function.cpp
-#  vms/spaces/basic_space.cpp
-#  vms/spaces/basic_space__read_type.cpp
-#  vms/spaces/basic_space__read_statement.cpp
-#  vms/spaces/global_space.cpp
-#  vms/spaces/block_space.cpp
-#  vms/spaces/space_node.cpp
-#  vms/statements/statement.cpp
-#  vms/statements/compile_expression.cpp
-#  vms/statements/compile_primary_expression.cpp
-#  vms/statements/compile_unary_expression.cpp
-#  vms/statements/expression_statement.cpp
-#  vms/statements/block_statement.cpp
-#  vms/statements/return_statement.cpp
-#  vms/statements/let_statement.cpp
-#  vms/statements/label_statement.cpp
-#  vms/statements/jump_statement.cpp
-#  vms/statements/control_statement.cpp
-#  vms/statements/if_statement.cpp
-#  vms/statements/if_string_statement.cpp
-#  vms/statements/for_statement.cpp
-#  vms/statements/while_statement.cpp
-#  vms/statements/switch_statement.cpp
-#  vms/statements/case_statement.cpp
-#  vms/compile_context.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp

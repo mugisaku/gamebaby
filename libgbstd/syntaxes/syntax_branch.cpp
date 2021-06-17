@@ -23,34 +23,54 @@ length() const noexcept
 }
 
 
-void
-syntax_branch::
-cut_back(int  l) noexcept
-{
-  m_elements.resize(l);
-}
 
-
-void
+syntax_branch&
 syntax_branch::
-splice(syntax_branch&&  rhs) noexcept
+append(syntax_branch&&   br) noexcept
 {
-    for(auto&  e: rhs.m_elements)
+    if(br.has_name())
     {
-      m_elements.emplace_back(std::move(e));
+      m_elements.emplace_back(std::move(br));
     }
+
+  else
+    {
+        for(auto&  e: br)
+        {
+          m_elements.emplace_back(std::move(e));
+        }
+    }
+
+
+  return *this;
+}
+
+
+syntax_branch&
+syntax_branch::
+append(syntax_element&&  el) noexcept
+{
+  m_elements.emplace_back(std::move(el));
+
+  return *this;
 }
 
 
 void
 syntax_branch::
-print() const noexcept
+print(int  indent) const noexcept
 {
+    if(has_name())
+    {
+      gbstd::print(m_name);
+
+      printf("\n");
+    }
+
+
     for(auto&  e: m_elements)
     {
-      e.print();
-
-      printf(" ");
+      e.print(indent);
     }
 }
 

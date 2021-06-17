@@ -10,11 +10,11 @@ namespace gbstd{
 
 syntax_parser::result
 syntax_parser::
-process_keyword(const syntax_operand&  o, syntax_token_iterator  it)
+process_keyword(const syntax_element&  e, syntax_token_iterator  it)
 {
-  auto  s = o.get_string();
+  auto  s = e.string();
 
-    if(it->is_identifier() && (it->get_string() == s))
+    if(it->is_identifier() && (it->string() == s))
     {
       auto&  tok = *it++;
 
@@ -26,7 +26,7 @@ process_keyword(const syntax_operand&  o, syntax_token_iterator  it)
         }
 
 
-      return result(it,syntax_branch_element(tok,o));
+      return result(it,syntax_branch_element(tok));
     }
 
 
@@ -36,9 +36,9 @@ process_keyword(const syntax_operand&  o, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_string(const syntax_operand&  o, syntax_token_iterator  it)
+process_string(const syntax_element&  e, syntax_token_iterator  it)
 {
-  auto  s = o.get_string();
+  auto  s = e.string();
 
     if(it.test(s))
     {
@@ -54,7 +54,7 @@ process_string(const syntax_operand&  o, syntax_token_iterator  it)
         }
 
 
-      return result(it,syntax_branch_element(tok,o));
+      return result(it,syntax_branch_element(tok));
     }
 
 
@@ -64,7 +64,7 @@ process_string(const syntax_operand&  o, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_optional(const syntax_operand&  o, syntax_token_iterator  it)
+process_optional(const syntax_element&  e, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -72,7 +72,7 @@ process_optional(const syntax_operand&  o, syntax_token_iterator  it)
     }
 
 
-  auto  res = process_by_expression(o.get_expression(),it);
+  auto  res = process_by_formula(e.formula(),it);
 
     if(m_debugging)
     {
@@ -89,7 +89,7 @@ process_optional(const syntax_operand&  o, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_multiple(const syntax_operand&  o, syntax_token_iterator  it)
+process_multiple(const syntax_element&  e, syntax_token_iterator  it)
 {
     if(m_debugging)
     {
@@ -97,7 +97,7 @@ process_multiple(const syntax_operand&  o, syntax_token_iterator  it)
     }
 
 
-  auto  res = process_by_expression(o.get_expression(),it);
+  auto  res = process_by_formula(e.formula(),it);
 
     if(res)
     {
@@ -105,7 +105,7 @@ process_multiple(const syntax_operand&  o, syntax_token_iterator  it)
         {
           it = res.iterator();
 
-          auto  cores = process_by_expression(o.get_expression(),it);
+          auto  cores = process_by_formula(e.formula(),it);
 
             if(!cores)
             {
@@ -132,22 +132,22 @@ process_multiple(const syntax_operand&  o, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_operand(const syntax_operand&  o, syntax_token_iterator  it)
+process_by_element(const syntax_element&  e, syntax_token_iterator  it)
 {
   it.skip();
 
   auto&  tok = *it;
 
-       if(o.is_keyword()            ){return process_keyword(o,it);}
-  else if(o.is_string()             ){return process_string(o,it);}
-  else if(o.is_expression()         ){return process_by_expression(o.get_expression(),it);}
-  else if(o.is_optional_expression()){return process_optional(o,it);}
-  else if(o.is_multiple_expression()){return process_multiple(o,it);}
-  else if(o.is_definition()         ){return process_by_definition(o.get_definition(),it);}
-  else if(o.is_integer_literal()  && it->is_integer()   ){return result(++it,syntax_branch_element(tok,o));}
-  else if(o.is_floating_literal() && it->is_floating()  ){return result(++it,syntax_branch_element(tok,o));}
-  else if(o.is_string_literal()   && it->is_string()    ){return result(++it,syntax_branch_element(tok,o));}
-  else if(o.is_identifier()       && it->is_identifier()){return result(++it,syntax_branch_element(tok,o));}
+       if(e.is_keyword()         ){return process_keyword(e,it);}
+  else if(e.is_string()          ){return process_string(e,it);}
+  else if(e.is_formula()         ){return process_by_formula(e.formula(),it);}
+  else if(e.is_optional_formula()){return process_optional(e,it);}
+  else if(e.is_multiple_formula()){return process_multiple(e,it);}
+  else if(e.is_reference()       ){return process_by_reference(e.string(),it);}
+  else if(e.is_integer_literal()  && it->is_integer()   ){return result(++it,syntax_branch_element(tok));}
+  else if(e.is_floating_literal() && it->is_floating()  ){return result(++it,syntax_branch_element(tok));}
+  else if(e.is_string_literal()   && it->is_string()    ){return result(++it,syntax_branch_element(tok));}
+  else if(e.is_identifier()       && it->is_identifier()){return result(++it,syntax_branch_element(tok));}
 
 
   return result();
