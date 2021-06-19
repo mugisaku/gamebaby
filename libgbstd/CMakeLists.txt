@@ -53,6 +53,8 @@ set(SOURCES
   file_ops/wave.cpp
   file_ops/wave_format.cpp
   file_ops/ogg_page.cpp
+  file_ops/source_code.cpp
+  file_ops/source_code_iterator.cpp
   sounds/sound_device.cpp
   sounds/sine_wave_device.cpp
   sounds/square_wave_device.cpp

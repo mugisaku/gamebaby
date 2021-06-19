@@ -26,7 +26,7 @@ process_keyword(const syntax_element&  e, syntax_token_iterator  it)
         }
 
 
-      return result(it,syntax_branch_element(tok));
+      return result(it,syntax_branch_element(tok,true));
     }
 
 
@@ -54,7 +54,7 @@ process_string(const syntax_element&  e, syntax_token_iterator  it)
         }
 
 
-      return result(it,syntax_branch_element(tok));
+      return result(it,syntax_branch_element(tok,false));
     }
 
 

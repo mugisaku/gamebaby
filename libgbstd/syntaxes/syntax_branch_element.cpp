@@ -16,6 +16,8 @@ assign(const syntax_branch_element&  rhs) noexcept
     {
       m_token  = rhs.m_token;
       m_branch = rhs.m_branch;
+
+      m_keyword_flag = rhs.m_keyword_flag;
     }
 
 
@@ -31,6 +33,8 @@ assign(syntax_branch_element&&  rhs) noexcept
     {
       std::swap(m_token ,rhs.m_token );
       std::swap(m_branch,rhs.m_branch);
+
+      std::swap(m_keyword_flag,rhs.m_keyword_flag);
     }
 
 
@@ -40,9 +44,11 @@ assign(syntax_branch_element&&  rhs) noexcept
 
 syntax_branch_element&
 syntax_branch_element::
-assign(const syntax_token&  tok) noexcept
+assign(const syntax_token&  tok, bool  k) noexcept
 {
   m_token = &tok;
+
+  m_keyword_flag = k && tok.is_identifier();
 
   return *this;
 }
@@ -55,6 +61,8 @@ assign(syntax_branch&&  bra) noexcept
   m_token = nullptr;
 
   m_branch = std::move(bra);
+
+  m_keyword_flag = false;
 
   return *this;
 }
@@ -74,6 +82,12 @@ print(int  indent) const noexcept
 
     if(is_token())
     {
+        if(is_keyword())
+        {
+          printf("KEYWORD,");
+        }
+
+
       m_token->print();
 
       printf("\n");

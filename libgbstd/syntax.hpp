@@ -524,6 +524,8 @@ syntax_branch_element
 
   syntax_branch  m_branch;
 
+  bool  m_keyword_flag=false;
+
 public:
   syntax_branch_element() noexcept{}
 
@@ -536,8 +538,11 @@ public:
   syntax_branch_element&  assign(const syntax_branch_element&   rhs) noexcept;
   syntax_branch_element&  assign(      syntax_branch_element&&  rhs) noexcept;
 
-  syntax_branch_element&  assign(const syntax_token&  tok) noexcept;
+  syntax_branch_element&  assign(const syntax_token&  tok, bool  k=false) noexcept;
   syntax_branch_element&  assign(syntax_branch&&  bra) noexcept;
+
+  bool  is_keyword(                       ) const noexcept{return m_keyword_flag;}
+  bool  is_keyword(std::u16string_view  sv) const noexcept{return is_keyword() && (m_token->string() == sv);}
 
   bool  is_token()  const noexcept{return  m_token;}
   bool  is_branch() const noexcept{return !m_token;}

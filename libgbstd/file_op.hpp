@@ -329,6 +329,103 @@ ogg_page
 
 
 
+class
+source_code
+{
+  using count_t = uint64_t;
+
+  struct data;
+
+  data*  m_data=nullptr;
+
+  static const char16_t  m_null;
+
+public:
+  source_code() noexcept{}
+ ~source_code(){unrefer();}
+
+  template<class...  Args>
+  source_code(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+
+  template<class...  Args>
+  source_code&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  operator bool() const noexcept{return m_data;}
+
+  void  unrefer() noexcept;
+
+  source_code&  assign(const source_code&   rhs) noexcept;
+  source_code&  assign(      source_code&&  rhs) noexcept;
+
+  source_code&  load(std::string_view  path) noexcept;
+
+  const std::string&  path() const noexcept;
+
+  const std::u16string&  content() const noexcept;
+
+  count_t  reference_count() const noexcept;
+  size_t  size() const noexcept;
+  size_t  number_of_lines() const noexcept;
+
+  const std::u16string_view*  begin() const noexcept;
+  const std::u16string_view*    end() const noexcept;
+
+  void  print() const noexcept;
+
+  class iterator;
+
+};
+
+
+class
+source_code::
+iterator
+{
+  source_code  m_source;
+
+  const char16_t*  m_pointer;
+
+  int  m_x_position=0;
+  int  m_y_position=0;
+
+public:
+  iterator(const char16_t*  p=nullptr) noexcept{assign(p);}
+
+  iterator&  operator=(const char16_t*  p) noexcept{return assign(p);}
+
+  iterator&  assign(const char16_t*  p=nullptr) noexcept;
+  iterator&  assign(const source_code&  src) noexcept;
+
+  operator bool() const noexcept{return m_pointer;}
+
+  const source_code&  source() const noexcept{return m_source;}
+
+  const char16_t&  operator[](int  i) const noexcept{return m_pointer[i];}
+
+  const char16_t&  operator*() const noexcept{return *m_pointer;}
+
+  bool  operator==(const iterator&  rhs) const noexcept{return m_pointer == rhs.m_pointer;}
+  bool  operator!=(const iterator&  rhs) const noexcept{return m_pointer != rhs.m_pointer;}
+
+  int  x_position() const noexcept{return m_x_position;}
+  int  y_position() const noexcept{return m_y_position;}
+
+  iterator   operator+ (int  n) const noexcept;
+  iterator&  operator+=(int  n) noexcept;
+
+  iterator&  operator++(   ) noexcept;
+  iterator   operator++(int) noexcept;
+
+  void  skip_spaces() noexcept;
+  void  skip_to_newline() noexcept;
+  void  skip_to_block_end() noexcept;
+  void  print() const noexcept;
+
+};
+
+
+
+
 }
 
 
