@@ -9,12 +9,12 @@ namespace gbstd{
 
 
 const syntax_token
-syntax_token_iterator::
+syntax_token_string::iterator::
 m_null;
 
 
-syntax_token_iterator&
-syntax_token_iterator::
+syntax_token_string::iterator&
+syntax_token_string::iterator::
 assign(const syntax_token_string&  s) noexcept
 {
   m_current = s.data();
@@ -24,8 +24,8 @@ assign(const syntax_token_string&  s) noexcept
 }
 
 
-syntax_token_iterator&
-syntax_token_iterator::
+syntax_token_string::iterator&
+syntax_token_string::iterator::
 operator++() noexcept
 {
   ++m_current;
@@ -34,8 +34,8 @@ operator++() noexcept
 }
 
 
-syntax_token_iterator
-syntax_token_iterator::
+syntax_token_string::iterator
+syntax_token_string::iterator::
 operator++(int) noexcept
 {
   auto  tmp = *this;
@@ -48,8 +48,8 @@ operator++(int) noexcept
 
 
 
-syntax_token_iterator
-syntax_token_iterator::
+syntax_token_string::iterator
+syntax_token_string::iterator::
 operator+(int  n) const noexcept
 {
   auto  t = *this;
@@ -60,8 +60,8 @@ operator+(int  n) const noexcept
 }
 
 
-syntax_token_iterator&
-syntax_token_iterator::
+syntax_token_string::iterator&
+syntax_token_string::iterator::
 operator+=(int  n) noexcept
 {
     if(n > 0)
@@ -78,7 +78,7 @@ operator+=(int  n) noexcept
 
 
 bool
-syntax_token_iterator::
+syntax_token_string::iterator::
 test(std::u16string_view  sv) const noexcept
 {
   auto  p = sv.data();
@@ -92,7 +92,7 @@ test(std::u16string_view  sv) const noexcept
 
 
 void
-syntax_token_iterator::
+syntax_token_string::iterator::
 skip() noexcept
 {
     while((*this)->is_others(u' ') ||

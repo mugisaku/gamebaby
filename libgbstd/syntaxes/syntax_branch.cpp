@@ -15,6 +15,16 @@ syntax_branch(syntax_branch_element&&  e) noexcept
 }
 
 
+const syntax_branch_element&
+syntax_branch::
+operator[](int  i) const noexcept
+{
+  static const syntax_branch_element  null;
+
+  return (i < m_elements.size())? m_elements[i]:null;
+}
+
+
 int
 syntax_branch::
 length() const noexcept
@@ -26,21 +36,9 @@ length() const noexcept
 
 syntax_branch&
 syntax_branch::
-append(syntax_branch&&   br) noexcept
+append(syntax_branch_element&&  el) noexcept
 {
-    if(br.has_name())
-    {
-      m_elements.emplace_back(std::move(br));
-    }
-
-  else
-    {
-        for(auto&  e: br)
-        {
-          m_elements.emplace_back(std::move(e));
-        }
-    }
-
+  m_elements.emplace_back(std::move(el));
 
   return *this;
 }
@@ -48,12 +46,20 @@ append(syntax_branch&&   br) noexcept
 
 syntax_branch&
 syntax_branch::
-append(syntax_element&&  el) noexcept
+append(std::vector<syntax_branch_element>&&  els) noexcept
 {
-  m_elements.emplace_back(std::move(el));
+    for(auto&  el: els)
+    {
+      m_elements.emplace_back(std::move(el));
+    }
+
+
+  els.clear();
 
   return *this;
 }
+
+
 
 
 void
@@ -62,9 +68,16 @@ print(int  indent) const noexcept
 {
     if(has_name())
     {
+      printf("<");
+
       gbstd::print(m_name);
 
-      printf("\n");
+      printf(">\n");
+    }
+
+  else
+    {
+      printf("*NO NAME*\n");
     }
 
 

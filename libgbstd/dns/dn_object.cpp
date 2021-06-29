@@ -12,13 +12,13 @@ namespace gbstd{
 
 dn_object&
 dn_object::
-assign(syntax_token_iterator&  it) noexcept
+assign(syntax_token_string::iterator&  it) noexcept
 {
   clear();
 
   it.skip();
 
-  const std::u16string*  name = nullptr;
+  std::u16string_view  name;
 
     if((it->is_identifier() || it->is_string()))
     {
@@ -28,7 +28,7 @@ assign(syntax_token_iterator&  it) noexcept
 
         if(it->is_others(u':'))
         {
-          name = &tok.string();
+          m_name = tok.string();
 
           ++it;
 
@@ -77,12 +77,6 @@ assign(syntax_token_iterator&  it) noexcept
       printf("[dn_object assign error]");
 
       tok.print();
-    }
-
-
-    if(name)
-    {
-      m_name = *name;
     }
 
 
@@ -323,9 +317,11 @@ print() const noexcept
 dn_object
 make_object_from_string(std::u16string_view  sv) noexcept
 {
-  auto  toks = make_token_string(sv);
+  source_code  src(sv);
 
-  syntax_token_iterator  it(toks);
+  syntax_token_string  toks(src);
+
+  syntax_token_string::iterator  it(toks);
 
   return dn_object(it);
 }

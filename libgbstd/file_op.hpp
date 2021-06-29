@@ -342,13 +342,21 @@ source_code
 
 public:
   source_code() noexcept{}
+  source_code(const char*  path) noexcept{load(path);}
+  source_code(std::string_view  path) noexcept{load(path);}
  ~source_code(){unrefer();}
 
   template<class...  Args>
-  source_code(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
+  explicit source_code(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
   template<class...  Args>
   source_code&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  source_code(const source_code&   rhs) noexcept{assign(rhs);}
+  source_code(      source_code&&  rhs) noexcept{assign(std::move(rhs));}
+
+  source_code&  operator=(const source_code&   rhs) noexcept{return assign(rhs);}
+  source_code&  operator=(      source_code&&  rhs) noexcept{return assign(std::move(rhs));}
 
   operator bool() const noexcept{return m_data;}
 
@@ -356,6 +364,8 @@ public:
 
   source_code&  assign(const source_code&   rhs) noexcept;
   source_code&  assign(      source_code&&  rhs) noexcept;
+  source_code&  assign(std::u16string_view  sv) noexcept;
+  source_code&  assign(std::u16string&&  s) noexcept;
 
   source_code&  load(std::string_view  path) noexcept;
 
@@ -389,10 +399,16 @@ iterator
   int  m_y_position=0;
 
 public:
-  iterator(const char16_t*  p=nullptr) noexcept{assign(p);}
+  iterator() noexcept{}
 
-  iterator&  operator=(const char16_t*  p) noexcept{return assign(p);}
+  template<class...  Args>
+  iterator(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
 
+  template<class...  Args>
+  iterator&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
+
+  iterator&  assign(const iterator&   rhs) noexcept;
+  iterator&  assign(      iterator&&  rhs) noexcept;
   iterator&  assign(const char16_t*  p=nullptr) noexcept;
   iterator&  assign(const source_code&  src) noexcept;
 

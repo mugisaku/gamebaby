@@ -18,9 +18,7 @@ assign(const syntax_token&  rhs) noexcept
       clear();
 
       m_kind = rhs.m_kind;
-
-      m_x_position = rhs.m_x_position;
-      m_y_position = rhs.m_y_position;
+      m_info = rhs.m_info;
 
         switch(m_kind)
         {
@@ -54,9 +52,7 @@ assign(syntax_token&&  rhs) noexcept
       clear();
 
       std::swap(m_kind,rhs.m_kind);
-
-      std::swap(m_x_position,rhs.m_x_position);
-      std::swap(m_y_position,rhs.m_y_position);
+      std::swap(m_info,rhs.m_info);
 
         switch(m_kind)
         {
@@ -113,11 +109,11 @@ assign(std::u16string&&  s) noexcept
 
 syntax_token&
 syntax_token::
-assign(syntax_identifier&&  id) noexcept
+assign(std::u16string&&  s, syntax_identifier) noexcept
 {
   clear();
 
-  new(&m_data) std::u16string(std::move(id.string()));
+  new(&m_data) std::u16string(std::move(s));
 
   m_kind = kind::identifier;
 
@@ -178,17 +174,7 @@ clear() noexcept
 
   m_kind = kind::null;
 
-  m_x_position = 0;
-  m_y_position = 0;
-}
-
-
-void
-syntax_token::
-set_position(int  x, int  y) noexcept
-{
-  m_x_position = x;
-  m_y_position = y;
+  m_info.clear();
 }
 
 
@@ -204,7 +190,7 @@ print() const noexcept
 
   utf8_encoder  u8enc;
 
-  printf("[%4d,%4d]: ",1+m_y_position,1+m_x_position);
+  printf("[%4d,%4d]: ",1+m_info.y_position(),1+m_info.x_position());
 
     switch(m_kind)
     {

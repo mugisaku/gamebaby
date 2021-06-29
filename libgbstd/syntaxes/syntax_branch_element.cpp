@@ -74,9 +74,9 @@ void
 syntax_branch_element::
 print(int  indent) const noexcept
 {
-    for(int  n = indent;  n;  --n)
+    for(int  n = 0;  n < indent;  ++n)
     {
-      printf("  ");
+      printf("|__");
     }
 
 

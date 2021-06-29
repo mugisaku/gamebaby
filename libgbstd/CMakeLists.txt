@@ -72,9 +72,9 @@ set(SOURCES
   gpfs_node_reference.cpp
   gpfs_path.cpp
   syntaxes/syntax_token.cpp
-  syntaxes/syntax_token_iterator.cpp
-  syntaxes/syntax_tokenizer.cpp
-  syntaxes/syntax_tokenizer__read_number.cpp
+  syntaxes/syntax_token_string_iterator.cpp
+  syntaxes/syntax_token_string.cpp
+  syntaxes/syntax_token_string__read_number.cpp
   syntaxes/syntax_element.cpp
   syntaxes/syntax_formula.cpp
   syntaxes/syntax_rule.cpp
@@ -91,12 +91,9 @@ set(SOURCES
   vms/expressions/postfix_element.cpp
   vms/expressions/operand.cpp
   vms/expressions/simple_value.cpp
-  vms/irs/ir_operation.cpp
-  vms/irs/ir_statement.cpp
-  vms/irs/ir_function.cpp
-  vms/irs/ir_global_space.cpp
   vms/irs/ir_value.cpp
   vms/irs/ir_memory.cpp
+  vms/irs/ir__print.cpp
   vms/irs/ir__assemble.cpp
   vms/irs/ir_processor.cpp
   ilc_javascript.cpp

@@ -10,7 +10,7 @@ namespace gbstd{
 
 dn_list&
 dn_list::
-assign(syntax_token_iterator&  it) noexcept
+assign(syntax_token_string::iterator&  it) noexcept
 {
   clear();
 

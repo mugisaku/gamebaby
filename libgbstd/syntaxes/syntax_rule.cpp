@@ -10,7 +10,7 @@ namespace gbstd{
 
 void
 syntax_rule::
-start_read(syntax_token_iterator&  it)
+start_read(syntax_token_string::iterator&  it)
 {
   auto&  name = it++->string();
 
@@ -48,7 +48,7 @@ start_read(syntax_token_iterator&  it)
 
 syntax_rule::wrapper
 syntax_rule::
-read_formula_internal(syntax_token_iterator&  it)
+read_formula_internal(syntax_token_string::iterator&  it)
 {
     if(it->is_others(u'|') ||
        it->is_others(u'&') ||
@@ -218,7 +218,7 @@ make_formula(std::vector<wrapper>&&  stk)
 
 syntax_formula
 syntax_rule::
-read_formula(char16_t  close, syntax_token_iterator&  it)
+read_formula(char16_t  close, syntax_token_string::iterator&  it)
 {
   std::vector<wrapper>  stack;
 
@@ -308,49 +308,29 @@ read_formula(char16_t  close, syntax_token_iterator&  it)
 
 syntax_rule&
 syntax_rule::
-assign(std::string_view  sv) noexcept
+assign(const source_code&  src) noexcept
 {
   m_formula_list.clear();
 
-  return append(sv);
+  return append(src);
 }
 
 
 syntax_rule&
 syntax_rule::
-assign(std::u16string_view  sv) noexcept
-{
-  m_formula_list.clear();
-
-  return append(sv);
-}
-
-
-syntax_rule&
-syntax_rule::
-append(std::string_view  sv) noexcept
-{
-  auto  u16s = make_u16string(sv);
-
-  return append(u16s);
-}
-
-
-syntax_rule&
-syntax_rule::
-append(std::u16string_view  sv) noexcept
+append(const source_code&  src) noexcept
 {
     if(0)
     {
       printf("定義を読み込み開始: ");
-      gbstd::print(sv);
+
       print_nl();
     }
 
 
-  auto  toks = make_token_string(sv);
+  syntax_token_string  toks(src);
 
-  syntax_token_iterator  it(toks);
+  syntax_token_string::iterator  it(toks);
 
   it.skip();
 

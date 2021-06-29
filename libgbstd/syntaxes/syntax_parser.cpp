@@ -8,13 +8,14 @@ namespace gbstd{
 
 
 
-syntax_parser::result
-syntax_parser::
-combine(result&&  l, result&&  r) noexcept
+syntax_parser::result::
+result(result&&  l, result&&  r) noexcept:
+m_iterator(r.m_iterator), m_elements(std::move(l.m_elements))
 {
-  l.branch().append(r.release());
-
-  return result(r.iterator(),l.release());
+    for(auto&  e: r.release())
+    {
+      m_elements.emplace_back(std::move(e));
+    }
 }
 
 
@@ -22,7 +23,7 @@ combine(result&&  l, result&&  r) noexcept
 
 syntax_parser::result
 syntax_parser::
-process_or(const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it)
+process_or(const syntax_element&  l, const syntax_element&  r, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -64,7 +65,7 @@ process_or(const syntax_element&  l, const syntax_element&  r, syntax_token_iter
 
 syntax_parser::result
 syntax_parser::
-process_and(const syntax_element&  l, const syntax_element&  r, syntax_token_iterator  it)
+process_and(const syntax_element&  l, const syntax_element&  r, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -80,7 +81,7 @@ process_and(const syntax_element&  l, const syntax_element&  r, syntax_token_ite
 
         if(rres)
         {
-          return combine(std::move(lres),std::move(rres));
+          return result(std::move(lres),std::move(rres));
         }
     }
 
@@ -91,7 +92,7 @@ process_and(const syntax_element&  l, const syntax_element&  r, syntax_token_ite
 
 syntax_parser::result
 syntax_parser::
-process_colon(const syntax_formula&  f, syntax_token_iterator  it)
+process_colon(const syntax_formula&  f, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -109,7 +110,7 @@ process_colon(const syntax_formula&  f, syntax_token_iterator  it)
 
         if(rres)
         {
-          return combine(std::move(lres),std::move(rres));
+          return result(std::move(lres),std::move(rres));
         }
 
 
@@ -127,7 +128,7 @@ process_colon(const syntax_formula&  f, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_formula(const syntax_formula&  f, syntax_token_iterator  it)
+process_by_formula(const syntax_formula&  f, syntax_token_string::iterator  it)
 {
   auto  code = f.code();
   auto&    l = f.left();
@@ -154,7 +155,7 @@ process_by_formula(const syntax_formula&  f, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it)
+process_by_named_formula(const syntax_formula&  f, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -179,6 +180,7 @@ process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it)
 
     if(res)
     {
+
         if(m_debugging)
         {
           gbstd::print(f.name());
@@ -186,7 +188,11 @@ process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it)
         }
 
 
-      return result(res.iterator(),syntax_branch(f.name(),res.release()));
+      syntax_branch  br(f.name());
+
+      br.append(res.release());
+
+      return result(res.iterator(),syntax_branch_element(std::move(br)));
     }
 
   else
@@ -203,7 +209,7 @@ process_by_named_formula(const syntax_formula&  f, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_reference(std::u16string_view  name, syntax_token_iterator  it)
+process_by_reference(std::u16string_view  name, syntax_token_string::iterator  it)
 {
   auto  f = m_rule->find(name);
 
@@ -219,7 +225,7 @@ process_by_reference(std::u16string_view  name, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-step(const syntax_formula&  f, syntax_token_iterator  it)
+step(const syntax_formula&  f, syntax_token_string::iterator  it)
 {
   m_depth = 0;
 
@@ -267,7 +273,7 @@ set_rule(const syntax_rule&  r) noexcept
 
 syntax_branch
 syntax_parser::
-start(const syntax_branch_source&  src)
+start(const syntax_token_string&  toks)
 {
     if(!m_rule || !*m_rule)
     {
@@ -284,7 +290,7 @@ start(const syntax_branch_source&  src)
 //m_debugging=1;
     try
     {
-      auto  it = src.iterator();
+      syntax_token_string::iterator  it(toks);
 
       it.skip();
 

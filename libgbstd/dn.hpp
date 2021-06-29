@@ -67,7 +67,7 @@ public:
   template<class...  Args>
   dn_object&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  dn_object&  assign(syntax_token_iterator&  it) noexcept;
+  dn_object&  assign(syntax_token_string::iterator&  it) noexcept;
   dn_object&  assign(bool  b) noexcept;
   dn_object&  assign(int  i) noexcept{return assign(static_cast<int64_t>(i));}
   dn_object&  assign(int64_t  i) noexcept;
@@ -143,7 +143,7 @@ public:
   dn_object&  operator[](int  i) const noexcept{return m_data[i];}
   dn_object&  operator[](std::u16string_view  sv) const noexcept;
 
-  dn_array&  assign(syntax_token_iterator&  it) noexcept;
+  dn_array&  assign(syntax_token_string::iterator&  it) noexcept;
   dn_array&  assign(std::initializer_list<dn_object>  ls) noexcept;
   dn_array&  assign(const dn_array&   rhs) noexcept;
   dn_array&  assign(      dn_array&&  rhs) noexcept;
@@ -202,7 +202,7 @@ public:
   template<class...  Args>
   dn_list&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
 
-  dn_list&  assign(syntax_token_iterator&  it) noexcept;
+  dn_list&  assign(syntax_token_string::iterator&  it) noexcept;
   dn_list&  assign(std::initializer_list<dn_object>  ls) noexcept;
   dn_list&  assign(const dn_list&   rhs) noexcept;
   dn_list&  assign(      dn_list&&  rhs) noexcept;

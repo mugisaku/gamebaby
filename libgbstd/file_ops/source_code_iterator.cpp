@@ -1,5 +1,6 @@
 #include"libgbstd/file_op.hpp"
 #include"libgbstd/utility.hpp"
+#include"libgbstd/character.hpp"
 
 
 
@@ -11,9 +12,47 @@ namespace gbstd{
 
 source_code::iterator&
 source_code::iterator::
+assign(const iterator&  rhs) noexcept
+{
+    if(this != &rhs)
+    {
+      m_source  = rhs.m_source;
+      m_pointer = rhs.m_pointer;
+
+      m_x_position = rhs.m_x_position;
+      m_y_position = rhs.m_y_position;
+    }
+
+
+  return *this;
+}
+
+
+source_code::iterator&
+source_code::iterator::
+assign(iterator&&  rhs) noexcept
+{
+    if(this != &rhs)
+    {
+      std::swap(m_source ,rhs.m_source );
+      std::swap(m_pointer,rhs.m_pointer);
+
+      std::swap(m_x_position,rhs.m_x_position);
+      std::swap(m_y_position,rhs.m_y_position);
+    }
+
+
+  return *this;
+}
+
+
+source_code::iterator&
+source_code::iterator::
 assign(const char16_t*  p) noexcept
 {
   m_source.unrefer();
+
+  m_pointer = p;
 
   m_x_position = 0;
   m_y_position = 0;

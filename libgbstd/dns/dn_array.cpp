@@ -29,7 +29,7 @@ operator[](std::u16string_view  sv) const noexcept
 
 dn_array&
 dn_array::
-assign(syntax_token_iterator&  it) noexcept
+assign(syntax_token_string::iterator&  it) noexcept
 {
   clear();
 

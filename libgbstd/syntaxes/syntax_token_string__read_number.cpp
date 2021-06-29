@@ -9,14 +9,14 @@ namespace gbstd{
 
 
 void
-syntax_tokenizer::
-read_binary_number() noexcept
+syntax_token_string::
+read_binary_number(source_code::iterator&  it) noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if((c == '0') ||
            (c == '1'))
@@ -29,7 +29,7 @@ read_binary_number() noexcept
             }
 
 
-          ++m_iterator;
+          ++it;
         }
 
       else
@@ -44,14 +44,14 @@ read_binary_number() noexcept
 
 
 void
-syntax_tokenizer::
-read_octal_number() noexcept
+syntax_token_string::
+read_octal_number(source_code::iterator&  it) noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if((c >= '0') &&
            (c <= '7'))
@@ -59,7 +59,7 @@ read_octal_number() noexcept
           n <<= 2;
           n  |= c-'0';
 
-          ++m_iterator;
+          ++it;
         }
 
       else
@@ -74,14 +74,14 @@ read_octal_number() noexcept
 
 
 void
-syntax_tokenizer::
-read_decimal_number() noexcept
+syntax_token_string::
+read_decimal_number(source_code::iterator&  it) noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if((c >= '0') &&
            (c <= '9'))
@@ -89,7 +89,7 @@ read_decimal_number() noexcept
           n *=    10;
           n += c-'0';
 
-          ++m_iterator;
+          ++it;
         }
 
       else
@@ -99,11 +99,11 @@ read_decimal_number() noexcept
     }
 
 
-    if(*m_iterator == '.')
+    if(*it == '.')
     {
-      ++m_iterator;
+      ++it;
 
-      read_floating_point_number(n);
+      read_floating_point_number(it,n);
 
       return;
     }
@@ -116,14 +116,14 @@ read_decimal_number() noexcept
 
 
 void
-syntax_tokenizer::
-read_hexadecimal_number() noexcept
+syntax_token_string::
+read_hexadecimal_number(source_code::iterator&  it) noexcept
 {
   uint64_t  n = 0;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if(((c >= '0') && (c <= '9')) ||
            ((c >= 'a') && (c <= 'f')) ||
@@ -172,7 +172,7 @@ read_hexadecimal_number() noexcept
             }
 
 
-          ++m_iterator;
+          ++it;
         }
 
       else
@@ -187,8 +187,8 @@ read_hexadecimal_number() noexcept
 
 
 void
-syntax_tokenizer::
-read_floating_point_number(uint64_t  i) noexcept
+syntax_token_string::
+read_floating_point_number(source_code::iterator&  it, uint64_t  i) noexcept
 {
   auto  fpn = static_cast<double>(i);
 
@@ -196,7 +196,7 @@ read_floating_point_number(uint64_t  i) noexcept
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if((c >= '0') &&
            (c <= '9'))
@@ -204,7 +204,7 @@ read_floating_point_number(uint64_t  i) noexcept
           fpn += fra*(c-'0');
           fra /= 10;
 
-          ++m_iterator;
+          ++it;
         }
 
       else
@@ -219,25 +219,25 @@ read_floating_point_number(uint64_t  i) noexcept
 
 
 void
-syntax_tokenizer::
-read_number_that_begins_by_zero() noexcept
+syntax_token_string::
+read_number_that_begins_by_zero(source_code::iterator&  it) noexcept
 {
-  auto  c = *++m_iterator;
+  auto  c = *++it;
 
-       if((c == 'b') || (c == 'B')){  ++m_iterator;           read_binary_number();}
-  else if((c == 'o') || (c == 'O')){  ++m_iterator;            read_octal_number();}
-  else if((c == 'x') || (c == 'X')){  ++m_iterator;      read_hexadecimal_number();}
-  else if((c == '.')              ){  ++m_iterator;  read_floating_point_number(0);}
+       if((c == 'b') || (c == 'B')){        read_binary_number(++it);}
+  else if((c == 'o') || (c == 'O')){         read_octal_number(++it);}
+  else if((c == 'x') || (c == 'X')){   read_hexadecimal_number(++it);}
+  else if((c == '.')              ){read_floating_point_number(++it,0);}
   else                             {m_buffer.emplace_back(static_cast<uint64_t>(0));}
 }
 
 
 void
-syntax_tokenizer::
-read_number() noexcept
+syntax_token_string::
+read_number(source_code::iterator&  it) noexcept
 {
-    if(*m_iterator == '0'){read_number_that_begins_by_zero();}
-  else                    {            read_decimal_number();}
+    if(*it == '0'){read_number_that_begins_by_zero(it);}
+  else            {            read_decimal_number(it);}
 }
 
 

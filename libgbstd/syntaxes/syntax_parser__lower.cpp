@@ -10,7 +10,7 @@ namespace gbstd{
 
 syntax_parser::result
 syntax_parser::
-process_keyword(const syntax_element&  e, syntax_token_iterator  it)
+process_keyword(const syntax_element&  e, syntax_token_string::iterator  it)
 {
   auto  s = e.string();
 
@@ -36,7 +36,7 @@ process_keyword(const syntax_element&  e, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_string(const syntax_element&  e, syntax_token_iterator  it)
+process_string(const syntax_element&  e, syntax_token_string::iterator  it)
 {
   auto  s = e.string();
 
@@ -64,7 +64,7 @@ process_string(const syntax_element&  e, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_optional(const syntax_element&  e, syntax_token_iterator  it)
+process_optional(const syntax_element&  e, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -89,7 +89,7 @@ process_optional(const syntax_element&  e, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_multiple(const syntax_element&  e, syntax_token_iterator  it)
+process_multiple(const syntax_element&  e, syntax_token_string::iterator  it)
 {
     if(m_debugging)
     {
@@ -105,15 +105,15 @@ process_multiple(const syntax_element&  e, syntax_token_iterator  it)
         {
           it = res.iterator();
 
-          auto  cores = process_by_formula(e.formula(),it);
+          auto  next_res = process_by_formula(e.formula(),it);
 
-            if(!cores)
+            if(!next_res)
             {
-              return result(it,res.release());
+              return std::move(res);
             }
 
 
-          res = combine(std::move(res),std::move(cores));
+          res = result(std::move(res),std::move(next_res));
         }
     }
 
@@ -132,7 +132,7 @@ process_multiple(const syntax_element&  e, syntax_token_iterator  it)
 
 syntax_parser::result
 syntax_parser::
-process_by_element(const syntax_element&  e, syntax_token_iterator  it)
+process_by_element(const syntax_element&  e, syntax_token_string::iterator  it)
 {
   it.skip();
 

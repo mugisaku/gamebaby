@@ -46,30 +46,30 @@ isspace(char16_t  c) noexcept
 
 
 bool
-syntax_tokenizer::
-test_head_of_identifier_defaultly(char16_t  c) noexcept
+syntax_token_string::
+test_head_of_identifier(char16_t  c) noexcept
 {
   return isalpha(c) || (c == '_');
 }
 
 
 bool
-syntax_tokenizer::
-test_body_of_identifier_defaultly(char16_t  c) noexcept
+syntax_token_string::
+test_body_of_identifier(char16_t  c) noexcept
 {
   return isalnum(c) || (c == '_');
 }
 
 
 void
-syntax_tokenizer::
-read_string()
+syntax_token_string::
+read_string(source_code::iterator&  it)
 {
   std::u16string  s;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if((c == '\0') ||
            (c == '\n') ||
@@ -82,9 +82,9 @@ read_string()
       else
         if(c == '\\')
         {
-          ++m_iterator;
+          ++it;
 
-          c = *m_iterator++;
+          c = *it++;
 
                if(c == 'n'){c = '\n';}
           else if(c == 't'){c = '\t';}
@@ -99,7 +99,7 @@ read_string()
       else
         if(c == '\"')
         {
-          ++m_iterator;
+          ++it;
 
           break;
         }
@@ -108,7 +108,7 @@ read_string()
         {
           s += c;
 
-          ++m_iterator;
+          ++it;
         }
     }
 
@@ -118,14 +118,14 @@ read_string()
 
 
 void
-syntax_tokenizer::
-read_raw_string()
+syntax_token_string::
+read_raw_string(source_code::iterator&  it)
 {
   std::u16string  s;
 
     for(;;)
     {
-      auto  c = *m_iterator;
+      auto  c = *it;
 
         if(c == '\0')
         {
@@ -134,10 +134,10 @@ read_raw_string()
 
       else
         if((c == '\"') &&
-           (m_iterator[1] == ']') &&
-           (m_iterator[2] == ']'))
+           (it[1] == ']') &&
+           (it[2] == ']'))
         {
-          m_iterator += 3;
+          it += 3;
 
           break;
         }
@@ -146,7 +146,7 @@ read_raw_string()
         {
           s += c;
 
-          ++m_iterator;
+          ++it;
         }
     }
 
@@ -156,73 +156,70 @@ read_raw_string()
 
 
 void
-syntax_tokenizer::
-step()
+syntax_token_string::
+step(source_code::iterator&  it)
 {
-  auto  c = *m_iterator;
+  auto  c = *it;
 
-  auto  x = m_iterator.get_x_index();
-  auto  y = m_iterator.get_y_index();
+  syntax_token_info  info(it);
 
-    if(m_test_head_of_identifier(c))
+    if(test_head_of_identifier(c))
     {
       std::u16string  s;
 
       s += c;
 
-      ++m_iterator;
+      ++it;
 
-        while(m_test_body_of_identifier(*m_iterator))
+        while(test_body_of_identifier(*it))
         {
-          s += *m_iterator++;
+          s += *it++;
         }
 
 
-      m_buffer.emplace_back(syntax_identifier(std::move(s)));
+      m_buffer.emplace_back(std::move(s),syntax_identifier());
     }
 
   else
-    if((m_iterator[0] == '[') &&
-       (m_iterator[1] == '[') &&
-       (m_iterator[2] == '\"'))
+    if((it[0] == '[') &&
+       (it[1] == '[') &&
+       (it[2] == '\"'))
     {
-      m_iterator += 3;
+      it += 3;
 
-      read_raw_string();
+      read_raw_string(it);
     }
 
   else
     if(c == '\"')
     {
-      ++m_iterator;
-
-      read_string();
+      read_string(++it);
     }
 
   else
     if(isdigit(c))
     {
-      read_number();
+      read_number(it);
     }
 
   else
-    if((m_iterator[0] == '/') &&
-       (m_iterator[1] == '*'))
+    if((it[0] == '/') &&
+       (it[1] == '*'))
     {
-      m_iterator += 2;
+      it += 2;
 
-      m_iterator.skip_to_block_end();
+      it.skip_to_block_end();
 
       m_buffer.emplace_back(u' ');
     }
 
   else
-    if((m_iterator[0] == '/') &&
-       (m_iterator[1] == '/'))
+    if((it[0] == '/') &&
+       (it[1] == '/'))
     {
-      m_iterator += 2;
+      it += 2;
 
-      m_iterator.skip_to_newline();
+      it.skip_to_newline();
 
       m_buffer.emplace_back(u' ');
     }
@@ -230,11 +227,11 @@ step()
   else
     if(isspace(c))
     {
-      ++m_iterator;
+      ++it;
 
-        while(isspace(*m_iterator))
+        while(isspace(*it))
         {
-          ++m_iterator;
+          ++it;
         }
 
 
@@ -243,43 +240,36 @@ step()
 
   else
     {
-      ++m_iterator;
+      ++it;
 
       m_buffer.emplace_back(c);
     }
 
 
-  m_buffer.back().set_position(x,y);
+  m_buffer.back().add_info(std::move(info));
 }
 
 
-syntax_token_string
-syntax_tokenizer::
-operator()(std::u16string_view  sv)
+syntax_token_string&
+syntax_token_string::
+assign(const source_code&  src)
 {
-  m_iterator.assign(sv.data());
+  source_code::iterator  it(src);
 
   m_buffer.clear();
 
-    while(*m_iterator)
+    while(*it)
     {
-      step();
+      step(it);
     }
 
 
   m_buffer.emplace_back();
 
-  return std::move(m_buffer);
+  return *this;
 }
 
 
-syntax_token_string
-make_token_string(std::u16string_view  sv)
-{
-  syntax_tokenizer  tknz;
-
-  return tknz(sv);
-}
 
 
 }

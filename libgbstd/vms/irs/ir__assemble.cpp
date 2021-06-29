@@ -105,23 +105,10 @@ context
 
   const symbol*  find_symbol(std::u16string_view  name);
 
-  void  append(const ir_function&  fn);
-
   as_line&  last_line() noexcept{return m_block_array.back().lines().back();}
 
   as_line&    add_line() noexcept;
   as_block&  add_block(std::u16string_view  lb) noexcept;
-
-  void  push(const ir_return_statement&  ret);
-  void  push(const ir_branch_statement&  br);
-  void  push(const ir_store_statement&  st);
-
-  void  push(const ir_unary_operation&  un);
-  void  push(const ir_binary_operation&  bin);
-  void  push(const ir_define_operation&  def);
-  void  push(const ir_address_operation&  addr);
-  void  push(const ir_call_operation&  cal);
-  void  push(const ir_phi_operation&  phi);
 
 };
 
@@ -182,6 +169,7 @@ find_symbol(std::u16string_view  name)
 }
 
 
+/*
 void
 context::
 append(const ir_function&  fn)
@@ -372,20 +360,15 @@ context::
 push(const ir_phi_operation&  phi)
 {
 }
+*/
 
 
 
 
 ir_package
-assemble(const ir_global_space&  gsp)
+assemble(const syntax_branch&  br)
 {
   context  ctx;
-
-    for(auto&  fn: gsp.function_list())
-    {
-      ctx.append(fn);
-    }
-
 
   return ir_package();
 }

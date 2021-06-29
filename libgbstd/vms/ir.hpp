@@ -3,12 +3,56 @@
 
 
 #include"libgbstd/syntax.hpp"
-#include"libgbstd/vms/irs/ir_statement.hpp"
 
 
 
 
 namespace gbstd{
+
+
+
+constexpr size_t  max_size(size_t  sz) noexcept{return (sz+7)/8*8;}
+
+
+class
+ir_error
+{
+public:
+  std::string  m_comment;
+
+  ir_error(std::string_view  sv) noexcept{m_comment = sv;}
+
+};
+
+
+class
+ir_type_info
+{
+  int  m_letter;
+  int  m_size;
+
+public:
+  constexpr ir_type_info(int  l='v', int  sz=0) noexcept: m_letter(l), m_size(sz){}
+
+  constexpr bool  is_void()     const noexcept{return m_letter == 'v';}
+  constexpr bool  is_integer()  const noexcept{return m_letter == 'i';}
+  constexpr bool  is_floating() const noexcept{return m_letter == 'f';}
+  constexpr bool  is_object() const noexcept{return m_letter == 'o';}
+
+  constexpr int      size() const noexcept{return m_size;}
+  constexpr int  max_size() const noexcept{return gbstd::max_size(m_size);}
+
+  void  print() const noexcept
+  {
+         if(m_letter == 'v'){printf("void");}
+    else if(m_letter == 'i'){printf("i%d",8*m_size);}
+    else if(m_letter == 'f'){printf("f%d",8*m_size);}
+    else if(m_letter == 'o'){printf("o%d",m_size);}
+    else {printf("unknown");}
+  }
+
+};
+
 
 
 
@@ -171,72 +215,6 @@ public:
 };
 
 
-using ir_parameter_list = std::vector<ir_parameter>;
-using ir_statement_list = std::vector<ir_statement>;
-
-
-class
-ir_function
-{
-  ir_type_info  m_return_type_info;
-
-  std::u16string  m_name;
-
-  ir_parameter_list  m_parameter_list;
-  ir_statement_list  m_statement_list;
-
-public:
-  ir_function() noexcept{}
-  ir_function(ir_type_info  ti, ir_parameter_list&&  paras, std::u16string_view  name, ir_statement_list&&  stmts) noexcept:
-  m_return_type_info(ti), m_parameter_list(std::move(paras)), m_name(name), m_statement_list(std::move(stmts)){}
-
-  const ir_type_info&  return_type_info() const noexcept{return m_return_type_info;}
-
-  const std::u16string&  name() const noexcept{return m_name;}
-
-  const ir_parameter_list&  parameter_list() const noexcept{return m_parameter_list;}
-  const ir_statement_list&  statement_list() const noexcept{return m_statement_list;}
-
-  void  print() const noexcept;
-
-};
-
-
-ir_parameter            make_parameter(const syntax_branch&  br) noexcept;
-ir_statement            make_statement(const syntax_branch&  br) noexcept;
-ir_parameter_list  make_parameter_list(const syntax_branch&  br) noexcept;
-ir_statement_list  make_statement_list(const syntax_branch&  br) noexcept;
-ir_type_info            make_type_info(const syntax_branch&  br) noexcept;
-std::u16string_view   make_string_view(const syntax_branch_element&  e) noexcept;
-ir_function              make_function(const syntax_branch&  br) noexcept;
-
-
-using ir_function_list = std::vector<ir_function>;
-
-
-class
-ir_global_space
-{
-  ir_function_list  m_function_list;
-
-public:
-  ir_global_space() noexcept{}
-
-  template<class...  Args>
-  ir_global_space(Args&&...  args) noexcept{assign(std::forward<Args>(args)...);}
-
-  template<class...  Args>
-  ir_global_space&  operator=(Args&&...  args) noexcept{return assign(std::forward<Args>(args)...);}
-
-  ir_global_space&  assign(const syntax_branch&  br) noexcept;
-
-  const ir_function_list&  function_list() const noexcept{return m_function_list;}
-
-  void  print() const noexcept;
-
-};
-
-
 class
 ir_value
 {
@@ -386,7 +364,9 @@ public:
 
 
 
-ir_package  assemble(const ir_global_space&  gsp);
+ir_package  assemble(const syntax_branch&  br);
+
+void  print_branch_as_ir(const syntax_branch&  br);
 
 
 class
