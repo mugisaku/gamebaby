@@ -1,4 +1,4 @@
-#include"libgbstd/vms/ir.hpp"
+#include"libgbstd/vm.hpp"
 
 
 
@@ -9,8 +9,8 @@ namespace gbstd{
 
 
 void
-ir_memory::
-copy(ir_address  src_addr, ir_type_info  src_ti, ir_address  dst_addr, ir_type_info  dst_ti) noexcept
+vm_memory::
+copy(vm_address  src_addr, vm_type_info  src_ti, vm_address  dst_addr, vm_type_info  dst_ti) noexcept
 {
   auto  sz = src_ti.size();
 
@@ -91,48 +91,48 @@ copy(ir_address  src_addr, ir_type_info  src_ti, ir_address  dst_addr, ir_type_i
 
 
 
-ir_value
-ir_memory::
-make_integer_value(ir_address  addr, size_t  sz) const noexcept
+vm_value
+vm_memory::
+make_integer_value(vm_address  addr, size_t  sz) const noexcept
 {
   return (sz == 1)? reinterpret_cast<const int8_t&>( m_space[addr])
         :(sz == 2)? reinterpret_cast<const int16_t&>(m_space[addr])
         :(sz == 4)? reinterpret_cast<const int32_t&>(m_space[addr])
         :(sz == 8)? reinterpret_cast<const int64_t&>(m_space[addr])
-        :ir_value()
+        :vm_value()
         ;
 }
 
 
-ir_value
-ir_memory::
-make_floating_value(ir_address  addr, size_t  sz) const noexcept
+vm_value
+vm_memory::
+make_floating_value(vm_address  addr, size_t  sz) const noexcept
 {
   return (sz == 4)? reinterpret_cast<const float&>( m_space[addr])
         :(sz == 8)? reinterpret_cast<const double&>(m_space[addr])
-        :ir_value()
+        :vm_value()
         ;
 }
 
 
-ir_value
-ir_memory::
-make_object_value(ir_address  addr, size_t  sz) const noexcept
+vm_value
+vm_memory::
+make_object_value(vm_address  addr, size_t  sz) const noexcept
 {
-  return ir_value(sz,&m_space[addr]);
+  return vm_value(sz,&m_space[addr]);
 }
 
 
 
 
-ir_value
-ir_memory::
-make_value(ir_address  addr, ir_type_info  ti) const noexcept
+vm_value
+vm_memory::
+make_value(vm_address  addr, vm_type_info  ti) const noexcept
 {
   return ti.is_integer()?  make_integer_value(addr,ti.size())
         :ti.is_floating()? make_floating_value(addr,ti.size())
         :ti.is_object()?   make_object_value(addr,ti.size())
-        :ir_value()
+        :vm_value()
         ;
 }
 

@@ -1,4 +1,4 @@
-#include"libgbstd/vms/ir.hpp"
+#include"libgbstd/vm.hpp"
 
 
 
@@ -8,9 +8,9 @@ namespace gbstd{
 
 
 
-ir_value&
-ir_value::
-assign(const ir_value&  rhs) noexcept
+vm_value&
+vm_value::
+assign(const vm_value&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -32,9 +32,9 @@ assign(const ir_value&  rhs) noexcept
 }
 
 
-ir_value&
-ir_value::
-assign(ir_value&&  rhs) noexcept
+vm_value&
+vm_value::
+assign(vm_value&&  rhs) noexcept
 {
     if(this != &rhs)
     {
@@ -49,15 +49,27 @@ assign(ir_value&&  rhs) noexcept
 }
 
 
-ir_value&
-ir_value::
+vm_value&
+vm_value::
 assign(int  sz, const void*  o) noexcept
 {
   unrefer();
 
-  m_type_info = ir_type_info('o',sz);
+  m_type_info = vm_type_info('o',sz);
 
   allocate(sz,o);
+
+  return *this;
+}
+
+
+vm_value&
+vm_value::
+assign(vm_type_info  ti) noexcept
+{
+  unrefer();
+
+  m_type_info = ti;
 
   return *this;
 }
@@ -66,7 +78,7 @@ assign(int  sz, const void*  o) noexcept
 
 
 void
-ir_value::
+vm_value::
 unrefer() noexcept
 {
     if(m_type_info.is_object())
@@ -80,12 +92,12 @@ unrefer() noexcept
     }
 
 
-  m_type_info = ir_type_info();
+  m_type_info = vm_type_info();
 }
 
 
 void
-ir_value::
+vm_value::
 allocate(int  sz, const void*  o) noexcept
 {
   auto  p = static_cast<uint8_t*>(malloc(size_of_counter+sz));

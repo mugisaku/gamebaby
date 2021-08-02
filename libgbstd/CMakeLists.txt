@@ -91,11 +91,14 @@ set(SOURCES
   vms/expressions/postfix_element.cpp
   vms/expressions/operand.cpp
   vms/expressions/simple_value.cpp
-  vms/irs/ir_value.cpp
-  vms/irs/ir_memory.cpp
-  vms/irs/ir__print.cpp
-  vms/irs/ir__assemble.cpp
-  vms/irs/ir_processor.cpp
+  vms/vm_opcode.cpp
+  vms/vm_value.cpp
+  vms/vm_memory.cpp
+  vms/vm__print.cpp
+  vms/vm_line.cpp
+  vms/vm_function.cpp
+  vms/vm_jobfield.cpp
+  vms/vm_execution.cpp
   ilc_javascript.cpp
   utility.cpp
   video.cpp
