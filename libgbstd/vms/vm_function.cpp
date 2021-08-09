@@ -8,150 +8,172 @@ namespace gbstd{
 
 
 
-void
+vm_operation
 vm_function::
-construct_define_operation(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_unary_operation(const syntax_branch&  br) noexcept
 {
-  ln.set_opcode(vm_opcode::ld);
+  auto  op = construct_unary_opcode(br[0].branch());
 
-  auto&  tok = br[1].token();
+  auto  l = construct_operand(br[1].branch());
 
-    if(tok.is_integer())
-    {
-      ln.add_operand(tok.integer());
-    }
-
-  else
-    if(tok.is_floating())
-    {
-      ln.add_operand(tok.floating());
-    }
+  return vm_operation(op,std::move(l));
 }
 
 
-void
+vm_operation
 vm_function::
-construct_unary_operation(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_binary_operation(const syntax_branch&  br) noexcept
 {
+  auto  op = construct_binary_opcode(br[0].branch());
+
+  auto  l = construct_operand(br[1].branch());
+  auto  r = construct_operand(br[2].branch());
+
+  return vm_operation(op,std::move(l),std::move(r));
 }
 
 
-void
+vm_opcode
 vm_function::
-construct_binary_instruction(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_unary_opcode(const syntax_branch&  br) noexcept
 {
   auto  s = br[0].string();
 
-  ln.set_opcode( (s == u"add")? vm_opcode::add
-                :(s == u"sub")? vm_opcode::sub
-                :(s == u"mul")? vm_opcode::mul
-                :(s == u"div")? vm_opcode::div
-                :(s == u"rem")? vm_opcode::rem
-                :(s == u"fadd")? vm_opcode::fadd
-                :(s == u"fsub")? vm_opcode::fsub
-                :(s == u"fmul")? vm_opcode::fmul
-                :(s == u"fdiv")? vm_opcode::fdiv
-                :(s == u"frem")? vm_opcode::frem
-                :(s == u"eq")? vm_opcode::eq
-                :(s == u"neq")? vm_opcode::neq
-                :(s == u"lt")? vm_opcode::lt
-                :(s == u"lteq")? vm_opcode::lteq
-                :(s == u"gt")? vm_opcode::gt
-                :(s == u"gteq")? vm_opcode::gteq
-                :(s == u"feq")? vm_opcode::feq
-                :(s == u"fneq")? vm_opcode::fneq
-                :(s == u"flt")? vm_opcode::flt
-                :(s == u"flteq")? vm_opcode::flteq
-                :(s == u"fgt")? vm_opcode::fgt
-                :(s == u"fgteq")? vm_opcode::fgteq
-                :(s == u"shl")? vm_opcode::shl
-                :(s == u"shr")? vm_opcode::shr
-                :(s == u"and")? vm_opcode::and_
-                :(s == u"or")? vm_opcode::or_
-                :(s == u"xor")? vm_opcode::xor_
-                :(s == u"logi_and")? vm_opcode::logi_and
-                :(s == u"logi_or")? vm_opcode::logi_or
-                :vm_opcode::nop
-               )
-               ;
+  return (s == u"logi_not")? vm_opcode::logi_not
+        :(s == u"not")? vm_opcode::not_
+        :(s == u"neg")? vm_opcode::neg
+        :(s == u"fneg")? vm_opcode::fneg
+        :vm_opcode::nop
+        ;
 }
 
 
-void
+vm_opcode
 vm_function::
-construct_binary_operation(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_binary_opcode(const syntax_branch&  br) noexcept
 {
-  construct_binary_instruction(br[0].branch(),ln);
+  auto  s = br[0].string();
 
-  ln.add_operand(construct_operand(br[1].branch()));
-  ln.add_operand(construct_operand(br[2].branch()));
+  return (s == u"add")? vm_opcode::add
+        :(s == u"sub")? vm_opcode::sub
+        :(s == u"mul")? vm_opcode::mul
+        :(s == u"div")? vm_opcode::div
+        :(s == u"rem")? vm_opcode::rem
+        :(s == u"fadd")? vm_opcode::fadd
+        :(s == u"fsub")? vm_opcode::fsub
+        :(s == u"fmul")? vm_opcode::fmul
+        :(s == u"fdiv")? vm_opcode::fdiv
+        :(s == u"frem")? vm_opcode::frem
+        :(s == u"eq")? vm_opcode::eq
+        :(s == u"neq")? vm_opcode::neq
+        :(s == u"lt")? vm_opcode::lt
+        :(s == u"lteq")? vm_opcode::lteq
+        :(s == u"gt")? vm_opcode::gt
+        :(s == u"gteq")? vm_opcode::gteq
+        :(s == u"feq")? vm_opcode::feq
+        :(s == u"fneq")? vm_opcode::fneq
+        :(s == u"flt")? vm_opcode::flt
+        :(s == u"flteq")? vm_opcode::flteq
+        :(s == u"fgt")? vm_opcode::fgt
+        :(s == u"fgteq")? vm_opcode::fgteq
+        :(s == u"shl")? vm_opcode::shl
+        :(s == u"shr")? vm_opcode::shr
+        :(s == u"and")? vm_opcode::and_
+        :(s == u"or")? vm_opcode::or_
+        :(s == u"xor")? vm_opcode::xor_
+        :(s == u"logi_and")? vm_opcode::logi_and
+        :(s == u"logi_or")? vm_opcode::logi_or
+        :vm_opcode::nop
+        ;
 }
 
 
 void
 vm_function::
-construct_address_operation(const syntax_branch&  br, vm_line&  ln) noexcept
-{
-}
-
-
-void
-vm_function::
-construct_phi_operation(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_address_operation(const syntax_branch&  br) noexcept
 {
 }
 
 
-void
+vm_phi_element
 vm_function::
-construct_operation(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_phi_element(const syntax_branch&  br) noexcept
+{
+  return vm_phi_element(br[0].string(),construct_operand(br[1].branch()));
+}
+
+
+vm_phi_element_list
+vm_function::
+construct_phi_operation(const syntax_branch&  br) noexcept
+{
+  vm_phi_element_list  ls;
+
+    for(auto&  e: br)
+    {
+        if(e.is_branch(u"phi_element"))
+        {
+          ls.emplace_back(construct_phi_element(e.branch()));
+        }
+    }
+
+
+  return std::move(ls);
+}
+
+
+vm_register
+vm_function::
+construct_operations(const syntax_branch&  br, vm_type_info  ti, std::u16string_view  lb) noexcept
 {
   auto&  e = br[0];
 
-       if(e.is_branch(u"define_operation") ){construct_define_operation( e.branch(),ln);}
-  else if(e.is_branch(u"unary_operation")  ){construct_unary_operation(  e.branch(),ln);}
-  else if(e.is_branch(u"binary_operation") ){construct_binary_operation( e.branch(),ln);}
-  else if(e.is_branch(u"address_operation")){construct_address_operation(e.branch(),ln);}
-  else if(e.is_branch(u"phi_operation")    ){construct_phi_operation(    e.branch(),ln);}
+       if(e.is_branch(u"unary_operation")  ){return vm_register(ti,lb,construct_unary_operation(  e.branch()));}
+  else if(e.is_branch(u"binary_operation") ){return vm_register(ti,lb,construct_binary_operation( e.branch()));}
+//  else if(e.is_branch(u"address_operation")){construct_address_operation(e.branch());}
+  else if(e.is_branch(u"phi_operation")    ){return vm_register(ti,lb,construct_phi_operation(e.branch()));}
   else{}
+
+  return vm_register();
 }
 
 
-void
+vm_register
 vm_function::
-construct_register_statement(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_register(const syntax_branch&  br) noexcept
 {
-  ln.set_type_info(construct_type_info(br[1].branch()));
+  auto  ti = construct_type_info(br[1].branch());
 
-  ln.set_destination(br[2].string());
-
+  auto  lb = br[2].string();
 
   auto&  e = br[3];
 
-       if(e.is_branch(u"operation")     ){construct_operation(e.branch(),ln);}
-  else if(e.is_branch(u"call_statement")){construct_call_statement(e.branch(),ln);}
+       if(e.is_branch(u"operation")     ){return construct_operations(e.branch(),ti,lb);}
+  else if(e.is_branch(u"call_statement")){return vm_register(ti,lb,construct_call(e.branch()));}
+
+  return vm_register();
 }
 
 
-void
+vm_return
 vm_function::
-construct_return_statement(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_return(const syntax_branch&  br) noexcept
 {
-  ln.set_opcode(vm_opcode::ret);
-
     if(br.length() == 2)
     {
-      ln.add_operand(construct_operand(br[1].branch()));
+      return vm_return(construct_operand(br[1].branch()));
     }
+
+
+  return vm_return();
 }
 
 
-void
+vm_branch
 vm_function::
-construct_branch_statement(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_branch(const syntax_branch&  br) noexcept
 {
-  gbstd::print(br[1].string());
-  gbstd::print(br[2].string());
+  return vm_branch(construct_operand(br[0].branch()),br[1].string(),br[2].string());
 }
 
 
@@ -163,40 +185,43 @@ construct_label_statement(const syntax_branch&  br) noexcept
 }
 
 
-void
+vm_transfer
 vm_function::
-construct_store_statement(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_store(const syntax_branch&  br) noexcept
 {
 //  construct_type_info(br[1].branch());
 
-  gbstd::print(br[2].string());
-  gbstd::print(br[3].string());
+//  br[2].string();
+//  br[3].string();
+
+  return vm_transfer();
 }
 
 
-void
+vm_operand_list
 vm_function::
-construct_argument_list(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_operand_list(const syntax_branch&  br) noexcept
 {
+  vm_operand_list  ls;
+
     for(auto&  e: br)
     {
         if(e.is_branch(u"operand"))
         {
-          ln.add_operand(construct_operand(e.branch()));
+          ls.emplace_back(construct_operand(e.branch()));
         }
     }
+
+
+  return std::move(ls);
 }
 
 
-void
+vm_call
 vm_function::
-construct_call_statement(const syntax_branch&  br, vm_line&  ln) noexcept
+construct_call(const syntax_branch&  br) noexcept
 {
-  ln.set_opcode(vm_opcode::cal);
-
-  ln.add_operand(br[1].string());
-
-  construct_argument_list(br[3].branch(),ln);
+  return vm_call(br[1].string(),construct_operand_list(br[3].branch()));
 }
 
 
@@ -206,12 +231,12 @@ construct_statement(const syntax_branch&  br) noexcept
 {
   auto&  e = br[0];
 
-       if(e.is_branch(u"register_statement")){construct_register_statement(e.branch(),add_line());}
-  else if(e.is_branch(u"return_statement")  ){construct_return_statement(e.branch(),add_line());}
-  else if(e.is_branch(u"branch_statement")  ){construct_branch_statement(e.branch(),add_line());}
+       if(e.is_branch(u"register_statement")){add_line(vm_line(construct_register(e.branch())));}
+  else if(e.is_branch(u"return_statement")  ){add_line(vm_line(construct_return(e.branch())));}
+  else if(e.is_branch(u"branch_statement")  ){add_line(vm_line(construct_branch(e.branch())));}
   else if(e.is_branch(u"label_statement")   ){construct_label_statement(e.branch());}
-  else if(e.is_branch(u"store_statement")   ){construct_store_statement(e.branch(),add_line());}
-  else if(e.is_branch(u"call_statement")    ){construct_call_statement(e.branch(),add_line());}
+  else if(e.is_branch(u"store_statement")   ){add_line(vm_line(construct_store(e.branch())));}
+  else if(e.is_branch(u"call_statement")    ){add_line(vm_line(construct_call(e.branch())));}
   else{;}
 }
 
@@ -318,7 +343,7 @@ assign(const syntax_branch&  br) noexcept
   m_symbol_table.emplace_back(vm_type_info('i',8),u"__return_address__",'l').set_offset(m_argument_size+16);
   m_symbol_table.emplace_back(vm_type_info('i',8),u"__return_value_address__",'l').set_offset(m_argument_size+24);
 
-  m_stack_allocation_size = 32;
+  m_stack_allocation_size = m_argument_size+32;
 
   m_name = br[5].string();
 
@@ -336,7 +361,7 @@ assign(const syntax_branch&  br) noexcept
 
 vm_line&
 vm_function::
-add_line() noexcept
+add_line(vm_line&&  ln) noexcept
 {
     if(m_block_array.empty())
     {
@@ -346,7 +371,7 @@ add_line() noexcept
 
   auto&  blk = m_block_array.back();
 
-  return blk.lines().emplace_back();
+  return blk.lines().emplace_back(std::move(ln));
 }
 
 
@@ -385,11 +410,13 @@ finalize(int  pos) noexcept
         {
           ln.set_position(pos++);
 
-            if(ln.has_destination())
+            if(ln.is_register())
             {
-              m_symbol_table.emplace_back(ln.type_info(),ln.destination(),'l').set_offset(m_stack_allocation_size);
+              auto&  reg = ln.get_register();
 
-              m_stack_allocation_size += ln.type_info().max_size();
+              m_symbol_table.emplace_back(reg.type_info(),reg.label(),'l').set_offset(m_stack_allocation_size);
+
+              m_stack_allocation_size += reg.type_info().max_size();
             }
         }
     }

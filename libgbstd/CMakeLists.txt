@@ -95,6 +95,7 @@ set(SOURCES
   vms/vm_value.cpp
   vms/vm_memory.cpp
   vms/vm__print.cpp
+  vms/vm_register.cpp
   vms/vm_line.cpp
   vms/vm_function.cpp
   vms/vm_jobfield.cpp

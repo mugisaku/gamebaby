@@ -12,9 +12,7 @@ std::u16string_view
 get_string(vm_opcode  o) noexcept
 {
   return std::u16string_view((o == vm_opcode::nop)? u"nop"
-                            :(o == vm_opcode::cpy)? u"cpy"
-                            :(o == vm_opcode::st)? u"st"
-                            :(o == vm_opcode::ld)? u"ld"
+                            :(o == vm_opcode::trf)? u"trf"
                             :(o == vm_opcode::add)? u"add"
                             :(o == vm_opcode::sub)? u"sub"
                             :(o == vm_opcode::mul)? u"mul"
@@ -47,9 +45,9 @@ get_string(vm_opcode  o) noexcept
                             :(o == vm_opcode::logi_or)? u"logi_or"
                             :(o == vm_opcode::logi_not)? u"logi_not"
                             :(o == vm_opcode::neg)? u"neg"
+                            :(o == vm_opcode::fneg)? u"fneg"
                             :(o == vm_opcode::br)? u"br"
                             :(o == vm_opcode::jmp)? u"jmp"
-                            :(o == vm_opcode::adr)? u"adr"
                             :(o == vm_opcode::cal)? u"cal"
                             :(o == vm_opcode::ret)? u"ret"
                             :u"");

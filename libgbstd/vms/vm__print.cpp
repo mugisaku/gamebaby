@@ -268,6 +268,175 @@ print_branch_as_ir(const syntax_branch&  br)
 
 
 
+void
+vm_type_info::
+print() const noexcept
+{
+       if(m_letter == 'n'){printf("undefined");}
+  else if(m_letter == 'v'){printf("void");}
+  else if(m_letter == 'i'){printf("i%d",8*m_size);}
+  else if(m_letter == 'u'){printf("u%d",8*m_size);}
+  else if(m_letter == 'f'){printf("f%d",8*m_size);}
+  else if(m_letter == 'o'){printf("o%d",m_size);}
+  else {printf("unknown");}
+}
+
+
+void
+vm_value::
+print() const noexcept
+{
+  printf("value: ");
+
+    if(m_type_info.is_integer())
+    {
+      printf("%" PRIi64,m_data.i);
+    }
+
+  else
+    {
+      printf("null");
+    }
+}
+
+
+void
+vm_operand::
+print() const noexcept
+{
+       if(is_integer()         ){printf("%" PRIi64,m_data.i);}
+  else if(is_unsigned_integer()){printf("%" PRIu64,m_data.u);}
+  else if(is_floating()        ){printf("%f",m_data.f);}
+  else if(is_identifier()      ){gbstd::print(m_data.s);}
+  else{printf("NULL");}
+}
+
+
+void
+vm_transfer::
+print() const noexcept
+{
+  printf("trf ");
+
+  m_src_type_info.print();
+
+  printf(" ");
+
+  gbstd::print(m_src_label);
+
+  printf(" ");
+
+  m_dst_type_info.print();
+
+  printf(" ");
+
+  gbstd::print(m_dst_label);
+}
+
+
+void
+vm_call::
+print() const noexcept
+{
+  printf("cal ");
+
+  gbstd::print(m_target);
+
+  printf("(");
+
+    for(auto&  o: m_operand_list)
+    {
+      o.print();
+
+      printf(",");
+    }
+
+
+  printf(")");
+}
+
+
+void
+vm_return::
+print() const noexcept
+{
+  printf("ret ");
+
+  m_operand.print();
+}
+
+
+void
+vm_jump::
+print() const noexcept
+{
+  printf("jmp ");
+
+  gbstd::print(m_label);
+}
+
+
+void
+vm_branch::
+print() const noexcept
+{
+  printf("br ");
+
+  m_operand.print();
+
+  printf(" ");
+
+  gbstd::print(m_if_true);
+
+  printf(" ");
+
+  gbstd::print(m_if_false);
+}
+
+
+void
+vm_phi_element::
+print() const noexcept
+{
+  gbstd::print(m_label);
+
+  printf(" ");
+
+  m_operand.print();
+}
+
+
+void
+vm_operation::
+print() const noexcept
+{
+  gbstd::print(get_string(m_opcode));
+
+  printf(" ");
+
+  m_left_operand.print();
+
+  printf(" ");
+
+  m_right_operand.print();
+}
+
+
+void
+vm_symbol::
+print() const noexcept
+{
+  m_type_info.print();
+
+  printf("  ");
+
+  gbstd::print(m_name);
+
+  printf("(%6" PRIi64 ")",m_offset);
+}
+
+
+
 }
 
 
